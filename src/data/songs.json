@@ -1,0 +1,50 @@
+[
+  {
+    "id": 1,
+    "title": "Thanisai Thendral",
+    "artist": "JKS Tamil Hits",
+    "album": "90s Semma Love Songs",
+    "duration": 320,
+    "src": "https://res.cloudinary.com/dm1cwbbfg/video/upload/q_auto/f_auto/v1778821333/90s_semma_love_Tamil_songs_JKS_%E0%AE%A4%E0%AF%87%E0%AE%A9%E0%AE%BF%E0%AE%9A%E0%AF%88_%E0%AE%A4%E0%AF%86%E0%AE%A9%E0%AF%8D%E0%AE%B1%E0%AE%B2%E0%AF%8D_MP3_128K_i7rdzh.mp3",
+    "cover": "/images/thanisai_thendral.png",
+    "genre": "Tamil",
+    "trending": true,
+    "recommended": true
+  },
+  {
+    "id": 2,
+    "title": "Aagaya Suriyanai",
+    "artist": "Tamil Hits",
+    "album": "Tamil Classics Vol. 1",
+    "duration": 245,
+    "src": "https://res.cloudinary.com/dm1cwbbfg/video/upload/q_auto/f_auto/v1778766125/Aagaya-Suriyanai_zysy3m.mp3",
+    "cover": "/images/aagaya_suriyanai.png",
+    "genre": "Tamil",
+    "trending": true,
+    "recommended": false
+  },
+  {
+    "id": 3,
+    "title": "Aao Romale",
+    "artist": "Tamil Hits",
+    "album": "Tamil Classics Vol. 3",
+    "duration": 233,
+    "src": "https://res.cloudinary.com/dm1cwbbfg/video/upload/q_auto/f_auto/v1778766032/Aaoromale_eaovba.mp3",
+    "cover": "/images/aaoromale.png",
+    "genre": "Tamil",
+    "trending": false,
+    "recommended": true
+  },
+  {
+    "id": 4,
+    "title": "Aaha Enbargal",
+    "artist": "Tamil Hits",
+    "album": "Tamil Classics Vol. 2",
+    "duration": 222,
+    "src": "https://res.cloudinary.com/dm1cwbbfg/video/upload/q_auto/f_auto/v1778765468/Aaha-Enbargal_a2ggr7.mp3",
+    "cover": "/images/aaha_enbargal.png",
+    "genre": "Tamil",
+    "trending": true,
+    "recommended": true
+  }
+]
