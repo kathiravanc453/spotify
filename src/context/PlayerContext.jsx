@@ -79,24 +79,37 @@ export function PlayerProvider({ children }) {
   const fetchSongs = useCallback(async () => {
     try {
       const res = await fetch('/api/songs');
+
+      // Guard: only parse as JSON if the response is OK and content-type is JSON
+      const contentType = res.headers.get('content-type') || '';
+      if (!res.ok || !contentType.includes('application/json')) {
+        // Backend not ready yet — silently fall back to static data
+        throw new Error(`Backend unavailable (status ${res.status})`);
+      }
+
       const data = await res.json();
-      setAllSongs(data);
+      if (Array.isArray(data)) {
+        setAllSongs(data);
+      }
     } catch (err) {
-      console.error('Fetch error:', err);
-      // Fallback to static if backend is down
+      // Only log on first load to avoid console spam every 20 seconds
+      if (loading) console.warn('[Rhythmix] Backend offline, using static songs.json fallback.');
+      // Fallback to static songs.json if backend is down
       try {
         const mod = await import('../data/songs.json');
-        setAllSongs(mod.default || []);
+        if (Array.isArray(mod.default) && mod.default.length > 0) {
+          setAllSongs(prev => prev.length === 0 ? mod.default : prev);
+        }
       } catch {}
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loading]);
 
   useEffect(() => {
     fetchSongs();
-    // Auto-refresh every 10 seconds to catch new syncs from Cloudinary
-    const interval = setInterval(fetchSongs, 10000);
+    // Auto-refresh every 20 seconds to catch new Cloudinary syncs
+    const interval = setInterval(fetchSongs, 20000);
     return () => clearInterval(interval);
   }, [fetchSongs]);
 
