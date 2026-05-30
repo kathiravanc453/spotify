@@ -9,10 +9,50 @@ export default function Login({ onLogin }) {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  // Helper: check if backend API is reachable
+  const isBackendAvailable = async () => {
+    try {
+      const res = await fetch('/api/songs', { method: 'GET' });
+      const ct = res.headers.get('content-type') || '';
+      return res.ok && ct.includes('application/json');
+    } catch {
+      return false;
+    }
+  };
+
+  // LocalStorage-based auth fallback (used on Vercel where no backend runs)
+  const localRegister = (userName, userEmail, userPassword) => {
+    const users = JSON.parse(localStorage.getItem('rhythmix_users') || '[]');
+    if (users.find(u => u.email.toLowerCase() === userEmail.toLowerCase())) {
+      throw new Error('An account with this email already exists.');
+    }
+    const newUser = {
+      name: userName,
+      email: userEmail.toLowerCase(),
+      password: userPassword,
+      avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(userName)}`,
+      role: userEmail.toLowerCase() === 'admin@rhythmix.com' ? 'admin' : 'user',
+    };
+    users.push(newUser);
+    localStorage.setItem('rhythmix_users', JSON.stringify(users));
+    const { password: _, ...session } = newUser;
+    return session;
+  };
+
+  const localLogin = (userEmail, userPassword) => {
+    const users = JSON.parse(localStorage.getItem('rhythmix_users') || '[]');
+    const user = users.find(
+      u => u.email.toLowerCase() === userEmail.toLowerCase() && u.password === userPassword
+    );
+    if (!user) throw new Error('Invalid email or password.');
+    const { password: _, ...session } = user;
+    return session;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    
+
     if (!email || !password || (isSignUp && !name)) {
       setError('Please fill in all required fields.');
       return;
@@ -21,24 +61,31 @@ export default function Login({ onLogin }) {
     setIsLoading(true);
 
     try {
-      const url = isSignUp ? '/api/register' : '/api/login';
-      const body = isSignUp ? { name, email, password } : { email, password };
-      
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-      });
+      const backendUp = await isBackendAvailable();
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Something went wrong.');
+      let data;
+      if (backendUp) {
+        // ✅ Backend available (running locally) — use Express API
+        const url = isSignUp ? '/api/register' : '/api/login';
+        const body = isSignUp ? { name, email, password } : { email, password };
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const contentType = response.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+          throw new Error('Server error. Please try again.');
+        }
+        data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Something went wrong.');
+      } else {
+        // 🌐 No backend (Vercel deployment) — use localStorage auth
+        data = isSignUp
+          ? localRegister(name, email, password)
+          : localLogin(email, password);
       }
 
-      // Store current logged-in session profile
       localStorage.setItem('rhythmix_session', JSON.stringify(data));
       onLogin(data);
     } catch (err) {
@@ -52,21 +99,40 @@ export default function Login({ onLogin }) {
     setIsLoading(true);
     setError('');
     try {
-      const response = await fetch('/api/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: 'demo@rhythmix.com', password: 'demo' }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Demo login failed.');
+      const backendUp = await isBackendAvailable();
+      let data;
+
+      if (backendUp) {
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: 'demo@rhythmix.com', password: 'demo' }),
+        });
+        const contentType = response.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) throw new Error('Server error.');
+        data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Demo login failed.');
+      } else {
+        // On Vercel: auto-create demo session in localStorage
+        const demoUser = {
+          name: 'Demo User',
+          email: 'demo@rhythmix.com',
+          avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Demo',
+          role: 'user',
+        };
+        // Register demo user if not exists
+        const users = JSON.parse(localStorage.getItem('rhythmix_users') || '[]');
+        if (!users.find(u => u.email === 'demo@rhythmix.com')) {
+          users.push({ ...demoUser, password: 'demo' });
+          localStorage.setItem('rhythmix_users', JSON.stringify(users));
+        }
+        data = demoUser;
       }
+
       localStorage.setItem('rhythmix_session', JSON.stringify(data));
       onLogin(data);
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Demo login failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
