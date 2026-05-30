@@ -1,6 +1,6 @@
 import { usePlayer } from '../../context/PlayerContext';
 import {
-  Play, Pause, SkipBack, SkipForward, Volume2, VolumeX
+  Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Heart, X
 } from 'lucide-react';
 
 function formatTime(secs) {
@@ -16,7 +16,7 @@ function Equalizer({ isPlaying }) {
       {[0, 1, 2].map(i => (
         <div
           key={i}
-          className={`w-[3px] bg-spotify-green rounded-full ${
+          className={`w-[3px] bg-cyan-400 rounded-full ${
             isPlaying
               ? i === 0 ? 'animate-equalize' : i === 1 ? 'animate-equalize-delayed-1' : 'animate-equalize-delayed-2'
               : 'h-1'
@@ -27,86 +27,101 @@ function Equalizer({ isPlaying }) {
     </div>
   );
 }
-
+ 
 export default function PlayerFooter() {
-  const { currentSong, isPlaying, progress, duration, volume, togglePlay, playNext, playPrev, seek, changeVolume } = usePlayer();
-
+  const { currentSong, isPlaying, progress, duration, volume, togglePlay, playNext, playPrev, seek, changeVolume, favorites = [], toggleLike, setActiveSection, stopPlayback } = usePlayer();
+ 
   if (!currentSong) return null;
-
+ 
   const pct = duration ? (progress / duration) * 100 : 0;
-
+ 
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-50 glassmorphism border-t border-white/10"
+      className="fixed bottom-0 left-0 right-0 md:bottom-5 md:left-5 md:right-5 z-50 rounded-none md:rounded-2xl border border-white/10 shadow-2xl overflow-hidden transition-all duration-300 animate-in slide-in-from-bottom-5"
       style={{
-        background: 'rgba(15,15,15,0.85)',
-        backdropFilter: 'blur(20px)',
+        background: 'rgba(10, 10, 15, 0.75)',
+        backdropFilter: 'blur(24px)',
+        WebkitBackdropFilter: 'blur(24px)',
       }}
     >
       {/* Progress Bar */}
-      <div className="w-full h-1 bg-white/10 cursor-pointer group" onClick={e => {
+      <div className="w-full h-1 bg-white/15 cursor-pointer group" onClick={e => {
         const rect = e.currentTarget.getBoundingClientRect();
         const ratio = (e.clientX - rect.left) / rect.width;
         seek(ratio * duration);
       }}>
         <div
-          className="h-full bg-spotify-green transition-all duration-100 relative"
+          className="h-full bg-gradient-to-r from-cyan-400 to-violet-500 transition-all duration-100 relative"
           style={{ width: `${pct}%` }}
         >
-          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-md shadow-black/50" />
         </div>
       </div>
-
-      <div className="flex items-center justify-between px-4 py-3 gap-4">
+ 
+      <div className="flex items-center justify-between px-4 md:px-5 py-3 md:py-4 gap-3 md:gap-4">
         {/* Song Info */}
-        <div className="flex items-center gap-3 min-w-0 flex-1">
-          <div className="relative">
-            <img
-              src={currentSong.cover}
-              alt={currentSong.title}
-              className="w-12 h-12 rounded-lg object-cover shadow-lg flex-shrink-0"
-            />
-            <div className="absolute inset-0 rounded-lg bg-black/20 flex items-center justify-center">
-              <Equalizer isPlaying={isPlaying} />
+        <div className="flex items-center gap-3.5 min-w-0 flex-1">
+          <div
+            onClick={() => setActiveSection('now-playing')}
+            className="flex items-center gap-3.5 min-w-0 flex-1 cursor-pointer hover:opacity-95 group/info"
+          >
+            <div className="relative rounded-lg overflow-hidden group/thumb flex-shrink-0">
+              <img
+                src={currentSong.cover}
+                alt={currentSong.title}
+                className="w-11 h-11 md:w-12 md:h-12 object-cover shadow-md transition-transform duration-500 group-hover/thumb:scale-105"
+              />
+              <div className="absolute inset-0 bg-black/35 flex items-center justify-center">
+                <Equalizer isPlaying={isPlaying} />
+              </div>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-white text-xs md:text-sm font-bold truncate group-hover/info:text-cyan-300 transition-colors">{currentSong.title}</p>
+              <p className="text-white/50 text-[10px] md:text-xs truncate mt-0.5 font-medium">{currentSong.artist}</p>
             </div>
           </div>
-          <div className="min-w-0">
-            <p className="text-white text-sm font-semibold truncate">{currentSong.title}</p>
-            <p className="text-white/50 text-xs truncate">{currentSong.artist}</p>
-          </div>
+          <button
+            onClick={() => toggleLike(currentSong.id)}
+            className="text-white/50 hover:text-rose-500 transition-colors p-1.5 flex items-center justify-center cursor-pointer flex-shrink-0"
+          >
+            <Heart
+              size={18}
+              className={favorites.includes(currentSong.id) ? 'text-rose-500 fill-rose-500 scale-110' : 'text-white/40 hover:text-white'}
+            />
+          </button>
         </div>
-
+ 
         {/* Controls */}
-        <div className="flex flex-col items-center gap-1 flex-shrink-0">
-          <div className="flex items-center gap-4">
-            <button onClick={playPrev} className="text-white/60 hover:text-white transition-colors p-1">
+        <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
+          <div className="flex items-center gap-3.5 md:gap-5">
+            <button onClick={playPrev} className="hidden md:block text-white/60 hover:text-white transition-all duration-200 hover:scale-105 active:scale-95 p-1">
               <SkipBack size={18} fill="currentColor" />
             </button>
             <button
               onClick={togglePlay}
-              className="w-10 h-10 rounded-full bg-white flex items-center justify-center hover:scale-105 transition-transform shadow-lg neon-glow"
+              className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-gradient-to-tr from-cyan-400 to-violet-500 hover:from-cyan-300 hover:to-violet-400 flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-md shadow-cyan-500/10 flex-shrink-0"
             >
               {isPlaying
-                ? <Pause size={18} fill="#000" color="#000" />
-                : <Play size={18} fill="#000" color="#000" className="ml-0.5" />
+                ? <Pause className="w-4 h-4 md:w-[18px] md:h-[18px]" fill="#fff" color="#fff" />
+                : <Play className="w-4 h-4 md:w-[18px] md:h-[18px] ml-0.5" fill="#fff" color="#fff" />
               }
             </button>
-            <button onClick={playNext} className="text-white/60 hover:text-white transition-colors p-1">
-              <SkipForward size={18} fill="currentColor" />
+            <button onClick={playNext} className="text-white/60 hover:text-white transition-all duration-200 hover:scale-105 active:scale-95 p-1">
+              <SkipForward className="w-4.5 h-4.5 md:w-[18px] md:h-[18px]" fill="currentColor" />
             </button>
           </div>
-          <div className="flex items-center gap-2 text-white/40 text-xs">
+          <div className="hidden md:flex items-center gap-2 text-white/30 text-xs font-semibold">
             <span>{formatTime(progress)}</span>
             <span>/</span>
             <span>{formatTime(duration)}</span>
           </div>
         </div>
-
+ 
         {/* Volume */}
-        <div className="flex items-center gap-2 flex-1 justify-end">
+        <div className="hidden md:flex items-center gap-2.5 flex-1 justify-end">
           <button
             onClick={() => changeVolume(volume > 0 ? 0 : 0.8)}
-            className="text-white/60 hover:text-white transition-colors"
+            className="text-cyan-400/90 hover:text-cyan-300 transition-all duration-200 hover:scale-110 active:scale-95 p-1.5 flex items-center justify-center"
           >
             {volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
           </button>
@@ -117,9 +132,18 @@ export default function PlayerFooter() {
             step={0.01}
             value={volume}
             onChange={e => changeVolume(parseFloat(e.target.value))}
-            className="w-20 md:w-28 accent-spotify-green cursor-pointer"
+            className="w-20 md:w-28 accent-cyan-400 cursor-pointer h-1 rounded-lg bg-white/10 outline-none appearance-none"
           />
         </div>
+
+        {/* Close/Cancel Button */}
+        <button
+          onClick={stopPlayback}
+          className="text-white/40 hover:text-rose-500 transition-colors p-1.5 flex items-center justify-center cursor-pointer flex-shrink-0 hover:bg-white/5 active:scale-90 rounded-full"
+          title="Close Player"
+        >
+          <X size={18} />
+        </button>
       </div>
     </div>
   );

@@ -1,0 +1,26 @@
+[
+  {
+    "name": "Administrator",
+    "email": "admin@rhythmix.com",
+    "password": "admin",
+    "avatar": "https://api.dicebear.com/7.x/initials/svg?seed=Administrator",
+    "role": "admin",
+    "registeredAt": "2026-05-30T11:46:00Z"
+  },
+  {
+    "name": "Demo User",
+    "email": "demo@rhythmix.com",
+    "password": "demo",
+    "avatar": "https://api.dicebear.com/7.x/initials/svg?seed=Demo%20User",
+    "role": "user",
+    "registeredAt": "2026-05-30T11:46:00Z"
+  },
+  {
+    "name": "kathir",
+    "email": "kathiravanchitharavel@gmail.com",
+    "password": "kathirvalli14333333",
+    "avatar": "https://api.dicebear.com/7.x/initials/svg?seed=kathir",
+    "role": "user",
+    "registeredAt": "2026-05-30T08:58:19.338Z"
+  }
+]

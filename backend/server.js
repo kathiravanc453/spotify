@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { v2 as cloudinary } from 'cloudinary';
+import https from 'https';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,7 +18,8 @@ cloudinary.config({
   api_secret: '6N9cJ9fhanGad1sj--3gssD-vCk'
 });
 
-const SONGS_JSON = path.join(__dirname, '..', 'src', 'data', 'songs.json');
+const SONGS_JSON = path.join(__dirname, 'songs.json');
+const USERS_JSON = path.join(__dirname, 'users.json');
 
 app.use(cors());
 app.use(express.json());
@@ -64,6 +66,129 @@ const getMoodFromFolder = (folderPath) => {
   return folder.charAt(0).toUpperCase() + folder.slice(1);
 };
 
+const AUTO_METADATA_CACHE_JSON = path.join(__dirname, 'auto-metadata-cache.json');
+
+const readMetadataCache = () => {
+  try {
+    if (fs.existsSync(AUTO_METADATA_CACHE_JSON)) {
+      return JSON.parse(fs.readFileSync(AUTO_METADATA_CACHE_JSON, 'utf-8'));
+    }
+  } catch (e) {
+    console.warn('⚠️ Error reading auto-metadata-cache.json:', e.message);
+  }
+  return {};
+};
+
+const writeMetadataCache = (cache) => {
+  try {
+    fs.writeFileSync(AUTO_METADATA_CACHE_JSON, JSON.stringify(cache, null, 2));
+  } catch (e) {
+    console.warn('⚠️ Error writing auto-metadata-cache.json:', e.message);
+  }
+};
+
+const cleanSearchTerm = (title) => {
+  let term = title
+    .replace(/[-_]/g, ' ') // Replace underscores and hyphens with spaces
+    .replace(/\s+/g, ' ')   // Collapse multiple spaces
+    .trim();
+
+  // Suffix patterns to remove to get a clean search query
+  const patternsToRemove = [
+    /high quality/gi,
+    /audio song/gi,
+    /video song/gi,
+    /bass boosted/gi,
+    /yuvan hits/gi,
+    /128k/gi,
+    /m4a/gi,
+    /mp3/gi,
+    /4k ultra hd/gi,
+    /blu ray/gi,
+    /dolby digital/gi,
+    /5\.1/gi,
+    /surround/gi,
+    /svp beats/gi,
+    /voice of spb/gi,
+    /-- \d+/g,
+    /\b[a-z0-9]{6}\b$/i // Matches 6-letter random hashes at the end like si5cms, xmauk8, udpl9y
+  ];
+
+  patternsToRemove.forEach(p => {
+    term = term.replace(p, '');
+  });
+
+  return term.replace(/\s+/g, ' ').trim();
+};
+
+const resolveMusicMetadata = (publicId, title) => {
+  return new Promise((resolve) => {
+    const cache = readMetadataCache();
+    
+    // Check cache first to avoid API spam
+    if (cache[publicId]) {
+      return resolve(cache[publicId]);
+    }
+
+    const query = cleanSearchTerm(title);
+    console.log(`🔍 [Auto-Scraper] Querying iTunes for cleaned term: "${query}" (Original: "${title}")`);
+
+    const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&country=in&media=music&entity=song&limit=1`;
+
+    https.get(url, (res) => {
+      let body = '';
+      res.on('data', chunk => body += chunk);
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(body);
+          if (parsed.results && parsed.results.length > 0) {
+            const track = parsed.results[0];
+            const highResArtwork = track.artworkUrl100 ? track.artworkUrl100.replace('100x100bb.jpg', '500x500bb.jpg') : null;
+            const resolved = {
+              title: track.trackName || title,
+              artist: track.artistName || 'Cloud Artist',
+              album: track.collectionName ? track.collectionName.replace(/\(Original Motion Picture Soundtrack\)/gi, '').replace(/- EP/gi, '').trim() : 'Singles',
+              cover: highResArtwork,
+              resolved: true
+            };
+
+            console.log(`✅ [Auto-Scraper] Resolved! Album: "${resolved.album}", Artist: "${resolved.artist}"`);
+
+            // Update cache
+            cache[publicId] = resolved;
+            writeMetadataCache(cache);
+            return resolve(resolved);
+          }
+        } catch (e) {
+          console.error(`❌ [Auto-Scraper] Parsing failed for "${query}":`, e.message);
+        }
+
+        // Fallback: cache fallback so we don't spam the API on subsequent ticks
+        console.log(`⚠️ [Auto-Scraper] No match found on iTunes for: "${query}". Setting fallback.`);
+        const fallback = {
+          title: title,
+          artist: 'Cloud Artist',
+          album: 'Singles',
+          cover: null,
+          resolved: false
+        };
+        cache[publicId] = fallback;
+        writeMetadataCache(cache);
+        resolve(fallback);
+      });
+    }).on('error', (err) => {
+      console.error(`❌ [Auto-Scraper] HTTP get error for "${query}":`, err.message);
+      resolve({
+        title: title,
+        artist: 'Cloud Artist',
+        album: 'Singles',
+        cover: null,
+        resolved: false
+      });
+    });
+  });
+};
+
 const syncWithCloudinary = async () => {
   console.log('\n====================================================');
   console.log('🛰️ DEEP FOLDER SYNC... (' + new Date().toLocaleTimeString() + ')');
@@ -76,15 +201,45 @@ const syncWithCloudinary = async () => {
       .max_results(500)
       .execute();
 
-    const cloudSongs = result.resources.filter(r => r.format === 'mp3' || r.format === 'm4a');
+    const cloudSongs = result.resources
+      .filter(r => r.format === 'mp3' || r.format === 'm4a')
+      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
     console.log(`🎵 I found ${cloudSongs.length} songs in your Cloudinary account.`);
 
+    if (cloudSongs.length > 0) {
+      console.log('Sample Cloud Resource Metadata:', {
+        public_id: cloudSongs[0].public_id,
+        folder: cloudSongs[0].folder,
+        asset_folder: cloudSongs[0].asset_folder,
+        all_keys: Object.keys(cloudSongs[0])
+      });
+    }
+
+    // Load metadata overrides
+    let overrides = {};
+    try {
+      const overridesPath = path.join(__dirname, 'metadata-overrides.json');
+      if (fs.existsSync(overridesPath)) {
+        overrides = JSON.parse(fs.readFileSync(overridesPath, 'utf-8'));
+      }
+    } catch (e) {
+      console.warn('⚠️ Could not read metadata-overrides.json:', e.message);
+    }
+
     let localSongs = [];
+    const seenCleanTitles = new Set();
 
     for (const cloud of cloudSongs) {
       // Prefer explicit mood set during upload via tags or context
       let folderMood = null;
-
+      let rawFolder = cloud.asset_folder || cloud.folder;
+      
+      if (!rawFolder && cloud.public_id && cloud.public_id.includes('/')) {
+        const parts = cloud.public_id.split('/');
+        parts.pop();
+        rawFolder = parts.join('/');
+      } 
+      
       // Check Cloudinary context.custom (some SDKs set custom context under context.custom)
       try {
         if (cloud.context && cloud.context.custom && cloud.context.custom.mood) {
@@ -99,30 +254,63 @@ const syncWithCloudinary = async () => {
       }
 
       // Fallback to folder detection
-      let rawFolder = cloud.folder;
       if (!folderMood) {
-        if (!rawFolder && cloud.public_id && cloud.public_id.includes('/')) {
-          const parts = cloud.public_id.split('/');
-          parts.pop();
-          rawFolder = parts.join('/');
-        }
         folderMood = getMoodFromFolder(rawFolder);
       }
 
       console.log(`  > "${cloud.public_id}" detected folder: "${rawFolder || 'root'}" -> Assigned Mood: "${folderMood}"`);
 
       const name = cloud.public_id.split('/').pop().split('.')[0].replace(/_/g, ' ');
-      const artist = 'Cloud Artist';
       
+      // Clean title duplicate check
+      const cleanName = cleanSearchTerm(name).toLowerCase();
+      if (seenCleanTitles.has(cleanName)) {
+        console.warn(`⚠️ [Duplicate Protection] Detected duplicate song "${name}" (ID: ${cloud.public_id}). Deleting duplicate from Cloudinary...`);
+        try {
+          cloudinary.uploader.destroy(cloud.public_id, { resource_type: 'video' }).then(result => {
+            console.log(`✅ [Duplicate Protection] Cloudinary destroy result for "${cloud.public_id}":`, result);
+          }).catch(err => {
+            console.error(`❌ [Duplicate Protection] Cloudinary destroy promise rejected for "${cloud.public_id}":`, err.message);
+          });
+        } catch (destroyErr) {
+          console.error(`❌ [Duplicate Protection] Failed to call destroy for "${cloud.public_id}":`, destroyErr.message);
+        }
+        continue; // Skip adding duplicate to localSongs database
+      }
+      seenCleanTitles.add(cleanName);
+
+      const artist = 'Cloud Artist';
       const defaultCover = `https://image.pollinations.ai/prompt/${encodeURIComponent(`artistic album cover for the song "${name}" by ${artist}, high resolution music art`)}?width=512&height=512&nologo=true&seed=${getStableId(cloud.public_id)}`;
       
+      // Check for overrides or resolve via auto-resolver
+      const songOverride = overrides[cloud.public_id];
+      let coverUrl = `https://res.cloudinary.com/dm1cwbbfg/image/upload/${cloud.public_id}.jpg`;
+      let fallbackUrl = defaultCover;
+      let albumName = 'Singles';
+      let songArtist = artist;
+
+      if (songOverride) {
+        coverUrl = songOverride.cover || coverUrl;
+        fallbackUrl = songOverride.cover || fallbackUrl;
+        albumName = songOverride.album || albumName;
+      } else {
+        const resolved = await resolveMusicMetadata(cloud.public_id, name);
+        if (resolved.cover) {
+          coverUrl = resolved.cover;
+          fallbackUrl = resolved.cover;
+        }
+        albumName = resolved.album || albumName;
+        songArtist = resolved.artist || songArtist;
+      }
+
       localSongs.push({
         id: getStableId(cloud.public_id),
         title: name,
-        artist: artist,
+        artist: songArtist,
         src: cloud.secure_url,
-        cover: `https://res.cloudinary.com/dm1cwbbfg/image/upload/${cloud.public_id}.jpg`,
-        fallbackCover: defaultCover,
+        cover: coverUrl,
+        fallbackCover: fallbackUrl,
+        album: albumName,
         mood: folderMood,
         genre: 'Tamil',
         uploadedAt: cloud.created_at
@@ -141,5 +329,141 @@ const syncWithCloudinary = async () => {
 
 setInterval(syncWithCloudinary, 15000);
 syncWithCloudinary();
+
+app.get('/api/songs', (req, res) => {
+  try {
+    if (fs.existsSync(SONGS_JSON)) {
+      const data = fs.readFileSync(SONGS_JSON, 'utf-8');
+      res.json(JSON.parse(data));
+    } else {
+      res.json([]);
+    }
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/songs', (req, res) => {
+  try {
+    const { title, artist, src, cover, album, genre, mood } = req.body;
+    if (!title || !src) {
+      return res.status(400).json({ error: 'Title and audio src are required' });
+    }
+
+    let songs = [];
+    if (fs.existsSync(SONGS_JSON)) {
+      songs = JSON.parse(fs.readFileSync(SONGS_JSON, 'utf-8'));
+    }
+
+    // Check for duplicate title
+    const cleanNewTitle = cleanSearchTerm(title).toLowerCase();
+    const isDuplicate = songs.some(s => cleanSearchTerm(s.title).toLowerCase() === cleanNewTitle);
+    
+    if (isDuplicate) {
+      return res.status(400).json({ error: 'This song already exists in the library!' });
+    }
+
+    const newSong = {
+      id: getStableId(src),
+      title,
+      artist: artist || 'Cloud Artist',
+      src,
+      cover: cover || '/favicon.svg',
+      fallbackCover: cover || '/favicon.svg',
+      album: album || 'Singles',
+      mood: mood || 'Melody',
+      genre: genre || 'Tamil',
+      uploadedAt: new Date().toISOString()
+    };
+
+    songs.push(newSong);
+    fs.writeFileSync(SONGS_JSON, JSON.stringify(songs, null, 2));
+
+    console.log(`✅ [POST /api/songs] Successfully added new song: "${title}"`);
+    res.status(201).json(newSong);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+const readUsers = () => {
+  try {
+    if (fs.existsSync(USERS_JSON)) {
+      return JSON.parse(fs.readFileSync(USERS_JSON, 'utf-8'));
+    }
+  } catch (e) {
+    console.error('Error reading users file:', e);
+  }
+  return [];
+};
+
+const writeUsers = (users) => {
+  try {
+    fs.writeFileSync(USERS_JSON, JSON.stringify(users, null, 2));
+  } catch (e) {
+    console.error('Error writing users file:', e);
+  }
+};
+
+app.post('/api/register', (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: 'All fields are required' });
+    }
+    
+    const users = readUsers();
+    if (users.find(u => u.email.toLowerCase() === email.toLowerCase())) {
+      return res.status(400).json({ error: 'User already exists' });
+    }
+
+    const newUser = {
+      name,
+      email: email.toLowerCase(),
+      password,
+      avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}`,
+      role: email.toLowerCase() === 'admin@rhythmix.com' ? 'admin' : 'user',
+      registeredAt: new Date().toISOString()
+    };
+
+    users.push(newUser);
+    writeUsers(users);
+
+    const sessionInfo = { name: newUser.name, email: newUser.email, avatar: newUser.avatar, role: newUser.role };
+    res.status(201).json(sessionInfo);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/login', (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    const users = readUsers();
+    const user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    const sessionInfo = { name: user.name, email: user.email, avatar: user.avatar, role: user.role };
+    res.json(sessionInfo);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/admin/users', (req, res) => {
+  try {
+    const users = readUsers();
+    const safeUsers = users.map(({ password, ...u }) => u);
+    res.json(safeUsers);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
 
 app.listen(PORT, () => { console.log(`🚀 DEEP SYNC SERVER ONLINE!`); });
