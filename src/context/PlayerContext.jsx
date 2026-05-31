@@ -124,12 +124,14 @@ export function PlayerProvider({ children }) {
     audio.play();
     setCurrentSong(song);
     setIsPlaying(true);
-    setActiveSection('now-playing');
+    // Note: we do NOT auto-navigate to 'now-playing' here.
+    // The user stays on their current page (Home/Library/Albums).
+    // They can click the footer player bar to open the Now Playing page.
     setRecentlyPlayed(prev => {
       const filtered = prev.filter(s => s.id !== song.id);
       return [song, ...filtered].slice(0, 10);
     });
-  }, [currentSong, isPlaying, setActiveSection]);
+  }, [currentSong, isPlaying]);
 
   const togglePlay = useCallback(() => {
     const audio = audioRef.current;

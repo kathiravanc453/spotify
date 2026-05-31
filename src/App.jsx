@@ -55,8 +55,9 @@ function AppContent({ user, onLogout }) {
         {/* Sidebar */}
         <Sidebar />
 
-        {/* Main content area */}
+        {/* Main content area — Header always stays visible */}
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+          {/* Header/Banner is ALWAYS rendered regardless of active section */}
           <Header search={search} setSearch={handleSearch} user={user} onLogout={onLogout} />
           <main
             className="flex-1 overflow-y-auto pb-32 md:pb-36"
@@ -73,7 +74,7 @@ function AppContent({ user, onLogout }) {
         </div>
       </div>
 
-      {/* Fixed bottom music player */}
+      {/* Fixed bottom music player — always on top */}
       <PlayerFooter />
     </div>
   );
