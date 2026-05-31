@@ -1,9 +1,11 @@
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import { usePlayer } from '../context/PlayerContext';
 import { cleanTitle, moodAccent } from '../utils/cleanTitle';
+import { useSwipe } from '../hooks/useGestures';
+import { toast } from '../components/ui/Toast';
 import {
   Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Heart,
-  ChevronLeft, Volume2, VolumeX, ListMusic, Sparkles
+  ChevronLeft, Volume2, VolumeX, ListMusic, Sparkles, Share2
 } from 'lucide-react';
 
 function formatTime(secs) {
@@ -23,6 +25,29 @@ export default function Playback() {
 
   const accent = moodAccent(currentSong?.mood);
   const displayTitle = cleanTitle(currentSong?.title || '');
+
+  // Swipe left → next song, right → prev song, down → go back
+  const swipeHandlers = useSwipe({
+    onSwipeLeft:  () => playNext?.(),
+    onSwipeRight: () => playPrev?.(),
+    onSwipeDown:  () => setActiveSection('home'),
+    threshold: 60,
+  });
+
+  // Share current song
+  const handleShare = useCallback(async () => {
+    const text = `🎵 ${displayTitle} — ${currentSong?.artist || 'Cloud Artist'} | Rhythmix`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: displayTitle, text, url: window.location.href });
+      } else {
+        await navigator.clipboard.writeText(text);
+        toast.success('Song info copied to clipboard!');
+      }
+    } catch {
+      toast.error('Could not share song.');
+    }
+  }, [displayTitle, currentSong]);
 
   // If there's no playing song, redirect back or render a loader
   if (!currentSong) {
@@ -60,7 +85,10 @@ export default function Playback() {
   const pct = duration ? (progress / duration) * 100 : 0;
 
   return (
-    <div className="relative min-h-[calc(100vh-140px)] w-full flex items-center justify-center p-4 md:p-8 overflow-hidden">
+    <div
+      className="relative min-h-[calc(100vh-140px)] w-full flex items-center justify-center p-4 md:p-8 overflow-hidden"
+      {...swipeHandlers}
+    >
       {/* Blurred background cover art */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none select-none z-0">
         <div
@@ -73,14 +101,28 @@ export default function Playback() {
       <div className="relative z-10 w-full max-w-5xl bg-white/[0.02] border border-white/5 backdrop-blur-2xl rounded-3xl p-6 md:p-10 flex flex-col md:flex-row gap-8 md:gap-12 shadow-2xl">
         {/* Left Column: Playing Song Card Controls */}
         <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left justify-between space-y-6">
-          {/* Back Button */}
-          <button
-            onClick={() => setActiveSection('home')}
-            className="self-start flex items-center gap-2 text-white/50 hover:text-white transition-colors text-sm font-semibold cursor-pointer pb-2 border-b border-transparent hover:border-white/15"
-          >
-            <ChevronLeft size={16} />
-            Back to Dashboard
-          </button>
+          {/* Back Button + Share */}
+          <div className="self-start w-full flex items-center justify-between">
+            <button
+              onClick={() => setActiveSection('home')}
+              className="flex items-center gap-2 text-white/50 hover:text-white transition-colors text-sm font-semibold cursor-pointer pb-2 border-b border-transparent hover:border-white/15"
+            >
+              <ChevronLeft size={16} />
+              Back
+            </button>
+            {/* Mobile swipe hint */}
+            <p className="md:hidden text-white/20 text-[9px] font-semibold tracking-wider">
+              ← swipe →
+            </p>
+            <button
+              onClick={handleShare}
+              className="flex items-center gap-1.5 text-white/40 hover:text-cyan-400 transition-colors text-xs font-semibold cursor-pointer p-2 rounded-xl hover:bg-white/5"
+              title="Share Song"
+            >
+              <Share2 size={15} />
+              <span className="hidden sm:block">Share</span>
+            </button>
+          </div>
 
           {/* Album Art container with shadow & glow */}
           <div className="relative group w-64 h-64 sm:w-72 sm:h-72 md:w-80 md:h-80 rounded-3xl overflow-hidden shadow-2xl border border-white/10 mx-auto md:mx-0 flex-shrink-0 animate-in zoom-in-95 duration-500">

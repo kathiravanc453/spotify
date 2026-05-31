@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { PlayerProvider, usePlayer } from './context/PlayerContext';
 import Sidebar from './components/layout/Sidebar';
 import Header from './components/layout/Header';
@@ -11,10 +11,18 @@ import Login from './pages/Login';
 import Playback from './pages/Playback';
 import ToastProvider from './components/ui/Toast';
 import ErrorBoundary from './components/ui/ErrorBoundary';
+import useMediaSession from './hooks/useMediaSession';
 
 function AppContent({ user, onLogout }) {
-  const { activeSection, setActiveSection } = usePlayer();
+  const { activeSection, setActiveSection, refreshSongs } = usePlayer();
   const [search, setSearch] = useState('');
+  const [isPulling, setIsPulling] = useState(false);
+  const [pullY, setPullY] = useState(0);
+  const pullStartY = useRef(null);
+  const mainRef = useRef(null);
+
+  // 🔒 Lock screen / notification bar media controls
+  useMediaSession();
 
   // Global search shortcut handler (Ctrl+K or Cmd+K)
   useEffect(() => {
@@ -31,6 +39,27 @@ function AppContent({ user, onLogout }) {
   const handleSearch = (val) => {
     setSearch(val);
     if (val) setActiveSection('search');
+  };
+
+  // ─── Pull-to-refresh (mobile) ─────────────────────────────────────────────
+  const onTouchStart = (e) => {
+    if (mainRef.current?.scrollTop === 0) {
+      pullStartY.current = e.touches[0].clientY;
+    }
+  };
+  const onTouchMove = (e) => {
+    if (pullStartY.current === null) return;
+    const dy = e.touches[0].clientY - pullStartY.current;
+    if (dy > 0 && dy < 100) setPullY(dy);
+  };
+  const onTouchEnd = async () => {
+    if (pullY > 60) {
+      setIsPulling(true);
+      await refreshSongs?.();
+      setTimeout(() => setIsPulling(false), 800);
+    }
+    setPullY(0);
+    pullStartY.current = null;
   };
 
   const renderContent = () => {
@@ -55,9 +84,25 @@ function AppContent({ user, onLogout }) {
         {/* Main content area — Header always stays visible */}
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
           <Header search={search} setSearch={handleSearch} user={user} onLogout={onLogout} />
+
+          {/* Pull-to-refresh indicator */}
+          <div
+            className="overflow-hidden transition-all duration-300 flex items-center justify-center"
+            style={{ height: isPulling ? '40px' : Math.min(pullY * 0.4, 40) + 'px', opacity: isPulling || pullY > 20 ? 1 : 0 }}
+          >
+            <div className={`flex items-center gap-2 text-cyan-400 text-xs font-bold ${isPulling ? 'animate-pulse' : ''}`}>
+              <div className={`w-4 h-4 border-2 border-cyan-400 border-t-transparent rounded-full ${isPulling ? 'animate-spin' : ''}`} />
+              {isPulling ? 'Syncing...' : 'Release to sync'}
+            </div>
+          </div>
+
           <main
+            ref={mainRef}
             className="flex-1 overflow-y-auto pb-32 md:pb-36"
             style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
           >
             {/* Error boundary wraps page content so crashes don't blank the whole app */}
             <ErrorBoundary>
