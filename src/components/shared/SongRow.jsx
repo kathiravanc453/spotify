@@ -1,5 +1,6 @@
 import { Play, Pause, Clock3, Heart } from 'lucide-react';
 import { usePlayer } from '../../context/PlayerContext';
+import { cleanTitle } from '../../utils/cleanTitle';
 
 function formatTime(secs) {
   if (!secs || isNaN(secs)) return '0:00';
@@ -12,6 +13,7 @@ export default function SongRow({ song, index }) {
   const { currentSong, isPlaying, playSong, favorites = [], toggleLike } = usePlayer();
   const isActive = currentSong?.id === song.id;
   const isCurrentlyPlaying = isActive && isPlaying;
+  const displayTitle = cleanTitle(song.title);
 
   return (
     <div
@@ -53,7 +55,7 @@ export default function SongRow({ song, index }) {
       {/* Title & artist */}
       <div className="flex-1 min-w-0">
         <p className={`text-sm font-semibold truncate transition-colors duration-300 ${isActive ? 'text-cyan-400' : 'text-white'}`}>
-          {song.title}
+          {displayTitle}
         </p>
         <p className="text-white/40 text-xs truncate mt-0.5 font-medium">{song.artist}</p>
       </div>

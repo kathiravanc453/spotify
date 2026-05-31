@@ -1,5 +1,6 @@
 import { Play, Pause } from 'lucide-react';
 import { usePlayer } from '../../context/PlayerContext';
+import { cleanTitle, moodAccent } from '../../utils/cleanTitle';
 
 function formatTime(secs) {
   if (!secs || isNaN(secs)) return '0:00';
@@ -9,9 +10,12 @@ function formatTime(secs) {
 }
 
 export default function SongCard({ song }) {
-  const { currentSong, isPlaying, playSong } = usePlayer();
+  const { currentSong, isPlaying, playSong, playCounts = {} } = usePlayer();
   const isActive = currentSong?.id === song.id;
   const isCurrentlyPlaying = isActive && isPlaying;
+  const accent = moodAccent(song.mood);
+  const displayTitle = cleanTitle(song.title);
+  const playCount = playCounts[song.id] || 0;
 
   return (
     <div
@@ -60,11 +64,16 @@ export default function SongCard({ song }) {
  
       {/* Info */}
       <div className="min-w-0 px-0.5">
-        <p className={`font-bold text-sm truncate transition-colors duration-300 ${isActive ? 'text-cyan-400' : 'text-white'}`}>
-          {song.title}
+        <p className={`font-bold text-sm truncate transition-colors duration-300 ${isActive ? accent.text : 'text-white'}`}>
+          {displayTitle}
         </p>
         <p className="text-white/50 text-xs truncate mt-0.5 font-medium">{song.artist}</p>
-        <p className="text-white/20 text-xs mt-1.5 font-semibold">{formatTime(song.duration)}</p>
+        <div className="flex items-center justify-between mt-1.5">
+          <p className="text-white/20 text-xs font-semibold">{formatTime(song.duration)}</p>
+          {playCount > 0 && (
+            <span className="text-[9px] text-white/25 font-bold">{playCount} plays</span>
+          )}
+        </div>
       </div>
     </div>
   );

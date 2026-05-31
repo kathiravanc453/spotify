@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { usePlayer } from '../context/PlayerContext';
 import SongCard from '../components/shared/SongCard';
 import SongRow from '../components/shared/SongRow';
+import { SongCardSkeleton, SongRowSkeleton } from '../components/ui/Skeleton';
 import { TrendingUp, Star, Clock, Music, Loader2, Music2, Heart, Zap, Coffee, Sparkles, Search, X } from 'lucide-react';
 
 // YOUR 5 MASTER CATEGORIES
@@ -70,8 +71,21 @@ export default function Home({ search = '', activeSection = 'home' }) {
  
   if (loading && allSongs.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full py-32">
-        <Loader2 className="animate-spin text-spotify-green" size={40} />
+      <div className="p-6 md:p-8 space-y-10">
+        {/* Skeleton for featured cards */}
+        <div>
+          <div className="h-5 w-36 bg-white/[0.06] rounded-full mb-6 animate-pulse" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => <SongCardSkeleton key={i} />)}
+          </div>
+        </div>
+        {/* Skeleton for song rows */}
+        <div>
+          <div className="h-5 w-48 bg-white/[0.06] rounded-full mb-6 animate-pulse" />
+          <div className="space-y-1">
+            {Array.from({ length: 5 }).map((_, i) => <SongRowSkeleton key={i} />)}
+          </div>
+        </div>
       </div>
     );
   }

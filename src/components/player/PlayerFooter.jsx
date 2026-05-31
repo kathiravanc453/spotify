@@ -1,6 +1,7 @@
 import { usePlayer } from '../../context/PlayerContext';
+import { cleanTitle, moodAccent } from '../../utils/cleanTitle';
 import {
-  Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Heart, X
+  Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Heart, X, Timer
 } from 'lucide-react';
 
 function formatTime(secs) {
@@ -29,11 +30,18 @@ function Equalizer({ isPlaying }) {
 }
  
 export default function PlayerFooter() {
-  const { currentSong, isPlaying, progress, duration, volume, togglePlay, playNext, playPrev, seek, changeVolume, favorites = [], toggleLike, setActiveSection, stopPlayback } = usePlayer();
+  const {
+    currentSong, isPlaying, progress, duration, volume,
+    togglePlay, playNext, playPrev, seek, changeVolume,
+    favorites = [], toggleLike, setActiveSection, stopPlayback,
+    sleepTimer, startSleepTimer, cancelSleepTimer,
+  } = usePlayer();
  
   if (!currentSong) return null;
  
-  const pct = duration ? (progress / duration) * 100 : 0;
+  const pct    = duration ? (progress / duration) * 100 : 0;
+  const accent = moodAccent(currentSong.mood);
+  const displayTitle = cleanTitle(currentSong.title);
  
   return (
     <div
@@ -76,7 +84,7 @@ export default function PlayerFooter() {
               </div>
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-white text-xs md:text-sm font-bold truncate group-hover/info:text-cyan-300 transition-colors">{currentSong.title}</p>
+              <p className="text-white text-xs md:text-sm font-bold truncate group-hover/info:text-cyan-300 transition-colors">{displayTitle}</p>
               <p className="text-white/50 text-[10px] md:text-xs truncate mt-0.5 font-medium">{currentSong.artist}</p>
             </div>
           </div>
@@ -99,7 +107,8 @@ export default function PlayerFooter() {
             </button>
             <button
               onClick={togglePlay}
-              className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-gradient-to-tr from-cyan-400 to-violet-500 hover:from-cyan-300 hover:to-violet-400 flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-md shadow-cyan-500/10 flex-shrink-0"
+              className={`w-10 h-10 md:w-11 md:h-11 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-md flex-shrink-0`}
+              style={{ background: `linear-gradient(135deg, ${accent.hex}, #a78bfa)` }}
             >
               {isPlaying
                 ? <Pause className="w-4 h-4 md:w-[18px] md:h-[18px]" fill="#fff" color="#fff" />
@@ -135,6 +144,40 @@ export default function PlayerFooter() {
             className="w-20 md:w-28 accent-cyan-400 cursor-pointer h-1 rounded-lg bg-white/10 outline-none appearance-none"
           />
         </div>
+
+        {/* Sleep Timer indicator + Cancel button */}
+        {sleepTimer !== null && (
+          <div className="hidden md:flex items-center gap-1.5 text-amber-400 text-xs font-bold bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-full">
+            <Timer size={12} />
+            <span>{sleepTimer}m</span>
+            <button onClick={cancelSleepTimer} className="text-amber-400/60 hover:text-amber-300 ml-0.5">
+              <X size={10} />
+            </button>
+          </div>
+        )}
+
+        {/* Sleep timer quick-set (hidden on mobile) */}
+        {sleepTimer === null && (
+          <div className="hidden md:flex items-center relative group/sleep">
+            <button
+              className="text-white/20 hover:text-amber-400 transition-colors p-1.5 flex items-center justify-center"
+              title="Sleep Timer"
+              onClick={() => startSleepTimer(30)}
+            >
+              <Timer size={15} />
+            </button>
+            {/* Tooltip */}
+            <div className="absolute bottom-full right-0 mb-2 hidden group-hover/sleep:flex flex-col gap-1 bg-[#0d0d12]/95 border border-white/10 rounded-xl p-2 shadow-2xl z-50 w-28">
+              <p className="text-white/50 text-[9px] font-bold uppercase tracking-wider px-1 mb-0.5">Sleep Timer</p>
+              {[15, 30, 45, 60].map(m => (
+                <button key={m} onClick={() => startSleepTimer(m)}
+                  className="text-white/70 hover:text-white text-xs font-semibold px-2 py-1 rounded-lg hover:bg-white/[0.06] text-left transition-colors">
+                  {m} min
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Close/Cancel Button */}
         <button

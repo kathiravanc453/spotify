@@ -2,12 +2,15 @@ import { useState, useEffect } from 'react';
 import { PlayerProvider, usePlayer } from './context/PlayerContext';
 import Sidebar from './components/layout/Sidebar';
 import Header from './components/layout/Header';
+import MobileNav from './components/layout/MobileNav';
 import PlayerFooter from './components/player/PlayerFooter';
 import Home from './pages/Home';
 import Library from './pages/Library';
 import Albums from './pages/Albums';
 import Login from './pages/Login';
 import Playback from './pages/Playback';
+import ToastProvider from './components/ui/Toast';
+import ErrorBoundary from './components/ui/ErrorBoundary';
 
 function AppContent({ user, onLogout }) {
   const { activeSection, setActiveSection } = usePlayer();
@@ -31,15 +34,9 @@ function AppContent({ user, onLogout }) {
   };
 
   const renderContent = () => {
-    if (activeSection === 'library' || activeSection === 'favorites') {
-      return <Library />;
-    }
-    if (activeSection === 'albums') {
-      return <Albums />;
-    }
-    if (activeSection === 'now-playing') {
-      return <Playback />;
-    }
+    if (activeSection === 'library' || activeSection === 'favorites') return <Library />;
+    if (activeSection === 'albums')      return <Albums />;
+    if (activeSection === 'now-playing') return <Playback />;
     return <Home search={search} activeSection={activeSection} />;
   };
 
@@ -52,18 +49,20 @@ function AppContent({ user, onLogout }) {
 
       {/* Content wrapper above blobs */}
       <div className="relative z-10 flex flex-1 overflow-hidden">
-        {/* Sidebar */}
+        {/* Sidebar — desktop only */}
         <Sidebar />
 
         {/* Main content area — Header always stays visible */}
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-          {/* Header/Banner is ALWAYS rendered regardless of active section */}
           <Header search={search} setSearch={handleSearch} user={user} onLogout={onLogout} />
           <main
             className="flex-1 overflow-y-auto pb-32 md:pb-36"
             style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}
           >
-            {renderContent()}
+            {/* Error boundary wraps page content so crashes don't blank the whole app */}
+            <ErrorBoundary>
+              {renderContent()}
+            </ErrorBoundary>
 
             {/* Mobile signature branding footer */}
             <div className="md:hidden flex flex-col items-center justify-center pt-8 pb-10 border-t border-white/[0.04] mx-6 opacity-30 mt-8">
@@ -76,6 +75,25 @@ function AppContent({ user, onLogout }) {
 
       {/* Fixed bottom music player — always on top */}
       <PlayerFooter />
+
+      {/* Mobile bottom navigation bar */}
+      <MobileNav />
+
+      {/* Global toast notifications */}
+      <ToastProvider />
+
+      {/* Keyboard shortcuts hint (bottom-left, desktop only) */}
+      <div className="hidden lg:flex fixed bottom-24 left-6 z-30 flex-col gap-0.5 opacity-0 hover:opacity-100 transition-opacity duration-500 group pointer-events-none">
+        <div className="bg-[#0d0d12]/80 border border-white/5 rounded-xl p-3 backdrop-blur text-[9px] text-white/40 font-mono space-y-1">
+          <p className="text-white/60 font-bold text-[9px] mb-1.5 uppercase tracking-wider">Keyboard Shortcuts</p>
+          <p><span className="text-white/60">Space</span> — Play / Pause</p>
+          <p><span className="text-white/60">← →</span> — Seek 5s</p>
+          <p><span className="text-white/60">Shift + ← →</span> — Prev / Next</p>
+          <p><span className="text-white/60">↑ ↓</span> — Volume</p>
+          <p><span className="text-white/60">M</span> — Mute toggle</p>
+          <p><span className="text-white/60">Ctrl+K</span> — Search</p>
+        </div>
+      </div>
     </div>
   );
 }
@@ -85,9 +103,7 @@ export default function App() {
     try {
       const session = localStorage.getItem('rhythmix_session');
       return session ? JSON.parse(session) : null;
-    } catch {
-      return null;
-    }
+    } catch { return null; }
   });
 
   const handleLogout = () => {
@@ -95,9 +111,7 @@ export default function App() {
     setUser(null);
   };
 
-  if (!user) {
-    return <Login onLogin={setUser} />;
-  }
+  if (!user) return <Login onLogin={setUser} />;
 
   return (
     <PlayerProvider>

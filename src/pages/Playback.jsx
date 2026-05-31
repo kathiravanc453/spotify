@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { usePlayer } from '../context/PlayerContext';
+import { cleanTitle, moodAccent } from '../utils/cleanTitle';
 import {
   Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Heart,
   ChevronLeft, Volume2, VolumeX, ListMusic, Sparkles
@@ -19,6 +20,9 @@ export default function Playback() {
     repeatMode, setRepeatMode, playSong, togglePlay, playNext,
     playPrev, seek, changeVolume, toggleLike, setActiveSection
   } = usePlayer() || {};
+
+  const accent = moodAccent(currentSong?.mood);
+  const displayTitle = cleanTitle(currentSong?.title || '');
 
   // If there's no playing song, redirect back or render a loader
   if (!currentSong) {
@@ -100,7 +104,7 @@ export default function Playback() {
           <div className="w-full space-y-2">
             <div className="flex items-center justify-between gap-4">
               <div className="min-w-0 flex-1 text-left">
-                <h1 className="text-white text-2xl md:text-3xl font-extrabold tracking-tight truncate">{currentSong.title}</h1>
+                <h1 className="text-white text-2xl md:text-3xl font-extrabold tracking-tight truncate">{displayTitle}</h1>
                 <p className="text-white/50 text-sm md:text-base font-semibold mt-1 truncate">{currentSong.artist}</p>
               </div>
               <button
@@ -174,7 +178,8 @@ export default function Playback() {
             <button
               id="play-pause-btn"
               onClick={togglePlay}
-              className="w-14 h-14 rounded-full bg-gradient-to-tr from-cyan-400 to-violet-500 hover:from-cyan-300 hover:to-violet-400 flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg shadow-cyan-500/20 text-white cursor-pointer"
+              className="w-14 h-14 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg text-white cursor-pointer"
+              style={{ background: `linear-gradient(135deg, ${accent.hex}, #a78bfa)`, boxShadow: `0 8px 32px ${accent.hex}33` }}
             >
               {isPlaying 
                 ? <Pause size={24} fill="#fff" color="#fff" /> 

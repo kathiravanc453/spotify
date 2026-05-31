@@ -3,98 +3,76 @@ import { createContext, useContext, useState, useRef, useEffect, useCallback } f
 const PlayerContext = createContext(null);
 
 export function PlayerProvider({ children }) {
-  const [allSongs, setAllSongs] = useState([]);
-  const [currentSong, setCurrentSong] = useState(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [volume, setVolume] = useState(0.8);
+  const [allSongs, setAllSongs]         = useState([]);
+  const [currentSong, setCurrentSong]   = useState(null);
+  const [isPlaying, setIsPlaying]       = useState(false);
+  const [progress, setProgress]         = useState(0);
+  const [duration, setDuration]         = useState(0);
+  const [volume, setVolume]             = useState(0.8);
   const [recentlyPlayed, setRecentlyPlayed] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [favorites, setFavorites] = useState([]);
+  const [loading, setLoading]           = useState(true);
+  const [favorites, setFavorites]       = useState([]);
   const [activeSection, setActiveSection] = useState('home');
+  const [sleepTimer, setSleepTimer]     = useState(null); // minutes remaining
+  const [playCounts, setPlayCounts]     = useState(() => {
+    try { return JSON.parse(localStorage.getItem('rhythmix_playcounts') || '{}'); } catch { return {}; }
+  });
+
   const [isShuffle, setIsShuffle] = useState(() => {
-    try {
-      const saved = localStorage.getItem('rhythmix_shuffle');
-      return saved ? JSON.parse(saved) : false;
-    } catch {
-      return false;
-    }
+    try { return JSON.parse(localStorage.getItem('rhythmix_shuffle') || 'false'); } catch { return false; }
   });
   const [repeatMode, setRepeatMode] = useState(() => {
-    try {
-      const saved = localStorage.getItem('rhythmix_repeat');
-      return saved ? JSON.parse(saved) : 'off';
-    } catch {
-      return 'off';
-    }
+    try { return JSON.parse(localStorage.getItem('rhythmix_repeat') || '"off"'); } catch { return 'off'; }
   });
-  const audioRef = useRef(new Audio());
 
-  useEffect(() => {
-    localStorage.setItem('rhythmix_shuffle', JSON.stringify(isShuffle));
-  }, [isShuffle]);
+  const audioRef     = useRef(new Audio());
+  const sleepTimerRef = useRef(null);
+  const loadedRef    = useRef(false); // fix infinite re-render: track first load with ref not state
 
-  useEffect(() => {
-    localStorage.setItem('rhythmix_repeat', JSON.stringify(repeatMode));
-  }, [repeatMode]);
+  // ─── Persist shuffle / repeat ────────────────────────────────────────────
+  useEffect(() => { localStorage.setItem('rhythmix_shuffle', JSON.stringify(isShuffle)); }, [isShuffle]);
+  useEffect(() => { localStorage.setItem('rhythmix_repeat',  JSON.stringify(repeatMode)); }, [repeatMode]);
 
-  // Load user-specific favorites from localStorage
+  // ─── Favorites ───────────────────────────────────────────────────────────
   useEffect(() => {
     const loadFavs = () => {
       try {
-        const session = localStorage.getItem('rhythmix_session');
+        const session   = localStorage.getItem('rhythmix_session');
         const userEmail = session ? JSON.parse(session)?.email : 'default';
-        const saved = localStorage.getItem(`rhythmix_favorites_${userEmail}`);
+        const saved     = localStorage.getItem(`rhythmix_favorites_${userEmail}`);
         setFavorites(saved ? JSON.parse(saved) : []);
-      } catch {
-        setFavorites([]);
-      }
+      } catch { setFavorites([]); }
     };
     loadFavs();
-
-    // Listen to storage events to keep favorites synced
     window.addEventListener('storage', loadFavs);
     return () => window.removeEventListener('storage', loadFavs);
   }, []);
 
   const toggleLike = useCallback((songId) => {
     try {
-      const session = localStorage.getItem('rhythmix_session');
+      const session   = localStorage.getItem('rhythmix_session');
       const userEmail = session ? JSON.parse(session)?.email : 'default';
-      const key = `rhythmix_favorites_${userEmail}`;
-      
+      const key       = `rhythmix_favorites_${userEmail}`;
       setFavorites(prev => {
-        const next = prev.includes(songId)
-          ? prev.filter(id => id !== songId)
-          : [...prev, songId];
+        const next = prev.includes(songId) ? prev.filter(id => id !== songId) : [...prev, songId];
         localStorage.setItem(key, JSON.stringify(next));
         return next;
       });
-    } catch (e) {
-      console.error(e);
-    }
+    } catch (e) { console.error(e); }
   }, []);
- 
+
+  // ─── Fetch songs — FIXED: no `loading` in dep array (caused infinite loop) ─
   const fetchSongs = useCallback(async () => {
     try {
-      const res = await fetch('/api/songs');
-
-      // Guard: only parse as JSON if the response is OK and content-type is JSON
+      const res         = await fetch('/api/songs');
       const contentType = res.headers.get('content-type') || '';
       if (!res.ok || !contentType.includes('application/json')) {
-        // Backend not ready yet — silently fall back to static data
-        throw new Error(`Backend unavailable (status ${res.status})`);
+        throw new Error(`Backend unavailable (${res.status})`);
       }
-
       const data = await res.json();
-      if (Array.isArray(data)) {
-        setAllSongs(data);
-      }
-    } catch (err) {
-      // Only log on first load to avoid console spam every 20 seconds
-      if (loading) console.warn('[Rhythmix] Backend offline, using static songs.json fallback.');
-      // Fallback to static songs.json if backend is down
+      if (Array.isArray(data)) setAllSongs(data);
+    } catch {
+      if (!loadedRef.current) console.warn('[Rhythmix] Backend offline — using static fallback.');
       try {
         const mod = await import('../data/songs.json');
         if (Array.isArray(mod.default) && mod.default.length > 0) {
@@ -102,46 +80,54 @@ export function PlayerProvider({ children }) {
         }
       } catch {}
     } finally {
-      setLoading(false);
+      if (!loadedRef.current) { loadedRef.current = true; setLoading(false); }
     }
-  }, [loading]);
+  }, []); // ← empty deps: stable reference, no re-render loop
 
   useEffect(() => {
     fetchSongs();
-    // Auto-refresh every 20 seconds to catch new Cloudinary syncs
     const interval = setInterval(fetchSongs, 20000);
     return () => clearInterval(interval);
   }, [fetchSongs]);
 
+  // ─── Play count tracking ──────────────────────────────────────────────────
+  const incrementPlayCount = useCallback((songId) => {
+    setPlayCounts(prev => {
+      const updated = { ...prev, [songId]: (prev[songId] || 0) + 1 };
+      localStorage.setItem('rhythmix_playcounts', JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  // ─── Play song ────────────────────────────────────────────────────────────
   const playSong = useCallback((song) => {
     const audio = audioRef.current;
     if (currentSong?.id === song.id) {
       if (isPlaying) { audio.pause(); setIsPlaying(false); }
-      else { audio.play(); setIsPlaying(true); }
+      else           { audio.play();  setIsPlaying(true);  }
       return;
     }
     audio.src = song.src;
     audio.play();
     setCurrentSong(song);
     setIsPlaying(true);
-    // Note: we do NOT auto-navigate to 'now-playing' here.
-    // The user stays on their current page (Home/Library/Albums).
-    // They can click the footer player bar to open the Now Playing page.
+    incrementPlayCount(song.id);
+    // Stay on current page — user can click footer to open Now Playing
     setRecentlyPlayed(prev => {
       const filtered = prev.filter(s => s.id !== song.id);
       return [song, ...filtered].slice(0, 10);
     });
-  }, [currentSong, isPlaying]);
+  }, [currentSong, isPlaying, incrementPlayCount]);
 
   const togglePlay = useCallback(() => {
     const audio = audioRef.current;
-    if (isPlaying) { audio.pause(); setIsPlaying(false); }
-    else if (currentSong) { audio.play(); setIsPlaying(true); }
+    if (isPlaying)      { audio.pause(); setIsPlaying(false); }
+    else if (currentSong) { audio.play();  setIsPlaying(true);  }
   }, [isPlaying, currentSong]);
 
+  // ─── Next / Prev ──────────────────────────────────────────────────────────
   const playNext = useCallback(() => {
     if (!currentSong || allSongs.length === 0) return;
-
     if (repeatMode === 'one') {
       const audio = audioRef.current;
       audio.currentTime = 0;
@@ -149,54 +135,109 @@ export function PlayerProvider({ children }) {
       setIsPlaying(true);
       return;
     }
-
     if (isShuffle && allSongs.length > 1) {
-      let randomIdx;
       const currentIdx = allSongs.findIndex(s => s.id === currentSong.id);
-      do {
-        randomIdx = Math.floor(Math.random() * allSongs.length);
-      } while (randomIdx === currentIdx && allSongs.length > 1);
+      let randomIdx;
+      do { randomIdx = Math.floor(Math.random() * allSongs.length); }
+      while (randomIdx === currentIdx && allSongs.length > 1);
       playSong(allSongs[randomIdx]);
       return;
     }
-
     const idx = allSongs.findIndex(s => s.id === currentSong.id);
-    const next = allSongs[(idx + 1) % allSongs.length];
-    playSong(next);
+    playSong(allSongs[(idx + 1) % allSongs.length]);
   }, [currentSong, allSongs, playSong, isShuffle, repeatMode]);
 
   const playNextRef = useRef(playNext);
-  useEffect(() => {
-    playNextRef.current = playNext;
-  }, [playNext]);
-
-  useEffect(() => {
-    const audio = audioRef.current;
-    audio.volume = volume;
-    const handleTimeUpdate = () => setProgress(audio.currentTime);
-    const handleDurationChange = () => setDuration(audio.duration);
-    const handleEnded = () => {
-      if (playNextRef.current) {
-        playNextRef.current();
-      }
-    };
-    audio.addEventListener('timeupdate', handleTimeUpdate);
-    audio.addEventListener('durationchange', handleDurationChange);
-    audio.addEventListener('ended', handleEnded);
-    return () => {
-      audio.removeEventListener('timeupdate', handleTimeUpdate);
-      audio.removeEventListener('durationchange', handleDurationChange);
-      audio.removeEventListener('ended', handleEnded);
-    };
-  }, []);
+  useEffect(() => { playNextRef.current = playNext; }, [playNext]);
 
   const playPrev = useCallback(() => {
     if (!currentSong || allSongs.length === 0) return;
+    // If more than 3 seconds in, restart current song instead
+    if (audioRef.current.currentTime > 3) {
+      audioRef.current.currentTime = 0;
+      return;
+    }
     const idx = allSongs.findIndex(s => s.id === currentSong.id);
-    const prev = allSongs[(idx - 1 + allSongs.length) % allSongs.length];
-    playSong(prev);
+    playSong(allSongs[(idx - 1 + allSongs.length) % allSongs.length]);
   }, [currentSong, allSongs, playSong]);
 
+  // ─── Audio event listeners ────────────────────────────────────────────────
+  useEffect(() => {
+    const audio = audioRef.current;
+    audio.volume = volume;
+    const onTimeUpdate      = () => setProgress(audio.currentTime);
+    const onDurationChange  = () => setDuration(audio.duration);
+    const onEnded           = () => playNextRef.current?.();
+    audio.addEventListener('timeupdate',      onTimeUpdate);
+    audio.addEventListener('durationchange',  onDurationChange);
+    audio.addEventListener('ended',           onEnded);
+    return () => {
+      audio.removeEventListener('timeupdate',     onTimeUpdate);
+      audio.removeEventListener('durationchange', onDurationChange);
+      audio.removeEventListener('ended',          onEnded);
+    };
+  }, []);
+
+  // ─── Keyboard shortcuts ───────────────────────────────────────────────────
+  useEffect(() => {
+    const onKey = (e) => {
+      // Ignore when typing in inputs
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+
+      switch (e.key) {
+        case ' ':
+          e.preventDefault();
+          togglePlay();
+          break;
+        case 'ArrowRight':
+          if (e.shiftKey) { playNextRef.current?.(); }
+          else { const a = audioRef.current; a.currentTime = Math.min(a.duration || 0, a.currentTime + 5); }
+          break;
+        case 'ArrowLeft':
+          if (e.shiftKey) { playPrev(); }
+          else { const a = audioRef.current; a.currentTime = Math.max(0, a.currentTime - 5); }
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          setVolume(v => { const nv = Math.min(1, v + 0.1); audioRef.current.volume = nv; return nv; });
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          setVolume(v => { const nv = Math.max(0, v - 0.1); audioRef.current.volume = nv; return nv; });
+          break;
+        case 'm': case 'M':
+          setVolume(v => { const nv = v > 0 ? 0 : 0.8; audioRef.current.volume = nv; return nv; });
+          break;
+        default: break;
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [togglePlay, playPrev]);
+
+  // ─── Sleep timer ──────────────────────────────────────────────────────────
+  const startSleepTimer = useCallback((minutes) => {
+    if (sleepTimerRef.current) clearInterval(sleepTimerRef.current);
+    setSleepTimer(minutes);
+    let remaining = minutes;
+    sleepTimerRef.current = setInterval(() => {
+      remaining -= 1;
+      setSleepTimer(remaining);
+      if (remaining <= 0) {
+        clearInterval(sleepTimerRef.current);
+        setSleepTimer(null);
+        audioRef.current.pause();
+        setIsPlaying(false);
+      }
+    }, 60000); // tick every minute
+  }, []);
+
+  const cancelSleepTimer = useCallback(() => {
+    if (sleepTimerRef.current) clearInterval(sleepTimerRef.current);
+    setSleepTimer(null);
+  }, []);
+
+  // ─── Seek / Volume / Stop ─────────────────────────────────────────────────
   const seek = useCallback((time) => {
     audioRef.current.currentTime = time;
     setProgress(time);
@@ -215,15 +256,20 @@ export function PlayerProvider({ children }) {
     setIsPlaying(false);
     setProgress(0);
     setDuration(0);
-  }, []);
+    cancelSleepTimer();
+  }, [cancelSleepTimer]);
 
+  // ─── Provide context ──────────────────────────────────────────────────────
   return (
     <PlayerContext.Provider value={{
       currentSong, isPlaying, progress, duration, volume,
-      recentlyPlayed, allSongs, loading, favorites,
+      recentlyPlayed, allSongs, loading, favorites, playCounts,
       playSong, togglePlay, playNext, playPrev, seek, changeVolume, toggleLike,
-      activeSection, setActiveSection, isShuffle, setIsShuffle, repeatMode, setRepeatMode,
-      stopPlayback
+      activeSection, setActiveSection,
+      isShuffle, setIsShuffle, repeatMode, setRepeatMode,
+      stopPlayback,
+      sleepTimer, startSleepTimer, cancelSleepTimer,
+      refreshSongs: fetchSongs,
     }}>
       {children}
     </PlayerContext.Provider>
