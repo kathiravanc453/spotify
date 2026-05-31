@@ -55,7 +55,7 @@ export function cleanTitle(raw = '') {
  * Returns the mood-based accent color CSS class for borders/text/glows.
  */
 export function moodAccent(mood = '') {
-  const m = mood.toLowerCase();
+  const m = (mood || '').toLowerCase();
   if (m.includes('love'))    return { text: 'text-rose-400',   bg: 'bg-rose-500/10',   border: 'border-rose-500/30',   glow: 'shadow-rose-500/20',   hex: '#fb7185' };
   if (m.includes('romance')) return { text: 'text-pink-400',   bg: 'bg-pink-500/10',   border: 'border-pink-500/30',   glow: 'shadow-pink-500/20',   hex: '#f472b6' };
   if (m.includes('melody'))  return { text: 'text-amber-400',  bg: 'bg-amber-500/10',  border: 'border-amber-500/30',  glow: 'shadow-amber-500/20',  hex: '#fbbf24' };
