@@ -36,10 +36,14 @@ function AppContent({ user, onLogout }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Scroll to top when section changes
+  // Scroll to top when section changes (using scrollTop for better mobile browser compatibility)
   useEffect(() => {
     if (mainRef.current) {
-      mainRef.current.scrollTo(0, 0);
+      try {
+        mainRef.current.scrollTop = 0;
+      } catch (e) {
+        // Ignore fallback errors
+      }
     }
   }, [activeSection]);
 
