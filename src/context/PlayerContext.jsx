@@ -112,7 +112,10 @@ export function PlayerProvider({ children }) {
     setCurrentSong(song);
     setIsPlaying(true);
     incrementPlayCount(song.id);
-    // Stay on current page — user can click footer to open Now Playing
+    
+    // Auto-navigate to Now Playing screen as requested by user
+    setActiveSection('now-playing');
+
     setRecentlyPlayed(prev => {
       const filtered = prev.filter(s => s.id !== song.id);
       return [song, ...filtered].slice(0, 10);
