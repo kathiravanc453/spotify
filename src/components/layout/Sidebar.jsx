@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Home, Search, Library, TrendingUp, Star, X, Music2, Disc, Heart, ChevronRight } from 'lucide-react';
+import { Home, Search, Library, TrendingUp, Star, X, Music2, Disc, Heart, ChevronRight, Menu } from 'lucide-react';
 import { usePlayer } from '../../context/PlayerContext';
 
 const navItems = [
@@ -67,20 +67,13 @@ export default function Sidebar() {
       </aside>
 
       {/* ── Mobile: Hamburger button inside header area ───────────── */}
-      {/* This is rendered as a portal trigger — actual button is in Header.jsx */}
-      {/* We expose a global toggle for the Header to use */}
       <button
         id="mobile-sidebar-toggle"
-        className="md:hidden fixed top-3.5 left-4 z-[60] w-9 h-9 rounded-xl flex items-center justify-center text-white/60 hover:text-white hover:bg-white/[0.06] transition-all duration-200 border border-white/5"
-        onClick={() => setMobileOpen(v => !v)}
+        className={`md:hidden fixed top-3.5 left-4 z-[50] w-9 h-9 rounded-xl flex items-center justify-center text-white/60 hover:text-white hover:bg-white/[0.06] transition-all duration-200 border border-white/5 ${mobileOpen ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}
+        onClick={() => setMobileOpen(true)}
         aria-label="Open menu"
       >
-        {/* Hamburger icon using divs — avoids icon overlap */}
-        <div className="flex flex-col gap-[5px] w-4">
-          <div className={`h-[2px] bg-current rounded-full transition-all duration-300 ${mobileOpen ? 'rotate-45 translate-y-[7px]' : ''}`} />
-          <div className={`h-[2px] bg-current rounded-full transition-all duration-300 ${mobileOpen ? 'opacity-0' : ''}`} />
-          <div className={`h-[2px] bg-current rounded-full transition-all duration-300 ${mobileOpen ? '-rotate-45 -translate-y-[7px]' : ''}`} />
-        </div>
+        <Menu size={18} />
       </button>
 
       {/* ── Mobile Sidebar Overlay ────────────────────────────────── */}
@@ -95,6 +88,13 @@ export default function Sidebar() {
         className={`md:hidden fixed top-0 left-0 bottom-0 z-[56] w-72 bg-[#0d0d12]/98 border-r border-white/[0.06] shadow-2xl transition-transform duration-300 ease-out backdrop-blur-2xl`}
         style={{ transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)' }}
       >
+        {/* Close button inside panel */}
+        <button
+          className="absolute top-4 right-4 w-8 h-8 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/5 flex items-center justify-center text-white/50 hover:text-white transition-all"
+          onClick={() => setMobileOpen(false)}
+        >
+          <X size={15} />
+        </button>
 
         <SidebarContent
           activeSection={activeSection}
