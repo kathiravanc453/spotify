@@ -260,6 +260,9 @@ export function PlayerProvider({ children }) {
     setProgress(0);
     setDuration(0);
     cancelSleepTimer();
+
+    // If they were on the playback screen, bring them back home so they don't see a blank "No song playing" page
+    setActiveSection(prev => prev === 'now-playing' ? 'home' : prev);
   }, [cancelSleepTimer]);
 
   // ─── Provide context ──────────────────────────────────────────────────────

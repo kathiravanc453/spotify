@@ -37,7 +37,7 @@ export default function PlayerFooter() {
     sleepTimer, startSleepTimer, cancelSleepTimer,
   } = usePlayer();
  
-  if (!currentSong) return null;
+  if (!currentSong || activeSection === 'now-playing') return null;
  
   const pct    = duration ? (progress / duration) * 100 : 0;
   const accent = moodAccent(currentSong.mood);
