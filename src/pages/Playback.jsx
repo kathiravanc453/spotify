@@ -49,22 +49,6 @@ export default function Playback() {
     }
   }, [displayTitle, currentSong]);
 
-  // If there's no playing song, redirect back or render a loader
-  if (!currentSong) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full py-32 space-y-4">
-        <Sparkles className="text-cyan-400 animate-spin" size={40} />
-        <p className="text-white/40 text-sm font-semibold">No song playing. Select a track from the Home screen!</p>
-        <button
-          onClick={() => setActiveSection('home')}
-          className="px-6 py-2.5 rounded-2xl bg-cyan-400 text-black text-sm font-bold shadow-lg hover:scale-105 active:scale-95 transition-all cursor-pointer"
-        >
-          Go Home
-        </button>
-      </div>
-    );
-  }
-
   // Get upcoming songs to show in "Up Next" queue
   const queue = useMemo(() => {
     if (!currentSong || allSongs.length === 0) return [];
@@ -81,6 +65,22 @@ export default function Playback() {
     }
     return upcoming;
   }, [currentSong, allSongs]);
+
+  // If there's no playing song, redirect back or render a loader
+  if (!currentSong) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full py-32 space-y-4">
+        <Sparkles className="text-cyan-400 animate-spin" size={40} />
+        <p className="text-white/40 text-sm font-semibold">No song playing. Select a track from the Home screen!</p>
+        <button
+          onClick={() => setActiveSection('home')}
+          className="px-6 py-2.5 rounded-2xl bg-cyan-400 text-black text-sm font-bold shadow-lg hover:scale-105 active:scale-95 transition-all cursor-pointer"
+        >
+          Go Home
+        </button>
+      </div>
+    );
+  }
 
   const pct = duration ? (progress / duration) * 100 : 0;
 
