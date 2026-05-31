@@ -95,13 +95,6 @@ export default function Sidebar() {
         className={`md:hidden fixed top-0 left-0 bottom-0 z-[56] w-72 bg-[#0d0d12]/98 border-r border-white/[0.06] shadow-2xl transition-transform duration-300 ease-out backdrop-blur-2xl`}
         style={{ transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)' }}
       >
-        {/* Close button inside panel */}
-        <button
-          className="absolute top-4 right-4 w-8 h-8 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/5 flex items-center justify-center text-white/50 hover:text-white transition-all"
-          onClick={() => setMobileOpen(false)}
-        >
-          <X size={15} />
-        </button>
 
         <SidebarContent
           activeSection={activeSection}
