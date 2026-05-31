@@ -36,6 +36,13 @@ function AppContent({ user, onLogout }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Scroll to top when section changes
+  useEffect(() => {
+    if (mainRef.current) {
+      mainRef.current.scrollTo(0, 0);
+    }
+  }, [activeSection]);
+
   const handleSearch = (val) => {
     setSearch(val);
     if (val) setActiveSection('search');
