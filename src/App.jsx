@@ -98,7 +98,7 @@ function AppContent({ user, onLogout }) {
 
           <main
             ref={mainRef}
-            className="flex-1 overflow-y-auto pb-32 md:pb-36"
+            className="flex-1 overflow-y-auto pb-[148px] md:pb-36"
             style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}
             onTouchStart={onTouchStart}
             onTouchMove={onTouchMove}
