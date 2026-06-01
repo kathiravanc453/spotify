@@ -15,7 +15,7 @@ export function PlayerProvider({ children }) {
   const [activeSection, setActiveSection] = useState('home');
   const [sleepTimer, setSleepTimer]     = useState(null); // minutes remaining
   const [playCounts, setPlayCounts]     = useState(() => {
-    try { return JSON.parse(localStorage.getItem('rhythmix_playcounts') || '{}'); } catch { return {}; }
+    try { return JSON.parse(localStorage.getItem('rhythmix_playcounts') || '{}') || {}; } catch { return {}; }
   });
 
   const [isShuffle, setIsShuffle] = useState(() => {
@@ -40,7 +40,7 @@ export function PlayerProvider({ children }) {
         const session   = localStorage.getItem('rhythmix_session');
         const userEmail = session ? JSON.parse(session)?.email : 'default';
         const saved     = localStorage.getItem(`rhythmix_favorites_${userEmail}`);
-        setFavorites(saved ? JSON.parse(saved) : []);
+        setFavorites(saved ? (JSON.parse(saved) || []) : []);
       } catch { setFavorites([]); }
     };
     loadFavs();
