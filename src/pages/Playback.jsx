@@ -98,7 +98,7 @@ export default function Playback() {
         <div className="absolute inset-0 bg-gradient-to-b from-[#07070a]/40 to-[#07070a]/80" />
       </div>
 
-      <div className="relative z-10 w-full max-w-5xl my-auto mx-auto bg-white/[0.02] border border-white/5 backdrop-blur-2xl rounded-3xl p-6 md:p-10 flex flex-col md:flex-row gap-8 md:gap-12 shadow-2xl">
+      <div className="relative z-10 w-full max-w-5xl mx-auto md:my-auto bg-white/[0.02] border border-white/5 backdrop-blur-2xl rounded-3xl p-6 md:p-10 flex flex-col md:flex-row gap-8 md:gap-12 shadow-2xl">
         {/* Left Column: Playing Song Card Controls */}
         <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left justify-between space-y-6">
           {/* Back Button + Share */}
