@@ -98,14 +98,14 @@ export default function Playback() {
         <div className="absolute inset-0 bg-gradient-to-b from-[#07070a]/40 to-[#07070a]/80" />
       </div>
 
-      <div className="relative z-10 w-full max-w-5xl mx-auto md:my-auto bg-white/[0.02] border border-white/5 backdrop-blur-2xl rounded-3xl p-6 md:p-10 flex flex-col md:flex-row gap-8 md:gap-12 shadow-2xl">
+      <div className="relative z-10 w-full max-w-5xl mx-auto md:my-auto bg-white/[0.02] border border-white/5 backdrop-blur-2xl rounded-3xl p-4 sm:p-6 md:p-10 flex flex-col md:flex-row gap-6 md:gap-12 shadow-2xl h-full md:h-auto max-h-[90vh] md:max-h-none overflow-y-auto md:overflow-visible">
         {/* Left Column: Playing Song Card Controls */}
-        <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left justify-between space-y-6">
+        <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left justify-between space-y-4 md:space-y-6 w-full max-w-md mx-auto md:max-w-none">
           {/* Back Button + Share */}
-          <div className="self-start w-full flex items-center justify-between">
+          <div className="w-full flex items-center justify-between">
             <button
               onClick={() => setActiveSection('home')}
-              className="flex items-center gap-2 text-white/50 hover:text-white transition-colors text-sm font-semibold cursor-pointer pb-2 border-b border-transparent hover:border-white/15"
+              className="flex items-center gap-1.5 text-white/50 hover:text-white transition-colors text-sm font-semibold cursor-pointer pb-2 border-b border-transparent hover:border-white/15"
             >
               <ChevronLeft size={16} />
               Back
@@ -125,7 +125,7 @@ export default function Playback() {
           </div>
 
           {/* Album Art container with shadow & glow */}
-          <div className="relative group w-64 h-64 sm:w-72 sm:h-72 md:w-80 md:h-80 rounded-3xl overflow-hidden shadow-2xl border border-white/10 mx-auto md:mx-0 flex-shrink-0 animate-in zoom-in-95 duration-500">
+          <div className="relative group w-full max-w-[240px] sm:max-w-[280px] md:max-w-none md:w-80 md:h-80 aspect-square rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl border border-white/10 mx-auto md:mx-0 flex-shrink-0 animate-in zoom-in-95 duration-500">
             <img
               src={currentSong.cover}
               alt={currentSong.title}
@@ -143,11 +143,11 @@ export default function Playback() {
           </div>
 
           {/* Song Metadata */}
-          <div className="w-full space-y-2">
+          <div className="w-full space-y-1.5 md:space-y-2 px-2 md:px-0">
             <div className="flex items-center justify-between gap-4">
               <div className="min-w-0 flex-1 text-left">
-                <h1 className="text-white text-2xl md:text-3xl font-extrabold tracking-tight truncate">{displayTitle}</h1>
-                <p className="text-white/50 text-sm md:text-base font-semibold mt-1 truncate">{currentSong.artist}</p>
+                <h1 className="text-white text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight truncate">{displayTitle}</h1>
+                <p className="text-white/50 text-xs sm:text-sm md:text-base font-semibold mt-0.5 md:mt-1 truncate">{currentSong.artist}</p>
               </div>
               <button
                 id="heart-btn"
@@ -156,19 +156,19 @@ export default function Playback() {
               >
                 <Heart
                   size={20}
-                  className={favorites.includes(currentSong.id) ? 'text-rose-500 fill-rose-500 scale-110' : ''}
+                  className={(favorites || []).includes(currentSong.id) ? 'text-rose-500 fill-rose-500 scale-110' : ''}
                 />
               </button>
             </div>
             
-            <div className="flex flex-wrap gap-2 pt-1 text-left">
+            <div className="flex flex-wrap gap-2 pt-1 text-left hidden sm:flex">
               {currentSong.mood && (
-                <span className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider bg-cyan-950/40 border border-cyan-800/30 px-3 py-1 rounded-full">
+                <span className="text-[9px] md:text-[10px] text-cyan-400 font-bold uppercase tracking-wider bg-cyan-950/40 border border-cyan-800/30 px-2.5 py-1 rounded-full">
                   Mood: {currentSong.mood}
                 </span>
               )}
               {currentSong.album && (
-                <span className="text-[10px] text-violet-400 font-bold uppercase tracking-wider bg-violet-950/40 border border-violet-800/30 px-3 py-1 rounded-full">
+                <span className="text-[9px] md:text-[10px] text-violet-400 font-bold uppercase tracking-wider bg-violet-950/40 border border-violet-800/30 px-2.5 py-1 rounded-full">
                   Album: {currentSong.album}
                 </span>
               )}
@@ -176,7 +176,7 @@ export default function Playback() {
           </div>
 
           {/* Time Timeline / Seeker Slider */}
-          <div className="w-full space-y-2">
+          <div className="w-full space-y-1.5 md:space-y-2 px-2 md:px-0">
             <input
               id="seeker-slider"
               type="range"
@@ -186,19 +186,19 @@ export default function Playback() {
               onChange={e => seek(parseFloat(e.target.value))}
               className="w-full accent-cyan-400 cursor-pointer h-1.5 rounded-lg bg-white/10 outline-none appearance-none transition-all duration-300 hover:h-2"
             />
-            <div className="flex justify-between text-[11px] text-white/40 font-semibold">
+            <div className="flex justify-between text-[10px] md:text-[11px] text-white/40 font-semibold">
               <span>{formatTime(progress)}</span>
               <span>{formatTime(duration)}</span>
             </div>
           </div>
 
           {/* Main Playback Controls */}
-          <div className="w-full flex items-center justify-between px-4 md:px-0">
+          <div className="w-full flex items-center justify-between px-2 md:px-0">
             {/* Shuffle Toggle */}
             <button
               id="shuffle-btn"
               onClick={() => setIsShuffle(prev => !prev)}
-              className={`p-2.5 rounded-xl transition-all duration-300 cursor-pointer ${
+              className={`p-2 md:p-2.5 rounded-xl transition-all duration-300 cursor-pointer ${
                 isShuffle 
                   ? 'text-cyan-400 bg-cyan-950/30 border border-cyan-500/15 shadow shadow-cyan-500/10' 
                   : 'text-white/30 hover:text-white bg-transparent border border-transparent'
@@ -211,21 +211,21 @@ export default function Playback() {
             <button
               id="prev-btn"
               onClick={playPrev}
-              className="p-2.5 rounded-xl text-white/60 hover:text-white transition-all duration-300 active:scale-95 cursor-pointer"
+              className="p-2 md:p-2.5 rounded-xl text-white/60 hover:text-white transition-all duration-300 active:scale-95 cursor-pointer"
             >
-              <SkipBack size={22} fill="currentColor" />
+              <SkipBack size={24} fill="currentColor" />
             </button>
 
             {/* Play/Pause */}
             <button
               id="play-pause-btn"
               onClick={togglePlay}
-              className="w-14 h-14 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg text-white cursor-pointer"
+              className="w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg text-white cursor-pointer"
               style={{ background: `linear-gradient(135deg, ${accent.hex}, #a78bfa)`, boxShadow: `0 8px 32px ${accent.hex}33` }}
             >
               {isPlaying 
-                ? <Pause size={24} fill="#fff" color="#fff" /> 
-                : <Play size={24} fill="#fff" color="#fff" className="ml-1" />
+                ? <Pause size={28} fill="#fff" color="#fff" /> 
+                : <Play size={28} fill="#fff" color="#fff" className="ml-1" />
               }
             </button>
 
@@ -233,9 +233,9 @@ export default function Playback() {
             <button
               id="next-btn"
               onClick={playNext}
-              className="p-2.5 rounded-xl text-white/60 hover:text-white transition-all duration-300 active:scale-95 cursor-pointer"
+              className="p-2 md:p-2.5 rounded-xl text-white/60 hover:text-white transition-all duration-300 active:scale-95 cursor-pointer"
             >
-              <SkipForward size={22} fill="currentColor" />
+              <SkipForward size={24} fill="currentColor" />
             </button>
 
             {/* Repeat Toggle */}
@@ -248,7 +248,7 @@ export default function Playback() {
                   return 'off';
                 });
               }}
-              className={`relative p-2.5 rounded-xl transition-all duration-300 cursor-pointer ${
+              className={`relative p-2 md:p-2.5 rounded-xl transition-all duration-300 cursor-pointer ${
                 repeatMode !== 'off' 
                   ? 'text-violet-400 bg-violet-950/30 border border-violet-500/15 shadow shadow-violet-500/10' 
                   : 'text-white/30 hover:text-white bg-transparent border border-transparent'
@@ -262,12 +262,12 @@ export default function Playback() {
           </div>
 
           {/* Volume Control */}
-          <div className="w-full flex items-center gap-3">
+          <div className="w-full flex items-center gap-3 px-2 md:px-0">
             <button
               onClick={() => changeVolume(volume > 0 ? 0 : 0.8)}
               className="text-white/40 hover:text-white transition-colors"
             >
-              {volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
+              {volume === 0 ? <VolumeX size={16} md:size={18} /> : <Volume2 size={16} md:size={18} />}
             </button>
             <input
               id="vol-slider"
@@ -282,15 +282,15 @@ export default function Playback() {
           </div>
         </div>
 
-        {/* Right Column: Up Next Queue */}
-        <div className="flex-1 flex flex-col justify-between max-w-md w-full border-t md:border-t-0 md:border-l border-white/5 pt-6 md:pt-0 md:pl-8 space-y-6">
+        {/* Right Column: Up Next Queue - HIDDEN ON MOBILE TO SAVE SPACE */}
+        <div className="hidden md:flex flex-1 flex-col justify-between max-w-md w-full border-l border-white/5 pl-8 space-y-6">
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <ListMusic size={18} className="text-cyan-400" />
               <h2 className="text-white text-lg font-bold tracking-tight">Up Next</h2>
             </div>
 
-            <div className="flex flex-col gap-2 max-h-[300px] md:max-h-[380px] overflow-y-auto pr-1 scrollbar-none">
+            <div className="flex flex-col gap-2 max-h-[380px] overflow-y-auto pr-1 scrollbar-none">
               {queue.length === 0 ? (
                 <p className="text-white/30 text-xs font-semibold py-8 text-center bg-white/[0.01] rounded-2xl border border-white/5">Queue is empty</p>
               ) : (
@@ -333,7 +333,7 @@ export default function Playback() {
           </div>
 
           {/* Related Selection Widget */}
-          <div className="bg-gradient-to-tr from-cyan-950/20 to-violet-950/15 border border-cyan-500/10 rounded-3xl p-4 md:p-5 flex items-center gap-4 relative overflow-hidden group">
+          <div className="bg-gradient-to-tr from-cyan-950/20 to-violet-950/15 border border-cyan-500/10 rounded-3xl p-5 flex items-center gap-4 relative overflow-hidden group">
             <div className="relative w-14 h-14 rounded-2xl overflow-hidden shadow-lg flex-shrink-0">
               <img
                 src={currentSong.cover}

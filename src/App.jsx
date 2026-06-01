@@ -170,8 +170,12 @@ export default function App() {
   if (!user) return <Login onLogin={setUser} />;
 
   return (
-    <PlayerProvider>
-      <AppContent user={user} onLogout={handleLogout} />
-    </PlayerProvider>
+    <ErrorBoundary>
+      <div className="bg-[#07070a] min-h-screen">
+        <PlayerProvider>
+          <AppContent user={user} onLogout={handleLogout} />
+        </PlayerProvider>
+      </div>
+    </ErrorBoundary>
   );
 }
