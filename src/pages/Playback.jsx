@@ -92,10 +92,10 @@ export default function Playback() {
       {/* Blurred background cover art */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none select-none z-0">
         <div
-          className="absolute inset-0 bg-cover bg-center filter blur-[100px] opacity-[0.18] scale-150 transition-all duration-1000"
+          className="absolute inset-0 bg-cover bg-center filter blur-[120px] opacity-40 scale-150 transition-all duration-1000"
           style={{ backgroundImage: `url(${currentSong.cover})` }}
         />
-        <div className="absolute inset-0 bg-[#07070a]/90" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#07070a]/40 to-[#07070a]/80" />
       </div>
 
       <div className="relative z-10 w-full max-w-5xl bg-white/[0.02] border border-white/5 backdrop-blur-2xl rounded-3xl p-6 md:p-10 flex flex-col md:flex-row gap-8 md:gap-12 shadow-2xl">
