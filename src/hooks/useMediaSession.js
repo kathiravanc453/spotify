@@ -21,15 +21,19 @@ export default function useMediaSession() {
     }
 
     // Set Now Playing metadata on the OS notification / lock screen
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title:  cleanTitle(currentSong.title) || currentSong.title,
-      artist: currentSong.artist || 'Cloud Artist',
-      album:  currentSong.album  || 'Rhythmix',
-      artwork: [
-        { src: currentSong.cover, sizes: '512x512', type: 'image/jpeg' },
-        { src: currentSong.cover, sizes: '256x256', type: 'image/jpeg' },
-      ],
-    });
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title:  cleanTitle(currentSong.title) || currentSong.title,
+        artist: currentSong.artist || 'Cloud Artist',
+        album:  currentSong.album  || 'Rhythmix',
+        artwork: [
+          { src: currentSong.cover || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=512', sizes: '512x512', type: 'image/jpeg' },
+          { src: currentSong.cover || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=256', sizes: '256x256', type: 'image/jpeg' },
+        ],
+      });
+    } catch (e) {
+      console.error('Failed to set media session metadata:', e);
+    }
 
     // Wire OS media buttons → Rhythmix controls
     navigator.mediaSession.setActionHandler('play',          () => { if (!isPlaying) togglePlay?.(); });
