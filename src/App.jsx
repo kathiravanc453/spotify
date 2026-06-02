@@ -59,6 +59,7 @@ function AppContent({ user, onLogout }) {
     }
   };
   const onTouchMove = (e) => {
+    if (activeSection === 'now-playing') return; // Disable pull-to-refresh on playback screen to prevent conflict with swipe-to-close
     if (pullStartY.current === null) return;
     const dy = e.touches[0].clientY - pullStartY.current;
     if (dy > 0 && dy < 100) setPullY(dy);

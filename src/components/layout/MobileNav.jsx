@@ -11,8 +11,8 @@ const NAV_ITEMS = [
 export default function MobileNav() {
   const { activeSection, setActiveSection, currentSong } = usePlayer();
 
-  // How tall is the player footer on mobile? ~72px. We sit above it.
-  const FOOTER_H = currentSong ? 72 : 0;
+  // How tall is the player footer on mobile? ~72px. We sit above it, unless we are on the now-playing screen where the footer is hidden.
+  const FOOTER_H = (currentSong && activeSection !== 'now-playing') ? 72 : 0;
 
   return (
     <nav

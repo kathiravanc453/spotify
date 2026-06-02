@@ -86,8 +86,6 @@ export function PlayerProvider({ children }) {
 
   useEffect(() => {
     fetchSongs();
-    const interval = setInterval(fetchSongs, 20000);
-    return () => clearInterval(interval);
   }, [fetchSongs]);
 
   // ─── Play count tracking ──────────────────────────────────────────────────

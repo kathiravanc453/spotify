@@ -36,26 +36,8 @@ export default function Home({ search = '', activeSection = 'home' }) {
   const [selectedMood, setSelectedMood] = useState(null);
   const [moodSearch, setMoodSearch] = useState('');
 
-  // Dynamic recommendation based on the currently playing song
-  const relatedSongs = useMemo(() => {
-    if (!currentSong) return [];
-    
-    // Filter out the current song, then match by mood or artist
-    const matches = allSongs.filter(s => 
-      s.id !== currentSong.id && (
-        s.mood?.toLowerCase().trim() === currentSong.mood?.toLowerCase().trim() ||
-        s.artist?.toLowerCase().trim() === currentSong.artist?.toLowerCase().trim()
-      )
-    );
-
-    // Fallback to general songs if there are less than 3 matches
-    if (matches.length < 3) {
-      const remaining = allSongs.filter(s => s.id !== currentSong.id && !matches.some(m => m.id === s.id));
-      return [...matches, ...remaining].slice(0, 5);
-    }
-    
-    return matches.slice(0, 5);
-  }, [currentSong, allSongs]);
+  // Dynamic recommendation based on the currently playing song (reusing upNextQueue to avoid duplicating expensive filtering logic)
+  const relatedSongs = usePlayer()?.upNextQueue?.slice(0, 5) || [];
  
   const filteredByMoodAndSearch = useMemo(() => {
     if (!selectedMood) return [];
