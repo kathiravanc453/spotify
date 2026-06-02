@@ -306,7 +306,7 @@ export default function Home({ search = '', activeSection = 'home' }) {
         <section>
           <SectionHeader icon={Music} title="Your Library" gradient="from-violet-500 to-fuchsia-500 shadow-violet-500/20" />
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-6">
-            {recommendedSongs.slice(0, 20).map(song => <SongCard key={song?.id} song={song} />)}
+            {allSongs.map(song => <SongCard key={song?.id} song={song} />)}
           </div>
         </section>
       </>
