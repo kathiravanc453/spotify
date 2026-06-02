@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Home, Search, Library, TrendingUp, Star, X, Music2, Disc, Heart, ChevronRight, Menu } from 'lucide-react';
+import { Home, Search, Library, TrendingUp, Star, X, Music2, Disc, Heart, ChevronRight, Menu, Shield } from 'lucide-react';
 import { usePlayer } from '../../context/PlayerContext';
 
 const navItems = [
@@ -12,7 +12,7 @@ const navItems = [
   { icon: Star,       label: 'Recommended', id: 'recommended'},
 ];
 
-function SidebarContent({ activeSection, setActiveSection, onItemClick }) {
+function SidebarContent({ activeSection, setActiveSection, onItemClick, user }) {
   return (
     <div className="flex flex-col h-full py-6 px-4">
       {/* Logo */}
@@ -41,6 +41,20 @@ function SidebarContent({ activeSection, setActiveSection, onItemClick }) {
             {label}
           </button>
         ))}
+
+        {user?.role === 'admin' && (
+          <button
+            onClick={() => { setActiveSection('admin'); onItemClick?.(); }}
+            className={`flex items-center gap-3.5 px-4 py-3.5 mt-4 rounded-xl text-sm font-bold transition-all duration-300 w-full text-left
+              ${activeSection === 'admin'
+                ? 'bg-gradient-to-r from-fuchsia-500/20 to-pink-500/10 text-fuchsia-400 border border-fuchsia-500/20 shadow-lg'
+                : 'text-fuchsia-400/70 hover:text-fuchsia-400 hover:bg-fuchsia-500/10 border border-fuchsia-500/10'
+              }`}
+          >
+            <Shield size={18} />
+            Admin Panel
+          </button>
+        )}
       </nav>
 
       {/* Bottom branding */}
@@ -52,7 +66,7 @@ function SidebarContent({ activeSection, setActiveSection, onItemClick }) {
   );
 }
 
-export default function Sidebar() {
+export default function Sidebar({ user }) {
   const { activeSection, setActiveSection } = usePlayer();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -63,6 +77,7 @@ export default function Sidebar() {
         <SidebarContent
           activeSection={activeSection}
           setActiveSection={setActiveSection}
+          user={user}
         />
       </aside>
 
@@ -100,6 +115,7 @@ export default function Sidebar() {
           activeSection={activeSection}
           setActiveSection={setActiveSection}
           onItemClick={() => setMobileOpen(false)}
+          user={user}
         />
       </div>
     </>

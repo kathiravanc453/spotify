@@ -9,6 +9,7 @@ import Library from './pages/Library';
 import Albums from './pages/Albums';
 import Login from './pages/Login';
 import Playback from './pages/Playback';
+import AdminUpload from './pages/AdminUpload';
 import ToastProvider from './components/ui/Toast';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import useMediaSession from './hooks/useMediaSession';
@@ -22,14 +23,29 @@ function AppContent({ user, onLogout }) {
   const pullStartY = useRef(null);
   const mainRef = useRef(null);
 
-  // 🔒 PWA Install Prompt Listener
+  // 🔒 PWA Install Prompt & Telemetry Listener
   useEffect(() => {
     const handleBeforeInstallPrompt = (e) => {
       e.preventDefault(); // Prevent standard browser popup
       setInstallPrompt(e); // Save event to trigger manually later
     };
+
+    const handleAppInstalled = async () => {
+      // PWA has been successfully installed, log it to the backend!
+      try {
+        await fetch('http://localhost:3001/api/stats/download', { method: 'POST' });
+      } catch (err) {
+        console.error('Failed to log PWA download:', err);
+      }
+    };
+
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
   }, []);
 
   const handleInstallClick = async () => {
@@ -95,6 +111,7 @@ function AppContent({ user, onLogout }) {
   };
 
   const renderContent = () => {
+    if (activeSection === 'admin')       return <AdminUpload />;
     if (activeSection === 'library' || activeSection === 'favorites') return <Library />;
     if (activeSection === 'albums')      return <Albums />;
     if (activeSection === 'now-playing') return <Playback />;
@@ -111,7 +128,7 @@ function AppContent({ user, onLogout }) {
       {/* Content wrapper above blobs */}
       <div className="relative z-10 flex flex-1 overflow-hidden">
         {/* Sidebar — desktop only */}
-        <Sidebar />
+        <Sidebar user={user} />
 
         {/* Main content area — Header always stays visible */}
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden">

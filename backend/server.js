@@ -20,6 +20,7 @@ cloudinary.config({
 
 const SONGS_JSON = path.join(__dirname, 'songs.json');
 const USERS_JSON = path.join(__dirname, 'users.json');
+const STATS_JSON = path.join(__dirname, 'stats.json');
 
 app.use(cors());
 app.use(express.json());
@@ -461,6 +462,46 @@ app.get('/api/admin/users', (req, res) => {
     const users = readUsers();
     const safeUsers = users.map(({ password, ...u }) => u);
     res.json(safeUsers);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ─── PWA Telemetry ──────────────────────────────────────────────────────────
+const readStats = () => {
+  try {
+    if (fs.existsSync(STATS_JSON)) {
+      return JSON.parse(fs.readFileSync(STATS_JSON, 'utf-8'));
+    }
+  } catch (e) {
+    console.error('Error reading stats file:', e);
+  }
+  return { downloads: 0 };
+};
+
+const writeStats = (stats) => {
+  try {
+    fs.writeFileSync(STATS_JSON, JSON.stringify(stats, null, 2));
+  } catch (e) {
+    console.error('Error writing stats file:', e);
+  }
+};
+
+app.get('/api/stats', (req, res) => {
+  try {
+    const stats = readStats();
+    res.json(stats);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/stats/download', (req, res) => {
+  try {
+    const stats = readStats();
+    stats.downloads = (stats.downloads || 0) + 1;
+    writeStats(stats);
+    res.json({ success: true, downloads: stats.downloads });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
