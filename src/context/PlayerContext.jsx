@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
 
 const PlayerContext = createContext(null);
 
@@ -128,6 +128,27 @@ export function PlayerProvider({ children }) {
     else if (currentSong) { audio.play();  setIsPlaying(true);  }
   }, [isPlaying, currentSong]);
 
+  // ─── Dynamic Queue / Recommendation Engine ────────────────────────────────
+  const upNextQueue = useMemo(() => {
+    if (!currentSong || allSongs.length === 0) return [];
+    
+    if (isShuffle) {
+      const remaining = allSongs.filter(s => s.id !== currentSong.id);
+      // Deterministic pseudo-shuffle based on current song id to prevent rapid reshuffling on re-renders
+      return [...remaining].sort((a, b) => {
+        const hashA = a.title.charCodeAt(0) + (currentSong.id.charCodeAt(0) || 0);
+        const hashB = b.title.charCodeAt(0) + (currentSong.id.charCodeAt(0) || 0);
+        return (hashA % 3) - (hashB % 3);
+      }).slice(0, 10);
+    }
+    
+    // Suggestion engine: 1. Same mood, 2. Same artist
+    const related = allSongs.filter(s => s.id !== currentSong.id && (s.mood === currentSong.mood || s.artist === currentSong.artist));
+    const others = allSongs.filter(s => s.id !== currentSong.id && s.mood !== currentSong.mood && s.artist !== currentSong.artist);
+    
+    return [...related, ...others].slice(0, 10);
+  }, [currentSong, allSongs, isShuffle]);
+
   // ─── Next / Prev ──────────────────────────────────────────────────────────
   const playNext = useCallback(() => {
     if (!currentSong || allSongs.length === 0) return;
@@ -138,17 +159,12 @@ export function PlayerProvider({ children }) {
       setIsPlaying(true);
       return;
     }
-    if (isShuffle && allSongs.length > 1) {
-      const currentIdx = allSongs.findIndex(s => s.id === currentSong.id);
-      let randomIdx;
-      do { randomIdx = Math.floor(Math.random() * allSongs.length); }
-      while (randomIdx === currentIdx && allSongs.length > 1);
-      playSong(allSongs[randomIdx]);
-      return;
+    if (upNextQueue.length > 0) {
+      playSong(upNextQueue[0]);
+    } else {
+      playSong(allSongs[0]);
     }
-    const idx = allSongs.findIndex(s => s.id === currentSong.id);
-    playSong(allSongs[(idx + 1) % allSongs.length]);
-  }, [currentSong, allSongs, playSong, isShuffle, repeatMode]);
+  }, [currentSong, allSongs, playSong, repeatMode, upNextQueue]);
 
   const playNextRef = useRef(playNext);
   useEffect(() => { playNextRef.current = playNext; }, [playNext]);
@@ -160,9 +176,13 @@ export function PlayerProvider({ children }) {
       audioRef.current.currentTime = 0;
       return;
     }
-    const idx = allSongs.findIndex(s => s.id === currentSong.id);
-    playSong(allSongs[(idx - 1 + allSongs.length) % allSongs.length]);
-  }, [currentSong, allSongs, playSong]);
+    if (recentlyPlayed.length > 1) {
+      playSong(recentlyPlayed[1]);
+    } else {
+      const idx = allSongs.findIndex(s => s.id === currentSong.id);
+      playSong(allSongs[(idx - 1 + allSongs.length) % allSongs.length]);
+    }
+  }, [currentSong, allSongs, playSong, recentlyPlayed]);
 
   // ─── Audio event listeners ────────────────────────────────────────────────
   useEffect(() => {
@@ -171,13 +191,18 @@ export function PlayerProvider({ children }) {
     const onTimeUpdate      = () => setProgress(audio.currentTime);
     const onDurationChange  = () => setDuration(audio.duration);
     const onEnded           = () => playNextRef.current?.();
+    const onVolumeChange    = () => setVolume(audio.volume);
+    
     audio.addEventListener('timeupdate',      onTimeUpdate);
     audio.addEventListener('durationchange',  onDurationChange);
     audio.addEventListener('ended',           onEnded);
+    audio.addEventListener('volumechange',    onVolumeChange);
+    
     return () => {
       audio.removeEventListener('timeupdate',     onTimeUpdate);
       audio.removeEventListener('durationchange', onDurationChange);
       audio.removeEventListener('ended',          onEnded);
+      audio.removeEventListener('volumechange',   onVolumeChange);
     };
   }, []);
 
@@ -276,6 +301,7 @@ export function PlayerProvider({ children }) {
       stopPlayback,
       sleepTimer, startSleepTimer, cancelSleepTimer,
       refreshSongs: fetchSongs,
+      upNextQueue,
     }}>
       {children}
     </PlayerContext.Provider>

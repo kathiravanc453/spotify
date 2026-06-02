@@ -50,21 +50,7 @@ export default function Playback() {
   }, [displayTitle, currentSong]);
 
   // Get upcoming songs to show in "Up Next" queue
-  const queue = useMemo(() => {
-    if (!currentSong || allSongs.length === 0) return [];
-    const idx = allSongs.findIndex(s => s.id === currentSong.id);
-    if (idx === -1) return allSongs.slice(0, 5);
-    
-    // We display the next 5 songs in order.
-    const upcoming = [];
-    for (let i = 1; i <= 5; i++) {
-      const nextIdx = (idx + i) % allSongs.length;
-      if (allSongs[nextIdx] && allSongs[nextIdx].id !== currentSong.id) {
-        upcoming.push(allSongs[nextIdx]);
-      }
-    }
-    return upcoming;
-  }, [currentSong, allSongs]);
+  const queue = usePlayer()?.upNextQueue || [];
 
   // If there's no playing song, redirect back or render a loader
   if (!currentSong) {
@@ -98,7 +84,7 @@ export default function Playback() {
         <div className="absolute inset-0 bg-gradient-to-b from-[#07070a]/40 to-[#07070a]/80" />
       </div>
 
-      <div className="relative z-10 w-full max-w-5xl mx-auto md:my-auto bg-white/[0.02] border border-white/5 backdrop-blur-2xl rounded-3xl p-4 sm:p-6 md:p-10 flex flex-col md:flex-row gap-6 md:gap-12 shadow-2xl h-full md:h-auto max-h-[90vh] md:max-h-none overflow-y-auto md:overflow-visible">
+      <div className="relative z-10 w-full max-w-5xl mx-auto md:my-auto md:bg-white/[0.02] md:border md:border-white/5 md:backdrop-blur-2xl md:rounded-3xl p-4 sm:p-6 md:p-10 flex flex-col md:flex-row gap-12 shadow-none md:shadow-2xl h-auto min-h-screen md:min-h-0">
         {/* Left Column: Playing Song Card Controls */}
         <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left justify-between space-y-4 md:space-y-6 w-full max-w-md mx-auto md:max-w-none">
           {/* Back Button + Share */}
@@ -288,29 +274,32 @@ export default function Playback() {
               />
             </div>
 
-            <button className="text-white/50 hover:text-white transition-colors cursor-pointer p-2 md:hidden">
+            <button 
+              onClick={() => document.getElementById('up-next-section')?.scrollIntoView({ behavior: 'smooth' })}
+              className="text-white/50 hover:text-white transition-colors cursor-pointer p-2 md:hidden"
+            >
               <ListMusic size={20} />
             </button>
           </div>
         </div>
 
-        {/* Right Column: Up Next Queue - HIDDEN ON MOBILE TO SAVE SPACE */}
-        <div className="hidden md:flex flex-1 flex-col justify-between max-w-md w-full border-l border-white/5 pl-8 space-y-6">
+        {/* Right Column: Up Next Queue */}
+        <div id="up-next-section" className="flex-1 flex-col justify-start max-w-md w-full mx-auto md:max-w-none border-t border-white/10 pt-8 md:pt-0 md:border-t-0 md:border-l md:border-white/5 md:pl-8 space-y-6 flex">
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <ListMusic size={18} className="text-cyan-400" />
+              <ListMusic size={18} className="text-[#1ed760]" />
               <h2 className="text-white text-lg font-bold tracking-tight">Up Next</h2>
             </div>
 
-            <div className="flex flex-col gap-2 max-h-[380px] overflow-y-auto pr-1 scrollbar-none">
+            <div className="flex flex-col gap-2 overflow-visible pr-1">
               {queue.length === 0 ? (
-                <p className="text-white/30 text-xs font-semibold py-8 text-center bg-white/[0.01] rounded-2xl border border-white/5">Queue is empty</p>
+                <p className="text-white/40 text-sm italic">No upcoming songs</p>
               ) : (
                 queue.map((song) => (
-                  <div
+                  <div 
                     key={song.id}
                     onClick={() => playSong(song)}
-                    className="group flex items-center gap-3 p-2.5 rounded-2xl hover:bg-white/[0.04] transition-all duration-300 border border-transparent hover:border-white/5 cursor-pointer"
+                    className="group flex items-center gap-3 p-2 md:p-3 rounded-xl hover:bg-white/5 transition-colors cursor-pointer active:scale-[0.98] border border-transparent hover:border-white/5"
                   >
                     <div className="relative w-10 h-10 rounded-xl overflow-hidden shadow flex-shrink-0">
                       <img
