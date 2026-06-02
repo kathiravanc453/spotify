@@ -18,8 +18,28 @@ function AppContent({ user, onLogout }) {
   const [search, setSearch] = useState('');
   const [isPulling, setIsPulling] = useState(false);
   const [pullY, setPullY] = useState(0);
+  const [installPrompt, setInstallPrompt] = useState(null);
   const pullStartY = useRef(null);
   const mainRef = useRef(null);
+
+  // 🔒 PWA Install Prompt Listener
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault(); // Prevent standard browser popup
+      setInstallPrompt(e); // Save event to trigger manually later
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setInstallPrompt(null);
+    }
+  };
 
   // 🔒 Lock screen / notification bar media controls
   useMediaSession();
@@ -108,7 +128,7 @@ function AppContent({ user, onLogout }) {
             </div>
           </div>
 
-          <main
+          <main 
             ref={mainRef}
             className="flex-1 overflow-y-auto pb-[148px] md:pb-36"
             style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}
@@ -116,6 +136,30 @@ function AppContent({ user, onLogout }) {
             onTouchMove={onTouchMove}
             onTouchEnd={onTouchEnd}
           >
+            {/* Native PWA Install Banner */}
+            {installPrompt && (
+              <div className="mx-4 md:mx-8 mt-4 mb-4 p-4 rounded-2xl bg-gradient-to-r from-cyan-900/40 to-violet-900/40 border border-cyan-500/20 shadow-lg shadow-cyan-500/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">
+                <div>
+                  <h3 className="text-white font-bold text-sm">Install Rhythmix</h3>
+                  <p className="text-white/60 text-xs mt-1">Get the native app experience on your home screen.</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button 
+                    onClick={() => setInstallPrompt(null)}
+                    className="text-white/40 hover:text-white text-xs font-semibold px-2 py-2"
+                  >
+                    Not Now
+                  </button>
+                  <button 
+                    onClick={handleInstallClick}
+                    className="bg-cyan-400 hover:bg-cyan-300 text-black text-xs font-bold px-4 py-2 rounded-lg shadow-md transition-all active:scale-95 cursor-pointer"
+                  >
+                    Install App
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Error boundary wraps page content so crashes don't blank the whole app */}
             <ErrorBoundary>
               {renderContent()}

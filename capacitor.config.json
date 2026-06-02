@@ -1,0 +1,6 @@
+{
+  "appId": "com.rhythmix.app",
+  "appName": "Rhythmix",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}
