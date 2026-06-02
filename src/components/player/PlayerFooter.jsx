@@ -33,7 +33,7 @@ export default function PlayerFooter() {
   const {
     currentSong, isPlaying, progress, duration, volume,
     togglePlay, playNext, playPrev, seek, changeVolume,
-    favorites = [], toggleLike, setActiveSection, stopPlayback,
+    favorites = [], toggleLike, activeSection, setActiveSection, stopPlayback,
     sleepTimer, startSleepTimer, cancelSleepTimer,
   } = usePlayer();
  

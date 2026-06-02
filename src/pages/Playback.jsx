@@ -5,7 +5,7 @@ import { useSwipe } from '../hooks/useGestures';
 import { toast } from '../components/ui/Toast';
 import {
   Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Heart,
-  ChevronLeft, Volume2, VolumeX, ListMusic, Sparkles, Share2
+  ChevronLeft, Volume2, VolumeX, ListMusic, Sparkles, Share2, MonitorSpeaker
 } from 'lucide-react';
 
 function formatTime(secs) {
@@ -152,11 +152,11 @@ export default function Playback() {
               <button
                 id="heart-btn"
                 onClick={() => toggleLike(currentSong.id)}
-                className="text-white/40 hover:text-rose-500 transition-colors p-2.5 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center cursor-pointer flex-shrink-0"
+                className="text-white/40 hover:text-white transition-colors p-2 flex items-center justify-center cursor-pointer flex-shrink-0"
               >
                 <Heart
-                  size={20}
-                  className={(favorites || []).includes(currentSong.id) ? 'text-rose-500 fill-rose-500 scale-110' : ''}
+                  size={24}
+                  className={(favorites || []).includes(currentSong.id) ? 'text-[#1ed760] fill-[#1ed760]' : ''}
                 />
               </button>
             </div>
@@ -176,7 +176,7 @@ export default function Playback() {
           </div>
 
           {/* Time Timeline / Seeker Slider */}
-          <div className="w-full space-y-1.5 md:space-y-2 px-2 md:px-0">
+          <div className="w-full space-y-1.5 md:space-y-2 px-2 md:px-0 mt-4 md:mt-0">
             <input
               id="seeker-slider"
               type="range"
@@ -184,48 +184,48 @@ export default function Playback() {
               max={duration || 100}
               value={progress}
               onChange={e => seek(parseFloat(e.target.value))}
-              className="w-full accent-cyan-400 cursor-pointer h-1.5 rounded-lg bg-white/10 outline-none appearance-none transition-all duration-300 hover:h-2"
+              className="w-full accent-white cursor-pointer h-1 rounded-full bg-white/20 outline-none appearance-none transition-all duration-300 hover:h-1.5"
             />
-            <div className="flex justify-between text-[10px] md:text-[11px] text-white/40 font-semibold">
+            <div className="flex justify-between text-[11px] text-white/60 font-medium">
               <span>{formatTime(progress)}</span>
               <span>{formatTime(duration)}</span>
             </div>
           </div>
 
           {/* Main Playback Controls */}
-          <div className="w-full flex items-center justify-between px-2 md:px-0">
+          <div className="w-full flex items-center justify-between px-2 md:px-0 py-2">
             {/* Shuffle Toggle */}
-            <button
-              id="shuffle-btn"
-              onClick={() => setIsShuffle(prev => !prev)}
-              className={`p-2 md:p-2.5 rounded-xl transition-all duration-300 cursor-pointer ${
-                isShuffle 
-                  ? 'text-cyan-400 bg-cyan-950/30 border border-cyan-500/15 shadow shadow-cyan-500/10' 
-                  : 'text-white/30 hover:text-white bg-transparent border border-transparent'
-              }`}
-            >
-              <Shuffle size={18} />
-            </button>
+            <div className="relative flex flex-col items-center">
+              <button
+                id="shuffle-btn"
+                onClick={() => setIsShuffle(prev => !prev)}
+                className={`p-2 transition-colors cursor-pointer ${
+                  isShuffle ? 'text-[#1ed760]' : 'text-white/60 hover:text-white'
+                }`}
+              >
+                <Shuffle size={20} />
+              </button>
+              {isShuffle && <div className="absolute -bottom-0.5 w-1 h-1 bg-[#1ed760] rounded-full" />}
+            </div>
 
             {/* Skip Back */}
             <button
               id="prev-btn"
               onClick={playPrev}
-              className="p-2 md:p-2.5 rounded-xl text-white/60 hover:text-white transition-all duration-300 active:scale-95 cursor-pointer"
+              className="p-2 text-white hover:scale-105 transition-all duration-300 active:scale-95 cursor-pointer"
             >
-              <SkipBack size={24} fill="currentColor" />
+              <SkipBack size={32} fill="currentColor" />
             </button>
 
             {/* Play/Pause */}
             <button
               id="play-pause-btn"
               onClick={togglePlay}
-              className="w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg text-white cursor-pointer"
-              style={{ background: `linear-gradient(135deg, ${accent.hex}, #a78bfa)`, boxShadow: `0 8px 32px ${accent.hex}33` }}
+              className="w-16 h-16 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all bg-white text-black cursor-pointer shadow-xl"
             >
               {isPlaying 
-                ? <Pause size={28} fill="#fff" color="#fff" /> 
-                : <Play size={28} fill="#fff" color="#fff" className="ml-1" />
+                ? <Pause size={28} fill="#000" color="#000" /> 
+                : <Play size={28} fill="#000" color="#000" className="ml-1" />
               }
             </button>
 
@@ -233,52 +233,64 @@ export default function Playback() {
             <button
               id="next-btn"
               onClick={playNext}
-              className="p-2 md:p-2.5 rounded-xl text-white/60 hover:text-white transition-all duration-300 active:scale-95 cursor-pointer"
+              className="p-2 text-white hover:scale-105 transition-all duration-300 active:scale-95 cursor-pointer"
             >
-              <SkipForward size={24} fill="currentColor" />
+              <SkipForward size={32} fill="currentColor" />
             </button>
 
             {/* Repeat Toggle */}
-            <button
-              id="repeat-btn"
-              onClick={() => {
-                setRepeatMode(prev => {
-                  if (prev === 'off') return 'all';
-                  if (prev === 'all') return 'one';
-                  return 'off';
-                });
-              }}
-              className={`relative p-2 md:p-2.5 rounded-xl transition-all duration-300 cursor-pointer ${
-                repeatMode !== 'off' 
-                  ? 'text-violet-400 bg-violet-950/30 border border-violet-500/15 shadow shadow-violet-500/10' 
-                  : 'text-white/30 hover:text-white bg-transparent border border-transparent'
-              }`}
-            >
-              <Repeat size={18} />
-              {repeatMode === 'one' && (
-                <span className="absolute top-1 right-1 w-3 h-3 bg-violet-500 rounded-full text-[7px] text-white flex items-center justify-center font-bold">1</span>
-              )}
-            </button>
+            <div className="relative flex flex-col items-center">
+              <button
+                id="repeat-btn"
+                onClick={() => {
+                  setRepeatMode(prev => {
+                    if (prev === 'off') return 'all';
+                    if (prev === 'all') return 'one';
+                    return 'off';
+                  });
+                }}
+                className={`p-2 transition-colors cursor-pointer ${
+                  repeatMode !== 'off' ? 'text-[#1ed760]' : 'text-white/60 hover:text-white'
+                }`}
+              >
+                <Repeat size={20} />
+                {repeatMode === 'one' && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#07070a] rounded-full text-[6px] text-[#1ed760] flex items-center justify-center font-bold">1</span>
+                )}
+              </button>
+              {repeatMode !== 'off' && <div className="absolute -bottom-0.5 w-1 h-1 bg-[#1ed760] rounded-full" />}
+            </div>
           </div>
 
-          {/* Volume Control */}
-          <div className="w-full flex items-center gap-3 px-2 md:px-0">
-            <button
-              onClick={() => changeVolume(volume > 0 ? 0 : 0.8)}
-              className="text-white/40 hover:text-white transition-colors"
-            >
-              {volume === 0 ? <VolumeX size={16} md:size={18} /> : <Volume2 size={16} md:size={18} />}
+          {/* Bottom Icons (Devices & Queue on mobile, Volume on desktop) */}
+          <div className="w-full flex items-center justify-between px-2 md:px-0">
+            <button className="text-white/50 hover:text-white transition-colors cursor-pointer p-2">
+              <MonitorSpeaker size={20} />
             </button>
-            <input
-              id="vol-slider"
-              type="range"
-              min={0}
-              max={1}
-              step={0.01}
-              value={volume}
-              onChange={e => changeVolume(parseFloat(e.target.value))}
-              className="flex-1 accent-cyan-400 cursor-pointer h-1 rounded-lg bg-white/10 outline-none appearance-none"
-            />
+
+            {/* Desktop Volume Slider (Hidden on mobile) */}
+            <div className="hidden md:flex items-center gap-3 flex-1 px-4">
+              <button
+                onClick={() => changeVolume(volume > 0 ? 0 : 0.8)}
+                className="text-white/40 hover:text-white transition-colors"
+              >
+                {volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
+              </button>
+              <input
+                id="vol-slider"
+                type="range"
+                min={0}
+                max={1}
+                step={0.01}
+                value={volume}
+                onChange={e => changeVolume(parseFloat(e.target.value))}
+                className="max-w-[150px] accent-white cursor-pointer h-1 rounded-full bg-white/20 outline-none appearance-none"
+              />
+            </div>
+
+            <button className="text-white/50 hover:text-white transition-colors cursor-pointer p-2 md:hidden">
+              <ListMusic size={20} />
+            </button>
           </div>
         </div>
 
