@@ -137,7 +137,7 @@ export default function Home({ search = '', activeSection = 'home' }) {
     }
  
     if (activeSection === 'trending') {
-      const trendingSongs = allSongs.slice(0, 5);
+      const trendingSongs = allSongs.slice(0, 20); // Show more trending
       return (
         <section className="space-y-6 animate-in fade-in duration-300">
           <div>
@@ -289,7 +289,7 @@ export default function Home({ search = '', activeSection = 'home' }) {
           <section>
             <SectionHeader icon={Clock} title="Recently Played" gradient="from-blue-400 to-indigo-500 shadow-blue-500/20" />
             <div className="flex flex-col gap-2">
-              {recentlyPlayed.slice(0, 4).map((song, i) => <SongRow key={song?.id || i} song={song} index={i} />)}
+              {recentlyPlayed.slice(0, 10).map((song, i) => <SongRow key={song?.id || i} song={song} index={i} />)}
             </div>
           </section>
         )}
@@ -306,7 +306,7 @@ export default function Home({ search = '', activeSection = 'home' }) {
         <section>
           <SectionHeader icon={Music} title="Your Library" gradient="from-violet-500 to-fuchsia-500 shadow-violet-500/20" />
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-6">
-            {allSongs.slice(0, 10).map(song => <SongCard key={song?.id} song={song} />)}
+            {recommendedSongs.slice(0, 20).map(song => <SongCard key={song?.id} song={song} />)}
           </div>
         </section>
       </>
