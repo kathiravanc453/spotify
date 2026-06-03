@@ -10,7 +10,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 cloudinary.config({
   cloud_name: 'dm1cwbbfg',
@@ -507,4 +507,12 @@ app.post('/api/stats/download', (req, res) => {
   }
 });
 
-app.listen(PORT, () => { console.log(`🚀 DEEP SYNC SERVER ONLINE!`); });
+// Serve static files from the React frontend build
+app.use(express.static(path.join(__dirname, '../dist')));
+
+// Catch-all route to serve index.html for React Router
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../dist/index.html'));
+});
+
+app.listen(PORT, () => { console.log(`🚀 DEEP SYNC SERVER ONLINE on port ${PORT}!`); });

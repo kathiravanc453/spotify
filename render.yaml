@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: rhythmix
+    env: node
+    buildCommand: npm install && npm run build:full
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 18.17.0
