@@ -13,6 +13,7 @@ import AdminUpload from './pages/AdminUpload';
 import ToastProvider from './components/ui/Toast';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import useMediaSession from './hooks/useMediaSession';
+import UpdateNotification from './components/UpdateNotification';
 
 function AppContent({ user, onLogout }) {
   const { activeSection, setActiveSection, refreshSongs } = usePlayer();
@@ -234,6 +235,7 @@ export default function App() {
   return (
     <ErrorBoundary>
       <div className="bg-[#07070a] min-h-screen">
+        <UpdateNotification />
         <PlayerProvider>
           <AppContent user={user} onLogout={handleLogout} />
         </PlayerProvider>
