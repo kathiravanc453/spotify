@@ -62,14 +62,6 @@ export default function AdminUpload() {
   });
   const [status, setStatus] = useState('idle'); // idle, uploading, syncing, success, error
   const [errorMsg, setErrorMsg] = useState('');
-  const [stats, setStats] = useState({ downloads: 0 });
-
-  useEffect(() => {
-    fetch('http://localhost:3001/api/stats')
-      .then(res => res.json())
-      .then(data => setStats(data))
-      .catch(err => console.error('Failed to load stats:', err));
-  }, []);
 
   const handleAudioSelect = (file) => {
     setAudioFile(file);
@@ -188,16 +180,6 @@ export default function AdminUpload() {
       <div>
         <h1 className="text-white text-3xl font-bold mb-2">Admin Dashboard</h1>
         <p className="text-white/50 text-sm">Upload songs directly to your cloud and view app statistics.</p>
-      </div>
-
-      <div className="bg-gradient-to-br from-cyan-900/40 to-violet-900/40 border border-cyan-500/20 rounded-3xl p-6 shadow-lg shadow-cyan-500/10 flex items-center justify-between">
-        <div>
-          <h2 className="text-white/60 text-sm font-semibold uppercase tracking-wider mb-1">Total App Downloads</h2>
-          <p className="text-white text-4xl font-black">{stats.downloads}</p>
-        </div>
-        <div className="w-16 h-16 rounded-2xl bg-cyan-500/20 flex items-center justify-center">
-          <Download size={32} className="text-cyan-400" />
-        </div>
       </div>
 
       <div className="bg-white/5 rounded-3xl border border-white/10 p-6 md:p-8 space-y-6">

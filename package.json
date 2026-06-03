@@ -4,16 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "start": "node backend/server.js",
-    "start:local": "node start-all.js",
     "dev": "vite",
     "build": "vite build",
-    "build:full": "npm run build",
     "lint": "eslint .",
     "preview": "vite preview"
-  },
-  "engines": {
-    "node": ">=18.0.0"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.4",
