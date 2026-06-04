@@ -100,59 +100,43 @@ export function PlayerProvider({ children }) {
     });
   }, []);
 
-  // ─── iTunes Album Art Hydration Engine ────────────────────────────────────
+  // ─── Album Art Hydration Engine (via /api/artwork backend) ───────────────
   useEffect(() => {
     if (allSongs.length === 0) return;
 
     let isSubscribed = true;
 
     const hydrateCovers = async () => {
-      // Read current state from local storage to ensure fresh cache
+      // Read current cache (v3 = clean slate so all songs retry with new backend)
       let cachedCovers = {};
-      try { cachedCovers = JSON.parse(localStorage.getItem('rhythmix_album_covers_v2') || '{}') || {}; } catch {}
+      try { cachedCovers = JSON.parse(localStorage.getItem('rhythmix_album_covers_v3') || '{}') || {}; } catch {}
 
       for (const song of allSongs) {
         if (!isSubscribed) break;
-        // Skip if we already successfully found a cover, OR if we already checked and failed (null)
-        if (cachedCovers[song.id] !== undefined) continue; 
+        // Skip if already cached (even if null — means we already tried)
+        if (cachedCovers[song.id] !== undefined) continue;
 
         try {
-          // Delay to respect iTunes API rate limits (~20 calls / min)
-          await new Promise(resolve => setTimeout(resolve, 1500));
+          // Small stagger so we don't fire 100 requests at once
+          await new Promise(r => setTimeout(r, 400));
           if (!isSubscribed) break;
 
-          let res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(song.title)}&country=in&media=music&entity=song&limit=1`);
-          let data = await res.json();
-
-          let coverUrl = null;
-          if (data.results && data.results.length > 0) {
-            coverUrl = data.results[0].artworkUrl100?.replace('100x100bb.jpg', '500x500bb.jpg');
-          } else {
-            // Fallback: If the title is messy (contains Cloudinary hashes etc), search using only the first 3 or 4 words
-            const words = song.title.split(' ').filter(Boolean);
-            if (words.length > 2) {
-              const shortTitle = words.slice(0, 3).join(' ');
-              await new Promise(r => setTimeout(r, 1000)); // Rate limit delay
-              if (!isSubscribed) break;
-              
-              res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(shortTitle)}&country=in&media=music&entity=song&limit=1`);
-              data = await res.json();
-              if (data.results && data.results.length > 0) {
-                coverUrl = data.results[0].artworkUrl100?.replace('100x100bb.jpg', '500x500bb.jpg');
-              }
-            }
-          }
+          // Call our own Vercel serverless function — it handles iTunes + Deezer search
+          const params = new URLSearchParams({ title: song.title, artist: song.artist || '' });
+          const res = await fetch(`/api/artwork?${params}`);
+          const data = await res.json();
+          const coverUrl = data.coverUrl || null;
 
           // Update cache
           cachedCovers[song.id] = coverUrl;
-          
+
           setAlbumCovers(prev => {
             const next = { ...prev, [song.id]: coverUrl };
-            localStorage.setItem('rhythmix_album_covers_v2', JSON.stringify(next));
+            localStorage.setItem('rhythmix_album_covers_v3', JSON.stringify(next));
             return next;
           });
         } catch (err) {
-          console.error(`Failed to fetch iTunes art for ${song.title}:`, err);
+          console.error(`[Artwork] Failed for "${song.title}":`, err);
         }
       }
     };
