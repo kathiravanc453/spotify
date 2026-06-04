@@ -64,7 +64,7 @@ export function PlayerProvider({ children }) {
   // ─── Fetch songs — FIXED: no `loading` in dep array (caused infinite loop) ─
   const fetchSongs = useCallback(async () => {
     try {
-      const res         = await fetch('/api/songs');
+      const res         = await fetch(`/api/songs?t=${Date.now()}`);
       const contentType = res.headers.get('content-type') || '';
       if (!res.ok || !contentType.includes('application/json')) {
         throw new Error(`Backend unavailable (${res.status})`);
