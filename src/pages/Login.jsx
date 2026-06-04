@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Music2, Mail, Lock, User, ArrowRight, Github, Chrome } from 'lucide-react';
+import { Music2, Mail, Lock, User, ArrowRight, Github, Chrome, Shield } from 'lucide-react';
+import AdminPhoneLogin from './AdminPhoneLogin';
 
 export default function Login({ onLogin }) {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -8,6 +9,12 @@ export default function Login({ onLogin }) {
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
+
+  // If user selected Admin Login, show the phone OTP screen directly
+  if (showAdmin) {
+    return <AdminPhoneLogin onAdminVerified={onLogin} onCancel={() => setShowAdmin(false)} />;
+  }
 
   // Helper: check if backend API is reachable
   const isBackendAvailable = async () => {
@@ -256,14 +263,21 @@ export default function Login({ onLogin }) {
           </button>
         </div>
 
-        {/* Toggle Form Tab Link */}
-        <div className="text-center mt-2">
+        <div className="text-center mt-2 flex flex-col gap-4">
           <button
             type="button"
             onClick={() => { setIsSignUp(!isSignUp); setError(''); }}
             className="text-cyan-400/90 hover:text-cyan-300 text-xs font-semibold hover:underline transition-colors"
           >
             {isSignUp ? 'Already have an account? Sign In' : "Don't have an account yet? Sign Up"}
+          </button>
+          
+          <button
+            type="button"
+            onClick={() => setShowAdmin(true)}
+            className="flex items-center justify-center gap-1.5 text-white/40 hover:text-white/80 text-[11px] font-bold tracking-wide uppercase transition-colors mx-auto"
+          >
+            <Shield size={12} /> Admin Login
           </button>
         </div>
 

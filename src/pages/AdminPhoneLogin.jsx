@@ -4,11 +4,11 @@ import {
   signInWithPhoneNumber,
 } from 'firebase/auth';
 import { auth } from '../firebase';
-import { Phone, ShieldCheck, ArrowRight, Music2, Loader2, RefreshCw } from 'lucide-react';
+import { Phone, ShieldCheck, ArrowRight, Music2, Loader2, RefreshCw, ArrowLeft } from 'lucide-react';
 
 const ADMIN_PHONE = import.meta.env.VITE_ADMIN_PHONE || '';
 
-export default function AdminPhoneLogin({ onAdminVerified }) {
+export default function AdminPhoneLogin({ onAdminVerified, onCancel }) {
   const [step, setStep]             = useState('phone'); // 'phone' | 'otp'
   const [phone, setPhone]           = useState('');
   const [otp, setOtp]               = useState(['', '', '', '', '', '']);
@@ -159,9 +159,18 @@ export default function AdminPhoneLogin({ onAdminVerified }) {
       {/* Glass card */}
       <div className="relative z-10 w-full max-w-sm bg-white/[0.025] border border-white/8 backdrop-blur-2xl rounded-3xl p-7 shadow-2xl flex flex-col gap-6">
 
-        {/* Brand */}
-        <div className="flex flex-col items-center text-center gap-2">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-cyan-400 to-violet-500 flex items-center justify-center shadow-lg shadow-cyan-500/25">
+        {/* Brand & Optional Back Button */}
+        <div className="relative flex flex-col items-center text-center gap-2">
+          {onCancel && (
+            <button 
+              onClick={onCancel}
+              className="absolute left-0 top-0 p-2 text-white/40 hover:text-white bg-white/5 hover:bg-white/10 rounded-full transition-colors"
+              title="Back to regular login"
+            >
+              <ArrowLeft size={16} />
+            </button>
+          )}
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-cyan-400 to-violet-500 flex items-center justify-center shadow-lg shadow-cyan-500/25 mt-2">
             <Music2 size={26} color="#fff" />
           </div>
           <h1 className="text-white font-extrabold text-2xl tracking-tight mt-1">Rhythmix Admin</h1>
