@@ -307,33 +307,6 @@ export default function Login({ onLogin }) {
           </form>
         )}
 
-        {/* ── Dev Bypass Buttons (since Firebase isn't configured yet) ────────────────────────────────────── */}
-        {!auth && (
-          <div className="flex flex-col gap-2 mt-2">
-            <div className="flex items-center gap-3 mb-1">
-              <div className="flex-1 h-[1px] bg-white/5" />
-              <span className="text-[10px] font-bold text-white/20 uppercase tracking-widest">BYPASS MODES</span>
-              <div className="flex-1 h-[1px] bg-white/5" />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => handleDevBypass('user')}
-                className="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white/60 hover:text-white text-[11px] font-bold py-3 rounded-xl transition-all duration-300 cursor-pointer"
-              >
-                <Chrome size={14} className="text-cyan-400" /> Demo Session
-              </button>
-              
-              <button
-                onClick={() => handleDevBypass('admin')}
-                className="flex items-center justify-center gap-2 bg-white/5 hover:bg-rose-500/10 border border-white/10 hover:border-rose-500/30 text-white/60 hover:text-rose-400 text-[11px] font-bold py-3 rounded-xl transition-all duration-300 cursor-pointer"
-              >
-                <ShieldCheck size={14} className="text-rose-400" /> Admin Access
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* Footer */}
         <div className="border-t border-white/5 pt-4 text-center opacity-30 mt-2">
           <p className="text-white text-[9px] font-bold tracking-wider uppercase">© 2026 Rhythmix · By Kathir Junior Developer</p>
