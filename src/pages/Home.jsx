@@ -228,9 +228,9 @@ export default function Home({ search = '', activeSection = 'home' }) {
             <div className="bg-gradient-to-r from-cyan-950/30 to-violet-950/20 border border-cyan-500/10 rounded-3xl p-5 md:p-8 flex flex-col md:flex-row items-center gap-6 shadow-xl relative overflow-hidden group">
               <div className="absolute top-[-50%] right-[-10%] w-[40%] h-[150%] rounded-full bg-gradient-to-l from-cyan-500/10 to-violet-500/0 blur-[80px] pointer-events-none" />
               
-              <div className="relative w-36 h-36 md:w-40 md:h-40 rounded-2xl overflow-hidden shadow-2xl flex-shrink-0">
+              <div className="relative w-36 h-36 md:w-40 md:h-40 rounded-2xl overflow-hidden shadow-2xl flex-shrink-0 bg-white/5">
                 <img 
-                  src={newDiscovery.cover} 
+                  src={albumCovers[newDiscovery.id] || newDiscovery.cover} 
                   alt={newDiscovery.title} 
                   onError={(e) => {
                     if (newDiscovery.fallbackCover && e.target.src !== newDiscovery.fallbackCover) {
