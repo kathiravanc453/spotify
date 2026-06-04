@@ -34,7 +34,7 @@ export default function PlayerFooter() {
     currentSong, isPlaying, progress, duration, volume,
     togglePlay, playNext, playPrev, seek, changeVolume,
     favorites = [], toggleLike, activeSection, setActiveSection, stopPlayback,
-    sleepTimer, startSleepTimer, cancelSleepTimer,
+    sleepTimer, startSleepTimer, cancelSleepTimer, albumCovers = {},
   } = usePlayer();
  
   if (!currentSong || activeSection === 'now-playing') return null;
@@ -73,9 +73,9 @@ export default function PlayerFooter() {
             onClick={() => setActiveSection('now-playing')}
             className="flex items-center gap-3.5 min-w-0 flex-1 cursor-pointer hover:opacity-95 group/info"
           >
-            <div className="relative rounded-lg overflow-hidden group/thumb flex-shrink-0">
+            <div className="relative w-10 h-10 rounded-md overflow-hidden flex-shrink-0 group bg-white/5">
               <img
-                src={currentSong.cover}
+                src={albumCovers[currentSong.id] || currentSong.cover}
                 alt={currentSong.title}
                 className="w-11 h-11 md:w-12 md:h-12 object-cover shadow-md transition-transform duration-500 group-hover/thumb:scale-105"
               />

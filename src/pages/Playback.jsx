@@ -20,7 +20,7 @@ export default function Playback() {
     currentSong, isPlaying, progress, duration, volume,
     allSongs = [], favorites = [], isShuffle, setIsShuffle,
     repeatMode, setRepeatMode, playSong, togglePlay, playNext,
-    playPrev, seek, changeVolume, toggleLike, setActiveSection
+    playPrev, seek, changeVolume, toggleLike, setActiveSection, albumCovers = {}
   } = usePlayer() || {};
 
   const accent = moodAccent(currentSong?.mood);
@@ -78,7 +78,7 @@ export default function Playback() {
       <div className="absolute inset-0 overflow-hidden pointer-events-none select-none z-0">
         <div
           className="absolute inset-0 bg-cover bg-center filter blur-[120px] opacity-40 scale-150 transition-all duration-1000"
-          style={{ backgroundImage: `url(${currentSong.cover})` }}
+          style={{ backgroundImage: `url(${albumCovers[currentSong.id] || currentSong.cover})` }}
         />
         <div className="absolute inset-0 bg-gradient-to-b from-[#07070a]/40 to-[#07070a]/80" />
       </div>
@@ -113,9 +113,9 @@ export default function Playback() {
           </div>
 
           {/* Album Art container with shadow & glow */}
-          <div className="relative group w-full max-w-[240px] sm:max-w-[280px] md:max-w-none md:w-80 md:h-80 aspect-square rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl border border-white/10 mx-auto md:mx-0 flex-shrink-0 animate-in zoom-in-95 duration-500">
+          <div className="relative group w-full max-w-[240px] sm:max-w-[280px] md:max-w-none md:w-80 md:h-80 aspect-square rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl border border-white/10 mx-auto md:mx-0 flex-shrink-0 animate-in zoom-in-95 duration-500 bg-white/5">
             <img
-              src={currentSong.cover}
+              src={albumCovers[currentSong.id] || currentSong.cover}
               alt={currentSong.title}
               onError={(e) => {
                 if (currentSong.fallbackCover && e.target.src !== currentSong.fallbackCover) {
@@ -303,9 +303,9 @@ export default function Playback() {
                     onClick={() => playSong(song)}
                     className="group flex items-center gap-3 p-2 md:p-3 rounded-xl hover:bg-white/5 transition-colors cursor-pointer active:scale-[0.98] border border-transparent hover:border-white/5"
                   >
-                    <div className="relative w-10 h-10 rounded-xl overflow-hidden shadow flex-shrink-0">
+                    <div className="relative w-10 h-10 rounded-xl overflow-hidden shadow flex-shrink-0 bg-white/5">
                       <img
-                        src={song.cover}
+                        src={albumCovers[song.id] || song.cover}
                         alt={song.title}
                         onError={(e) => {
                           if (song.fallbackCover && e.target.src !== song.fallbackCover) {
@@ -337,9 +337,9 @@ export default function Playback() {
 
           {/* Related Selection Widget */}
           <div className="bg-gradient-to-tr from-cyan-950/20 to-violet-950/15 border border-cyan-500/10 rounded-3xl p-5 flex items-center gap-4 relative overflow-hidden group">
-            <div className="relative w-14 h-14 rounded-2xl overflow-hidden shadow-lg flex-shrink-0">
+            <div className="relative w-14 h-14 rounded-2xl overflow-hidden shadow-lg flex-shrink-0 bg-white/5">
               <img
-                src={currentSong.cover}
+                src={albumCovers[currentSong.id] || currentSong.cover}
                 alt={currentSong.title}
                 onError={(e) => {
                   if (currentSong.fallbackCover && e.target.src !== currentSong.fallbackCover) {

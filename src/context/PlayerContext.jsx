@@ -17,6 +17,9 @@ export function PlayerProvider({ children }) {
   const [playCounts, setPlayCounts]     = useState(() => {
     try { return JSON.parse(localStorage.getItem('rhythmix_playcounts') || '{}') || {}; } catch { return {}; }
   });
+  const [albumCovers, setAlbumCovers]   = useState(() => {
+    try { return JSON.parse(localStorage.getItem('rhythmix_album_covers') || '{}') || {}; } catch { return {}; }
+  });
 
   const [isShuffle, setIsShuffle] = useState(() => {
     try { return JSON.parse(localStorage.getItem('rhythmix_shuffle') || 'false'); } catch { return false; }
@@ -96,6 +99,54 @@ export function PlayerProvider({ children }) {
       return updated;
     });
   }, []);
+
+  // ─── iTunes Album Art Hydration Engine ────────────────────────────────────
+  useEffect(() => {
+    if (allSongs.length === 0) return;
+
+    let isSubscribed = true;
+
+    const hydrateCovers = async () => {
+      // Read current state from local storage to ensure fresh cache
+      let cachedCovers = {};
+      try { cachedCovers = JSON.parse(localStorage.getItem('rhythmix_album_covers') || '{}') || {}; } catch {}
+
+      for (const song of allSongs) {
+        if (!isSubscribed) break;
+        // Skip if we already successfully found a cover, OR if we already checked and failed (null)
+        if (cachedCovers[song.id] !== undefined) continue; 
+
+        try {
+          // Delay to respect iTunes API rate limits (~20 calls / min)
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          if (!isSubscribed) break;
+
+          const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(song.title)}&country=in&media=music&entity=song&limit=1`);
+          const data = await res.json();
+
+          let coverUrl = null;
+          if (data.results && data.results.length > 0) {
+            coverUrl = data.results[0].artworkUrl100?.replace('100x100bb.jpg', '500x500bb.jpg');
+          }
+
+          // Update cache
+          cachedCovers[song.id] = coverUrl;
+          
+          setAlbumCovers(prev => {
+            const next = { ...prev, [song.id]: coverUrl };
+            localStorage.setItem('rhythmix_album_covers', JSON.stringify(next));
+            return next;
+          });
+        } catch (err) {
+          console.error(`Failed to fetch iTunes art for ${song.title}:`, err);
+        }
+      }
+    };
+
+    hydrateCovers();
+
+    return () => { isSubscribed = false; };
+  }, [allSongs]);
 
   // ─── Play song ────────────────────────────────────────────────────────────
   const playSong = useCallback((song) => {
@@ -292,7 +343,7 @@ export function PlayerProvider({ children }) {
   return (
     <PlayerContext.Provider value={{
       currentSong, isPlaying, progress, duration, volume,
-      recentlyPlayed, allSongs, loading, favorites, playCounts,
+      recentlyPlayed, allSongs, loading, favorites, playCounts, albumCovers,
       playSong, togglePlay, playNext, playPrev, seek, changeVolume, toggleLike,
       activeSection, setActiveSection,
       isShuffle, setIsShuffle, repeatMode, setRepeatMode,

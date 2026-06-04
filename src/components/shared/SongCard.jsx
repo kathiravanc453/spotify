@@ -13,7 +13,7 @@ function formatTime(secs) {
 }
 
 export default function SongCard({ song }) {
-  const { currentSong, isPlaying, playSong, progress, duration, playCounts = {} } = usePlayer();
+  const { currentSong, isPlaying, playSong, progress, duration, playCounts = {}, albumCovers = {} } = usePlayer();
   const [showContext, setShowContext] = useState(false);
 
   const isActive = currentSong?.id === song.id;
@@ -44,9 +44,9 @@ export default function SongCard({ song }) {
           hover:-translate-y-1`}
       >
         {/* Cover */}
-        <div className="relative aspect-square rounded-xl overflow-hidden shadow-md">
+        <div className="relative aspect-square rounded-xl overflow-hidden shadow-md bg-white/5">
           <img
-            src={song.cover}
+            src={albumCovers[song.id] || song.cover}
             alt={song.title}
             onError={(e) => {
               if (song.fallbackCover && e.target.src !== song.fallbackCover) {

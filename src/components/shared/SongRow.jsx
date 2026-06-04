@@ -10,7 +10,7 @@ function formatTime(secs) {
 }
 
 export default function SongRow({ song, index }) {
-  const { currentSong, isPlaying, playSong, favorites = [], toggleLike, progress, duration } = usePlayer();
+  const { currentSong, isPlaying, playSong, favorites = [], toggleLike, progress, duration, albumCovers = {} } = usePlayer();
   const isActive = currentSong?.id === song.id;
   const isCurrentlyPlaying = isActive && isPlaying;
   const displayTitle = cleanTitle(song.title);
@@ -43,7 +43,7 @@ export default function SongRow({ song, index }) {
  
       {/* Cover thumbnail */}
       <img
-        src={song.cover}
+        src={albumCovers[song.id] || song.cover}
         alt={song.title}
         onError={(e) => {
           if (song.fallbackCover && e.target.src !== song.fallbackCover) {
