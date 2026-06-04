@@ -75,7 +75,8 @@ export default function Login({ onLogin }) {
       } else if (err.code === 'auth/too-many-requests') {
         setError('Too many attempts. Please wait a few minutes and try again.');
       } else {
-        setError('Failed to send OTP. Please try again.');
+        // Show the exact Firebase error message for debugging
+        setError(`Error: ${err.message || 'Failed to send OTP. Please try again.'}`);
       }
     } finally {
       setLoading(false);
