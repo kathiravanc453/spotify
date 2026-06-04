@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { usePlayer } from '../context/PlayerContext';
-import { Upload, Music, Image, CheckCircle, AlertCircle, X, Plus, Loader2, TrendingUp, Star, Download } from 'lucide-react';
+import { Upload, Music, Image, CheckCircle, AlertCircle, X, Plus, Loader2, TrendingUp, Star, Download, LogOut } from 'lucide-react';
+import AdminPhoneLogin from './AdminPhoneLogin';
 
 const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/cloudinary/auto/upload';
 const CLOUDINARY_PRESET = 'j4mjnnll';
@@ -54,6 +55,25 @@ function DropZone({ label, accept, icon: Icon, file, onFile, color, type }) {
 
 export default function AdminUpload() {
   const { allSongs, refreshSongs } = usePlayer();
+
+  // ── Firebase Phone Auth gate ──────────────────────────────────────────
+  const [adminSession, setAdminSession] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('rhythmix_admin_session') || 'null'); } catch { return null; }
+  });
+
+  const handleAdminVerified = (session) => setAdminSession(session);
+
+  const handleAdminLogout = () => {
+    localStorage.removeItem('rhythmix_admin_session');
+    setAdminSession(null);
+  };
+
+  // Show phone OTP login if not authenticated as admin
+  if (!adminSession || adminSession.role !== 'admin') {
+    return <AdminPhoneLogin onAdminVerified={handleAdminVerified} />;
+  }
+  // ─────────────────────────────────────────────────────────────────────
+
   const [audioFile, setAudioFile] = useState(null);
   const [coverFile, setCoverFile] = useState(null);
   const [form, setForm] = useState({
@@ -177,10 +197,23 @@ export default function AdminUpload() {
 
   return (
     <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-white text-3xl font-bold mb-2">Admin Dashboard</h1>
-        <p className="text-white/50 text-sm">Upload songs directly to your cloud and view app statistics.</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-white text-3xl font-bold mb-1">Admin Dashboard</h1>
+          <p className="text-white/50 text-sm">Upload songs directly to your cloud and view app statistics.</p>
+          <div className="flex items-center gap-2 mt-2">
+            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+            <span className="text-green-400 text-xs font-semibold">Verified · {adminSession?.phone}</span>
+          </div>
+        </div>
+        <button
+          onClick={handleAdminLogout}
+          className="flex items-center gap-2 bg-white/5 hover:bg-rose-500/10 border border-white/10 hover:border-rose-500/30 text-white/50 hover:text-rose-400 text-xs font-bold px-4 py-2.5 rounded-xl transition-all duration-300 cursor-pointer flex-shrink-0"
+        >
+          <LogOut size={14} /> Logout
+        </button>
       </div>
+
 
       <div className="bg-white/5 rounded-3xl border border-white/10 p-6 md:p-8 space-y-6">
         <form onSubmit={handleSubmit} className="space-y-6">
