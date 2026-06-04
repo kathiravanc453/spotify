@@ -10,7 +10,7 @@ const normalizeMood = (mood) => {
 };
 
 export default function Albums() {
-  const { allSongs = [], currentSong, isPlaying, playSong } = usePlayer() || {};
+  const { allSongs = [], currentSong, isPlaying, playSong, albumCovers = {} } = usePlayer() || {};
   const [selectedAlbumName, setSelectedAlbumName] = useState(null);
   const [selectedMoodName, setSelectedMoodName] = useState(null);
   const [activeMoodFilter, setActiveMoodFilter] = useState('All');
@@ -26,6 +26,8 @@ export default function Albums() {
         grouped[albumName] = {
           name: albumName,
           artist: song.artist && song.artist !== 'Cloud Artist' ? song.artist : 'Various Artists',
+          // Use the first song's real fetched cover for the album card
+          representativeSongId: song.id,
           cover: song.cover || '/favicon.svg',
           fallbackCover: song.fallbackCover,
           songs: []
@@ -47,6 +49,7 @@ export default function Albums() {
         grouped[mood] = {
           name: mood,
           artist: 'Various Artists',
+          representativeSongId: song.id,
           cover: song.cover,
           fallbackCover: song.fallbackCover,
           songs: []
@@ -109,9 +112,9 @@ export default function Albums() {
 
         {/* Dynamic Header Block */}
         <div className="flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-8 pb-6 border-b border-white/5">
-          <div className="relative group w-48 h-48 md:w-56 md:h-56 rounded-3xl overflow-hidden shadow-2xl border border-white/5 flex-shrink-0">
+          <div className="relative group w-48 h-48 md:w-56 md:h-56 rounded-3xl overflow-hidden shadow-2xl border border-white/5 flex-shrink-0 bg-white/5">
             <img
-              src={selectedCollection.cover}
+              src={albumCovers[selectedCollection.representativeSongId] || selectedCollection.cover}
               alt={selectedCollection.name}
               onError={(e) => {
                 if (selectedCollection.fallbackCover && e.target.src !== selectedCollection.fallbackCover) {
@@ -248,9 +251,9 @@ export default function Albums() {
               className="group flex flex-col text-left w-full bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 hover:border-white/10 p-4 rounded-3xl transition-all duration-350 cursor-pointer"
             >
               {/* Cover wrapper with CD overlay effect */}
-              <div className="relative aspect-square w-full rounded-2xl overflow-hidden mb-4 shadow-lg shadow-black/25">
+              <div className="relative aspect-square w-full rounded-2xl overflow-hidden mb-4 shadow-lg shadow-black/25 bg-white/5">
                 <img
-                  src={item.cover}
+                  src={albumCovers[item.representativeSongId] || item.cover}
                   alt={item.name}
                   onError={(e) => {
                     if (item.fallbackCover && e.target.src !== item.fallbackCover) {
