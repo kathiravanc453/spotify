@@ -43,6 +43,10 @@ const cleanSearchTerm = (title) => {
   });
   term = term.replace(/\s{2,}/g, ' ').trim();
   term = term.replace(/^[-\s]+|[-\s]+$/g, '');
+  
+  // Strip Cloudinary random 6-character suffix (e.g. mb5woo) if it exists at the end of the filename
+  term = term.replace(/\s+[a-z0-9]{6}$/i, '').trim();
+  
   return term || title;
 };
 

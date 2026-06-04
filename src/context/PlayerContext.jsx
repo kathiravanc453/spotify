@@ -18,7 +18,7 @@ export function PlayerProvider({ children }) {
     try { return JSON.parse(localStorage.getItem('rhythmix_playcounts') || '{}') || {}; } catch { return {}; }
   });
   const [albumCovers, setAlbumCovers]   = useState(() => {
-    try { return JSON.parse(localStorage.getItem('rhythmix_album_covers') || '{}') || {}; } catch { return {}; }
+    try { return JSON.parse(localStorage.getItem('rhythmix_album_covers_v2') || '{}') || {}; } catch { return {}; }
   });
 
   const [isShuffle, setIsShuffle] = useState(() => {
@@ -109,7 +109,7 @@ export function PlayerProvider({ children }) {
     const hydrateCovers = async () => {
       // Read current state from local storage to ensure fresh cache
       let cachedCovers = {};
-      try { cachedCovers = JSON.parse(localStorage.getItem('rhythmix_album_covers') || '{}') || {}; } catch {}
+      try { cachedCovers = JSON.parse(localStorage.getItem('rhythmix_album_covers_v2') || '{}') || {}; } catch {}
 
       for (const song of allSongs) {
         if (!isSubscribed) break;
@@ -121,12 +121,26 @@ export function PlayerProvider({ children }) {
           await new Promise(resolve => setTimeout(resolve, 1500));
           if (!isSubscribed) break;
 
-          const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(song.title)}&country=in&media=music&entity=song&limit=1`);
-          const data = await res.json();
+          let res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(song.title)}&country=in&media=music&entity=song&limit=1`);
+          let data = await res.json();
 
           let coverUrl = null;
           if (data.results && data.results.length > 0) {
             coverUrl = data.results[0].artworkUrl100?.replace('100x100bb.jpg', '500x500bb.jpg');
+          } else {
+            // Fallback: If the title is messy (contains Cloudinary hashes etc), search using only the first 3 or 4 words
+            const words = song.title.split(' ').filter(Boolean);
+            if (words.length > 2) {
+              const shortTitle = words.slice(0, 3).join(' ');
+              await new Promise(r => setTimeout(r, 1000)); // Rate limit delay
+              if (!isSubscribed) break;
+              
+              res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(shortTitle)}&country=in&media=music&entity=song&limit=1`);
+              data = await res.json();
+              if (data.results && data.results.length > 0) {
+                coverUrl = data.results[0].artworkUrl100?.replace('100x100bb.jpg', '500x500bb.jpg');
+              }
+            }
           }
 
           // Update cache
@@ -134,7 +148,7 @@ export function PlayerProvider({ children }) {
           
           setAlbumCovers(prev => {
             const next = { ...prev, [song.id]: coverUrl };
-            localStorage.setItem('rhythmix_album_covers', JSON.stringify(next));
+            localStorage.setItem('rhythmix_album_covers_v2', JSON.stringify(next));
             return next;
           });
         } catch (err) {
