@@ -15,6 +15,28 @@ const getStableId = (str) => {
   return Math.abs(hash);
 };
 
+const DEFAULT_COVERS = [
+  'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=500&q=80',
+  'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&q=80',
+  'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80',
+  'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80',
+  'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=500&q=80',
+  'https://images.unsplash.com/photo-1493225457124-a1a2a6712817?w=500&q=80',
+  'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=500&q=80',
+  'https://images.unsplash.com/photo-1458560871784-56d234015a7e?w=500&q=80',
+  'https://images.unsplash.com/photo-1516280440502-62a26c45163a?w=500&q=80',
+  'https://images.unsplash.com/photo-1621618806192-31ea3a6693a1?w=500&q=80'
+];
+
+const getDeterministicCover = (title) => {
+  let hash = 0;
+  for (let i = 0; i < title.length; i++) {
+    hash = title.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % DEFAULT_COVERS.length;
+  return DEFAULT_COVERS[index];
+};
+
 const getMoodFromFolder = (folderPath) => {
   if (!folderPath) return 'Melody';
   const segments = folderPath.split('/').filter(Boolean);
@@ -102,7 +124,7 @@ export default async function handler(req, res) {
         title,
         artist,
         src: cloud.secure_url,
-        cover: '/favicon.svg',
+        cover: getDeterministicCover(title),
         fallbackCover: '/favicon.svg',
         album: 'Cloudinary Singles',
         mood,
