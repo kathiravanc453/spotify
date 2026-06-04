@@ -51,6 +51,11 @@ export default function AdminPhoneLogin({ onAdminVerified }) {
     e.preventDefault();
     setError('');
 
+    if (!auth) {
+      setError('Firebase is not configured! Please add your VITE_FIREBASE_API_KEY in .env.local to use the OTP login.');
+      return;
+    }
+
     const fullPhone = formatPhone(phone);
 
     // Guard: only allow the registered admin number
@@ -281,6 +286,16 @@ export default function AdminPhoneLogin({ onAdminVerified }) {
               {resendTimer > 0 ? `Resend OTP in ${resendTimer}s` : 'Resend OTP'}
             </button>
           </form>
+        )}
+
+        {/* ── Dev Bypass Button ────────────────────────────────────── */}
+        {!auth && (
+          <button
+            onClick={() => onAdminVerified({ name: 'Admin', phone: 'Bypass Mode', role: 'admin' })}
+            className="w-full mt-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white/60 hover:text-white text-xs font-bold py-3 px-4 rounded-xl transition-all duration-300 active:scale-95 cursor-pointer"
+          >
+            Bypass OTP (Dev Mode)
+          </button>
         )}
 
         {/* Footer */}
