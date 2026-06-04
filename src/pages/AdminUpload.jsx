@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { usePlayer } from '../context/PlayerContext';
-import { Upload, Music, Image, CheckCircle, AlertCircle, X, Plus, Loader2, TrendingUp, Star, Download, LogOut } from 'lucide-react';
-import AdminPhoneLogin from './AdminPhoneLogin';
+import { Upload, Music, Image, CheckCircle, AlertCircle, X, Plus, Loader2, TrendingUp, Star, Download, LogOut, ShieldAlert } from 'lucide-react';
 
 const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/cloudinary/auto/upload';
 const CLOUDINARY_PRESET = 'j4mjnnll';
@@ -70,7 +69,17 @@ export default function AdminUpload() {
 
   // Show phone OTP login if not authenticated as admin
   if (!adminSession || adminSession.role !== 'admin') {
-    return <AdminPhoneLogin onAdminVerified={handleAdminVerified} />;
+    return (
+      <div className="flex flex-col items-center justify-center h-[70vh] text-center px-4 animate-in fade-in zoom-in duration-500">
+        <div className="w-20 h-20 bg-rose-500/10 rounded-full flex items-center justify-center border border-rose-500/20 shadow-lg shadow-rose-500/10 mb-6">
+          <ShieldAlert size={40} className="text-rose-500" />
+        </div>
+        <h1 className="text-white text-3xl font-extrabold tracking-tight mb-2">Access Denied</h1>
+        <p className="text-white/50 text-sm max-w-md">
+          You need an Administrator account to upload songs. Please log out and log in with the authorized admin mobile number.
+        </p>
+      </div>
+    );
   }
   // ─────────────────────────────────────────────────────────────────────
 
