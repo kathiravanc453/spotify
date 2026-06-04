@@ -73,7 +73,6 @@ export default function Playback() {
   return (
     <div
       className="relative min-h-[calc(100vh-140px)] w-full flex flex-col p-4 md:p-8 overflow-x-hidden"
-      {...swipeHandlers}
     >
       {/* Blurred background cover art */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none select-none z-0">
@@ -86,7 +85,10 @@ export default function Playback() {
 
       <div className="relative z-10 w-full max-w-5xl mx-auto md:my-auto md:bg-white/[0.02] md:border md:border-white/5 md:backdrop-blur-2xl md:rounded-3xl p-4 sm:p-6 md:p-10 flex flex-col md:flex-row gap-12 shadow-none md:shadow-2xl h-auto min-h-screen md:min-h-0">
         {/* Left Column: Playing Song Card Controls */}
-        <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left justify-between space-y-4 md:space-y-6 w-full max-w-md mx-auto md:max-w-none">
+        <div 
+          className="flex-1 flex flex-col items-center md:items-start text-center md:text-left justify-between space-y-4 md:space-y-6 w-full max-w-md mx-auto md:max-w-none"
+          {...swipeHandlers}
+        >
           {/* Back Button + Share */}
           <div className="w-full flex items-center justify-between">
             <button
