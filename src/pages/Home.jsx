@@ -174,105 +174,168 @@ export default function Home({ search = '', activeSection = 'home' }) {
       const playedIds = new Set(recentlyPlayed.map(s => s.id));
       const moodCounts = {};
       recentlyPlayed.forEach(s => {
-        if (s.mood) {
-          const m = s.mood.trim();
-          moodCounts[m] = (moodCounts[m] || 0) + 1;
-        }
+        if (s.mood) moodCounts[s.mood.trim()] = (moodCounts[s.mood.trim()] || 0) + 1;
       });
-      
-      let favoriteMood = null;
-      let maxCount = 0;
+      let favoriteMood = null, maxCount = 0;
       Object.entries(moodCounts).forEach(([mood, count]) => {
-        if (count > maxCount) {
-          maxCount = count;
-          favoriteMood = mood;
-        }
+        if (count > maxCount) { maxCount = count; favoriteMood = mood; }
       });
- 
-      let recommendedSongs = [];
-      if (favoriteMood) {
-        recommendedSongs = allSongs.filter(s => 
-          s.mood?.toLowerCase().trim() === favoriteMood.toLowerCase().trim() && 
-          !playedIds.has(s.id)
-        );
-      }
-      
-      if (recommendedSongs.length < 5) {
-        const unplayedSongs = allSongs.filter(s => !playedIds.has(s.id));
-        unplayedSongs.forEach(s => {
-          if (recommendedSongs.length < 10 && !recommendedSongs.find(r => r.id === s.id)) {
-            recommendedSongs.push(s);
-          }
+
+      // Mood-matched songs not yet played
+      let moodSongs = favoriteMood
+        ? allSongs.filter(s => s.mood?.toLowerCase().trim() === favoriteMood.toLowerCase().trim() && !playedIds.has(s.id))
+        : [];
+      if (moodSongs.length < 5) {
+        allSongs.filter(s => !playedIds.has(s.id)).forEach(s => {
+          if (moodSongs.length < 12 && !moodSongs.find(r => r.id === s.id)) moodSongs.push(s);
         });
       }
- 
-      if (recommendedSongs.length === 0) {
-        recommendedSongs = allSongs;
-      }
- 
-      const sortedSongs = [...allSongs].sort((a, b) => new Date(b.uploadedAt || 0) - new Date(a.uploadedAt || 0));
-      const newDiscovery = sortedSongs[0];
- 
+      if (moodSongs.length === 0) moodSongs = allSongs.slice(0, 12);
+
+      // New arrivals — last 7 days
+      const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+      const newArrivals = [...allSongs]
+        .sort((a,b) => new Date(b.uploadedAt||0) - new Date(a.uploadedAt||0))
+        .filter(s => new Date(s.uploadedAt||0).getTime() > sevenDaysAgo)
+        .slice(0, 10);
+
+      const featuredTrack = moodSongs[0] || allSongs[0];
+      const suggestionRow  = moodSongs.slice(1, 9);
+
+      const moodGradients = {
+        love: 'from-rose-900/70 via-pink-900/40 to-transparent',
+        melody: 'from-cyan-900/70 via-blue-900/40 to-transparent',
+        romance: 'from-fuchsia-900/70 via-rose-900/40 to-transparent',
+        vibes: 'from-amber-900/70 via-orange-900/40 to-transparent',
+        'energy boost': 'from-violet-900/70 via-indigo-900/40 to-transparent',
+      };
+      const moodGrad = moodGradients[favoriteMood?.toLowerCase()] || 'from-cyan-900/60 via-violet-900/40 to-transparent';
+
       return (
         <section className="space-y-10 animate-in fade-in duration-300">
+          {/* Header */}
           <div>
-            <h2 className="text-white text-3xl font-extrabold tracking-tight mb-2">Recommended</h2>
+            <h2 className="text-white text-3xl font-extrabold tracking-tight mb-1">Recommended</h2>
             <p className="text-white/40 text-sm font-medium">
-              {favoriteMood 
-                ? `Based on your recent love for "${favoriteMood}" music` 
+              {favoriteMood
+                ? `✨ Based on your love for "${favoriteMood}" music`
                 : 'Personalized suggestions based on your listening taste'}
             </p>
           </div>
- 
-          {newDiscovery && (
-            <div className="bg-gradient-to-r from-cyan-950/30 to-violet-950/20 border border-cyan-500/10 rounded-3xl p-5 md:p-8 flex flex-col md:flex-row items-center gap-6 shadow-xl relative overflow-hidden group">
-              <div className="absolute top-[-50%] right-[-10%] w-[40%] h-[150%] rounded-full bg-gradient-to-l from-cyan-500/10 to-violet-500/0 blur-[80px] pointer-events-none" />
-              
-              <div className="relative w-36 h-36 md:w-40 md:h-40 rounded-2xl overflow-hidden shadow-2xl flex-shrink-0 bg-white/5">
-                <img 
-                  src={albumCovers[newDiscovery.id] || newDiscovery.cover} 
-                  alt={newDiscovery.title} 
-                  onError={(e) => {
-                    if (newDiscovery.fallbackCover && e.target.src !== newDiscovery.fallbackCover) {
-                      e.target.src = newDiscovery.fallbackCover;
-                    } else {
-                      e.target.src = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500';
-                    }
-                  }}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
-                />
-              </div>
- 
-              <div className="flex-1 text-center md:text-left space-y-3 z-10">
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-violet-400 text-xs font-bold uppercase tracking-widest bg-cyan-950/40 border border-cyan-800/30 px-3 py-1 rounded-full w-fit">
-                  NEW DISCOVERY
-                </span>
-                <div>
-                  <h3 className="text-white text-2xl font-extrabold tracking-tight truncate max-w-lg">{newDiscovery.title}</h3>
-                  <p className="text-white/60 text-sm mt-1 font-semibold">{newDiscovery.artist} • <span className="text-cyan-400">{newDiscovery.mood}</span></p>
+
+          {/* ── Featured Track Hero Card ──────────────────────────────── */}
+          {featuredTrack && (
+            <div
+              className="relative rounded-3xl overflow-hidden cursor-pointer group"
+              onClick={() => playSong(featuredTrack)}
+              style={{ minHeight: '200px' }}
+            >
+              {/* Blurred background art */}
+              <div
+                className="absolute inset-0 bg-cover bg-center scale-110 transition-transform duration-[8000ms] group-hover:scale-125"
+                style={{
+                  backgroundImage: `url(${albumCovers[featuredTrack.id] || featuredTrack.cover})`,
+                  filter: 'blur(28px) brightness(0.45)'
+                }}
+              />
+              <div className={`absolute inset-0 bg-gradient-to-r ${moodGrad}`} />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#07070a]/80 via-transparent to-transparent" />
+
+              {/* Content */}
+              <div className="relative z-10 flex items-center gap-5 p-6 md:p-8">
+                {/* Album Art */}
+                <div className="relative flex-shrink-0 w-28 h-28 md:w-36 md:h-36 rounded-2xl overflow-hidden shadow-2xl border border-white/10 group-hover:scale-105 transition-transform duration-500">
+                  <img
+                    src={albumCovers[featuredTrack.id] || featuredTrack.cover}
+                    alt={featuredTrack.title}
+                    onError={e => { e.target.src = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500'; }}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Play size={28} fill="#fff" color="#fff" className="ml-1 drop-shadow-lg" />
+                  </div>
                 </div>
-                <button 
-                  onClick={() => playSong(newDiscovery)}
-                  className="px-6 py-2.5 rounded-2xl bg-gradient-to-tr from-cyan-400 to-violet-500 text-white text-sm font-bold shadow-lg shadow-cyan-500/10 hover:scale-105 active:scale-95 transition-all duration-300"
-                >
-                  Listen Now
-                </button>
+
+                {/* Text */}
+                <div className="flex-1 min-w-0">
+                  <span className="inline-block text-[10px] font-extrabold uppercase tracking-widest text-cyan-400 bg-cyan-950/60 border border-cyan-800/40 px-3 py-1 rounded-full mb-3">
+                    🎯 Featured For You
+                  </span>
+                  <h3 className="text-white text-xl md:text-3xl font-extrabold tracking-tight leading-tight truncate">
+                    {cleanTitle(featuredTrack.title)}
+                  </h3>
+                  <p className="text-white/60 text-sm font-semibold mt-1 truncate">{featuredTrack.artist}</p>
+                  {featuredTrack.mood && (
+                    <span className="mt-2 inline-block text-[10px] font-bold uppercase text-violet-400 bg-violet-950/40 border border-violet-800/20 px-2.5 py-0.5 rounded-full">
+                      {featuredTrack.mood}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           )}
- 
+
+          {/* ── Based On Your Taste — horizontal scroll ───────────────── */}
+          {suggestionRow.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-white text-lg font-bold tracking-tight">Based on Your Taste</h3>
+                <span className="text-white/30 text-xs font-semibold">{suggestionRow.length} songs</span>
+              </div>
+              <div className="flex gap-4 overflow-x-auto scroll-snap-x scrollbar-none pb-2">
+                {suggestionRow.map((song, i) => {
+                  const cover = albumCovers[song.id] || song.cover;
+                  return (
+                    <div
+                      key={song.id}
+                      onClick={() => playSong(song)}
+                      className="ripple-container flex-shrink-0 w-40 cursor-pointer group scroll-snap-x"
+                      style={{ scrollSnapAlign: 'start' }}
+                    >
+                      <div className="relative w-40 h-40 rounded-2xl overflow-hidden shadow-lg mb-2 bg-white/5">
+                        <img
+                          src={cover}
+                          alt={song.title}
+                          onError={e => { e.target.src = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500'; }}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Play size={22} fill="#fff" color="#fff" className="ml-0.5" />
+                        </div>
+                      </div>
+                      <p className="text-white text-xs font-bold truncate px-0.5">{cleanTitle(song.title)}</p>
+                      <p className="text-white/40 text-[10px] truncate px-0.5 mt-0.5">{song.artist}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ── New Arrivals (last 7 days) ────────────────────────────── */}
+          {newArrivals.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                <h3 className="text-white text-lg font-bold tracking-tight">New Arrivals</h3>
+                <span className="text-white/30 text-xs font-semibold">Last 7 days</span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
+                {newArrivals.map(song => <SongCard key={song.id} song={song} />)}
+              </div>
+            </div>
+          )}
+
+          {/* ── Made For You grid ─────────────────────────────────────── */}
           <div>
             <SectionHeader icon={Sparkles} title="Made For You" gradient="from-cyan-400 to-violet-500 shadow-cyan-500/20" />
-            
-            {recommendedSongs.length === 0 ? (
+            {moodSongs.length === 0 ? (
               <div className="text-center py-20 bg-white/[0.02] border border-white/5 rounded-3xl">
                 <p className="text-white/30 font-medium">Add some songs to Cloudinary to view recommendations!</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-6">
-                {recommendedSongs.map(song => (
-                  <SongCard key={song.id} song={song} />
-                ))}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-5">
+                {moodSongs.map(song => <SongCard key={song.id} song={song} />)}
               </div>
             )}
           </div>

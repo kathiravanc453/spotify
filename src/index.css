@@ -11,30 +11,24 @@
   --color-spotify-light: #161622;
 }
 
-/* Custom Scrollbar */
+/* ── Custom Scrollbar ───────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.08); border-radius: 9999px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
 
-/* Hide scrollbar utility */
-.scrollbar-none::-webkit-scrollbar {
-  display: none;
-}
-.scrollbar-none {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
 
-/* Glassmorphism utility */
+/* ── Glassmorphism ──────────────────────────────────────────────────────── */
 .glassmorphism {
-  background: rgba(10, 10, 15, 0.45);
+  background: rgba(10,10,15,0.45);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255,255,255,0.06);
 }
 
-/* Base styles */
+/* ── Base ───────────────────────────────────────────────────────────────── */
 body {
   background-color: #07070a;
   color: #ffffff;
@@ -42,21 +36,94 @@ body {
   font-family: 'Outfit', sans-serif;
   letter-spacing: -0.01em;
 }
-
 * { box-sizing: border-box; }
 
-/* Equalizer bars animation */
+/* ── Equalizer bars ─────────────────────────────────────────────────────── */
 @keyframes equalize {
   0%   { height: 4px; }
   50%  { height: 16px; }
   100% { height: 4px; }
 }
-.animate-equalize {
-  animation: equalize 1.2s ease-in-out infinite;
+.animate-equalize          { animation: equalize 1.2s ease-in-out infinite; }
+.animate-equalize-delayed-1{ animation: equalize 1.2s ease-in-out 0.4s infinite; }
+.animate-equalize-delayed-2{ animation: equalize 1.2s ease-in-out 0.8s infinite; }
+
+/* ── Shimmer skeleton ───────────────────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
 }
-.animate-equalize-delayed-1 {
-  animation: equalize 1.2s ease-in-out 0.4s infinite;
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.03) 25%,
+    rgba(255,255,255,0.08) 50%,
+    rgba(255,255,255,0.03) 75%
+  );
+  background-size: 200% auto;
+  animation: shimmer 1.8s linear infinite;
 }
-.animate-equalize-delayed-2 {
-  animation: equalize 1.2s ease-in-out 0.8s infinite;
+
+/* ── Card hover lift ────────────────────────────────────────────────────── */
+.card-hover-lift {
+  transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.35s ease;
 }
+.card-hover-lift:hover {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 24px 48px rgba(0,0,0,0.5);
+}
+
+/* ── Stagger entrance ───────────────────────────────────────────────────── */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.stagger-item {
+  opacity: 0;
+  animation: fadeSlideUp 0.5s cubic-bezier(0.22,1,0.36,1) forwards;
+}
+.stagger-item:nth-child(1)  { animation-delay: 0.05s; }
+.stagger-item:nth-child(2)  { animation-delay: 0.10s; }
+.stagger-item:nth-child(3)  { animation-delay: 0.15s; }
+.stagger-item:nth-child(4)  { animation-delay: 0.20s; }
+.stagger-item:nth-child(5)  { animation-delay: 0.25s; }
+.stagger-item:nth-child(6)  { animation-delay: 0.30s; }
+.stagger-item:nth-child(7)  { animation-delay: 0.35s; }
+.stagger-item:nth-child(8)  { animation-delay: 0.40s; }
+.stagger-item:nth-child(9)  { animation-delay: 0.45s; }
+.stagger-item:nth-child(10) { animation-delay: 0.50s; }
+.stagger-item:nth-child(n+11){ animation-delay: 0.55s; }
+
+/* ── Float (cover art breathing) ───────────────────────────────────────── */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-6px); }
+}
+.animate-float { animation: float 4s ease-in-out infinite; }
+
+/* ── Ripple on tap ──────────────────────────────────────────────────────── */
+.ripple-container { position: relative; overflow: hidden; }
+.ripple-container::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+.ripple-container:active::after { opacity: 1; transition: opacity 0s; }
+
+/* ── Glow ring on active song ───────────────────────────────────────────── */
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(6,182,212,0); }
+  50%       { box-shadow: 0 0 0 6px rgba(6,182,212,0.2); }
+}
+.active-glow { animation: glowPulse 2s ease-in-out infinite; }
+
+/* ── Horizontal scroll snap ─────────────────────────────────────────────── */
+.scroll-snap-x {
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+.scroll-snap-x > * { scroll-snap-align: start; }
