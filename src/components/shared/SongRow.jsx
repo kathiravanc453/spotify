@@ -10,10 +10,13 @@ function formatTime(secs) {
 }
 
 export default function SongRow({ song, index }) {
-  const { currentSong, isPlaying, playSong, favorites = [], toggleLike } = usePlayer();
+  const { currentSong, isPlaying, playSong, favorites = [], toggleLike, progress, duration } = usePlayer();
   const isActive = currentSong?.id === song.id;
   const isCurrentlyPlaying = isActive && isPlaying;
   const displayTitle = cleanTitle(song.title);
+  
+  // Show live progress if playing, otherwise show total duration (use live duration if active, fallback to metadata)
+  const timeToShow = isCurrentlyPlaying ? progress : (isActive && duration ? duration : song.duration);
 
   return (
     <div
@@ -77,10 +80,11 @@ export default function SongRow({ song, index }) {
         />
       </button>
 
-      {/* Duration */}
-      <p className="text-white/30 text-xs flex-shrink-0 flex items-center gap-1.5 font-semibold">
-        <Clock3 size={11} className="text-white/20" />
-        {formatTime(song.duration)}
+      {/* Duration / Live Progress */}
+      <p className="text-white/30 text-xs flex-shrink-0 flex items-center gap-1.5 font-semibold w-12 justify-end">
+        {!isCurrentlyPlaying && <Clock3 size={11} className="text-white/20" />}
+        {isCurrentlyPlaying && <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse mr-0.5"></span>}
+        {formatTime(timeToShow)}
       </p>
     </div>
   );

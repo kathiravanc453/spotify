@@ -107,7 +107,8 @@ export default async function handler(req, res) {
         album: 'Cloudinary Singles',
         mood,
         genre: 'Tamil',
-        uploadedAt: cloud.created_at
+        uploadedAt: cloud.created_at,
+        duration: cloud.duration || 0
       };
     });
 

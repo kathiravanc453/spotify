@@ -13,13 +13,18 @@ function formatTime(secs) {
 }
 
 export default function SongCard({ song }) {
-  const { currentSong, isPlaying, playSong, playCounts = {} } = usePlayer();
+  const { currentSong, isPlaying, playSong, progress, duration, playCounts = {} } = usePlayer();
   const [showContext, setShowContext] = useState(false);
 
   const isActive = currentSong?.id === song.id;
   const isCurrentlyPlaying = isActive && isPlaying;
   const accent = moodAccent(song.mood);
+  
+  // Clean the title for display
   const displayTitle = cleanTitle(song.title);
+  
+  // Show live progress if playing, otherwise show total duration (use live duration if active, fallback to metadata)
+  const timeToShow = isCurrentlyPlaying ? progress : (isActive && duration ? duration : song.duration);
   const playCount = playCounts[song.id] || 0;
 
   // Long-press opens context menu on mobile
@@ -83,8 +88,11 @@ export default function SongCard({ song }) {
             {displayTitle}
           </p>
           <p className="text-white/50 text-xs truncate mt-0.5 font-medium">{song.artist}</p>
-          <div className="flex items-center justify-between mt-1.5">
-            <p className="text-white/20 text-xs font-semibold">{formatTime(song.duration)}</p>
+          <div className="flex items-center justify-between mt-1.5 flex-shrink-0">
+            <p className="text-white/20 text-[10px] sm:text-xs font-semibold tracking-wider flex items-center gap-1.5 min-w-[36px]">
+              {isCurrentlyPlaying && <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse mr-0.5"></span>}
+              {formatTime(timeToShow)}
+            </p>
             {playCount > 0 && (
               <span className="text-[9px] text-white/25 font-bold">{playCount} plays</span>
             )}
