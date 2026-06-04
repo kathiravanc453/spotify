@@ -32,7 +32,7 @@ function SectionHeader({ icon: Icon, title, gradient }) {
 }
 
 export default function Home({ search = '', activeSection = 'home' }) {
-  const { recentlyPlayed = [], allSongs = [], loading = false, playSong, currentSong } = usePlayer() || {};
+  const { recentlyPlayed = [], allSongs = [], loading = false, playSong, currentSong, playCounts = {}, albumCovers = {} } = usePlayer() || {};
   const [selectedMood, setSelectedMood] = useState(null);
   const [moodSearch, setMoodSearch] = useState('');
 
@@ -50,6 +50,16 @@ export default function Home({ search = '', activeSection = 'home' }) {
   }, [selectedMood, allSongs, moodSearch]);
  
   const trending = useMemo(() => allSongs.filter(s => s?.trending), [allSongs]);
+
+  // The real "Top Play" — the song with the highest play count, falls back to first song
+  const topSong = useMemo(() => {
+    if (allSongs.length === 0) return null;
+    const withCounts = allSongs.filter(s => (playCounts[s.id] || 0) > 0);
+    if (withCounts.length === 0) return allSongs[0];
+    return withCounts.reduce((best, s) =>
+      (playCounts[s.id] || 0) > (playCounts[best.id] || 0) ? s : best
+    );
+  }, [allSongs, playCounts]);
  
   if (loading && allSongs.length === 0) {
     return (
@@ -273,14 +283,22 @@ export default function Home({ search = '', activeSection = 'home' }) {
     // Default Home view
     return (
       <>
-        {allSongs[0] && (
-          <div className="relative rounded-3xl overflow-hidden h-48 md:h-64 shadow-2xl border border-white/5 group/banner">
-            <div className="absolute inset-0 bg-cover bg-center transition-transform duration-[10000ms] group-hover/banner:scale-105" style={{ backgroundImage: `url(${allSongs[0]?.cover}), url(${allSongs[0]?.fallbackCover})`, filter: 'blur(1px) brightness-0.35)' }} />
+        {topSong && (
+          <div
+            className="relative rounded-3xl overflow-hidden h-48 md:h-64 shadow-2xl border border-white/5 group/banner cursor-pointer"
+            onClick={() => playSong(topSong)}
+          >
+            <div
+              className="absolute inset-0 bg-cover bg-center transition-transform duration-[10000ms] group-hover/banner:scale-105"
+              style={{ backgroundImage: `url(${albumCovers[topSong.id] || topSong.cover}), url(${topSong.fallbackCover})`, filter: 'blur(1px) brightness(0.35)' }}
+            />
             <div className="absolute inset-0 bg-gradient-to-r from-[#07070a] via-[#07070a]/60 to-transparent" />
             <div className="relative z-10 flex flex-col justify-end h-full p-6 md:p-10">
-              <span className="text-cyan-400 text-xs font-bold uppercase tracking-widest mb-2 bg-cyan-950/40 border border-cyan-800/30 px-3 py-1 rounded-full w-fit">Top Play</span>
-              <h1 className="text-white text-3xl md:text-5xl font-extrabold leading-tight tracking-tight">{allSongs[0]?.title}</h1>
-              <p className="text-white/70 text-sm md:text-base mt-2 font-medium">{allSongs[0]?.artist}</p>
+              <span className="text-cyan-400 text-xs font-bold uppercase tracking-widest mb-2 bg-cyan-950/40 border border-cyan-800/30 px-3 py-1 rounded-full w-fit">
+                🔥 Top Play{playCounts[topSong.id] ? ` · ${playCounts[topSong.id]} plays` : ''}
+              </span>
+              <h1 className="text-white text-3xl md:text-5xl font-extrabold leading-tight tracking-tight">{topSong.title}</h1>
+              <p className="text-white/70 text-sm md:text-base mt-2 font-medium">{topSong.artist}</p>
             </div>
           </div>
         )}
