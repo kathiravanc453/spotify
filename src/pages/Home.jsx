@@ -3,7 +3,8 @@ import { usePlayer } from '../context/PlayerContext';
 import SongCard from '../components/shared/SongCard';
 import SongRow from '../components/shared/SongRow';
 import { SongCardSkeleton, SongRowSkeleton } from '../components/ui/Skeleton';
-import { TrendingUp, Star, Clock, Music, Loader2, Music2, Heart, Zap, Coffee, Sparkles, Search, X } from 'lucide-react';
+import { TrendingUp, Star, Clock, Music, Loader2, Music2, Heart, Zap, Coffee, Sparkles, Search, X, Play } from 'lucide-react';
+import { cleanTitle } from '../utils/cleanTitle';
 
 // YOUR 5 MASTER CATEGORIES
 const MASTER_MOODS = ['love', 'melody', 'romance', 'vibes', 'energy boost'];

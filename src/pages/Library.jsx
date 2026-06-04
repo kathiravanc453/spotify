@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { usePlayer } from '../context/PlayerContext';
 import SongCard from '../components/shared/SongCard';
 import SongRow from '../components/shared/SongRow';
-import { Heart, Zap, Coffee, Sparkles, Music2, ChevronLeft, Music, Search, X } from 'lucide-react';
+import { Heart, Zap, Coffee, Sparkles, Music2, ChevronLeft, Music, Search, X, Play } from 'lucide-react';
 
 const MASTER_MOODS = ['love', 'melody', 'romance', 'vibes', 'energy boost'];
 
