@@ -75,8 +75,9 @@ export default function Login({ onLogin }) {
       } else if (err.code === 'auth/too-many-requests') {
         setError('Too many attempts. Please wait a few minutes and try again.');
       } else {
-        // Show the exact Firebase error message for debugging
-        setError(`Error: ${err.message || 'Failed to send OTP. Please try again.'}`);
+        // Show the exact Firebase error message for debugging, PLUS the key it tried to use
+        const currentKey = import.meta.env.VITE_FIREBASE_API_KEY || 'EMPTY/UNDEFINED';
+        setError(`Error: ${err.message || 'Failed to send OTP.'} (Key used: ${currentKey})`);
       }
     } finally {
       setLoading(false);
