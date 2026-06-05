@@ -65,12 +65,13 @@ export default async function handler(req, res) {
       .expression('resource_type:video')
       .with_field('tags')
       .with_field('context')
+      .sort_by('created_at', 'desc')  // newest uploads first
       .max_results(500)
       .execute();
 
     const cloudSongs = result.resources
       .filter(r => r.format === 'mp3' || r.format === 'm4a')
-      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()); // newest first
 
     const mappedSongs = cloudSongs.map(cloud => {
       let folderMood = null;
