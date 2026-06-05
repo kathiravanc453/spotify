@@ -106,33 +106,55 @@ export function PlayerProvider({ children, user }) {
 
     let isSubscribed = true;
 
+    // Generic fallbacks we want to REPLACE with a real album art
+    const GENERIC_COVERS = [
+      '/favicon.svg',
+      'https://images.unsplash.com/photo-1493225457124-a1a2a5d5facf?w=500',
+    ];
+
+    const needsArtwork = (song) => {
+      if (!song.cover) return true;
+      return GENERIC_COVERS.some(g => song.cover === g);
+    };
+
     const hydrateCovers = async () => {
-      // Read current cache (v3 = clean slate so all songs retry with new backend)
+      // v4 cache — fresh start so songs that previously returned null get retried
       let cachedCovers = {};
-      try { cachedCovers = JSON.parse(localStorage.getItem('rhythmix_album_covers_v3') || '{}') || {}; } catch {}
+      try { cachedCovers = JSON.parse(localStorage.getItem('rhythmix_album_covers_v4') || '{}') || {}; } catch {}
 
       for (const song of allSongs) {
         if (!isSubscribed) break;
-        // Skip if already cached (even if null — means we already tried)
-        if (cachedCovers[song.id] !== undefined) continue;
+
+        // If the song already has a real custom cover, use it directly — no API call needed
+        if (!needsArtwork(song) && cachedCovers[song.id] === undefined) {
+          cachedCovers[song.id] = song.cover;
+          setAlbumCovers(prev => {
+            const next = { ...prev, [song.id]: song.cover };
+            localStorage.setItem('rhythmix_album_covers_v4', JSON.stringify(next));
+            return next;
+          });
+          continue;
+        }
+
+        // Skip if already searched and got a real result
+        if (cachedCovers[song.id] && !GENERIC_COVERS.includes(cachedCovers[song.id])) continue;
 
         try {
           // Small stagger so we don't fire 100 requests at once
-          await new Promise(r => setTimeout(r, 400));
+          await new Promise(r => setTimeout(r, 350));
           if (!isSubscribed) break;
 
-          // Call our own Vercel serverless function — it handles iTunes + Deezer search
+          // Call Vercel serverless — searches iTunes first, then Deezer
           const params = new URLSearchParams({ title: song.title, artist: song.artist || '' });
           const res = await fetch(`/api/artwork?${params}`);
           const data = await res.json();
-          const coverUrl = data.coverUrl || null;
+          // If API found something use it, else keep the existing cover (may be generic)
+          const coverUrl = data.coverUrl || song.cover || null;
 
-          // Update cache
           cachedCovers[song.id] = coverUrl;
-
           setAlbumCovers(prev => {
             const next = { ...prev, [song.id]: coverUrl };
-            localStorage.setItem('rhythmix_album_covers_v3', JSON.stringify(next));
+            localStorage.setItem('rhythmix_album_covers_v4', JSON.stringify(next));
             return next;
           });
         } catch (err) {
