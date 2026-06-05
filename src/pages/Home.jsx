@@ -79,10 +79,11 @@ export default function Home({ search = '', activeSection = 'home' }) {
   const maleArtistsData = useMemo(() => {
     const counts = {};
     MALE_ARTISTS.forEach(artist => {
+      const cleanName = artist.replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
       counts[artist] = { 
         count: 0, 
         name: artist, 
-        cover: artistImages[artist] || `https://ui-avatars.com/api/?name=${encodeURIComponent(artist)}&background=random&color=fff&size=500&font-size=0.33`
+        cover: artistImages[artist] || `https://ui-avatars.com/api/?name=${encodeURIComponent(cleanName)}&background=random&color=fff&size=500&font-size=0.33`
       };
     });
 
@@ -104,10 +105,11 @@ export default function Home({ search = '', activeSection = 'home' }) {
   const femaleArtistsData = useMemo(() => {
     const counts = {};
     FEMALE_ARTISTS.forEach(artist => {
+      const cleanName = artist.replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
       counts[artist] = { 
         count: 0, 
         name: artist, 
-        cover: artistImages[artist] || `https://ui-avatars.com/api/?name=${encodeURIComponent(artist)}&background=random&color=fff&size=500&font-size=0.33`
+        cover: artistImages[artist] || `https://ui-avatars.com/api/?name=${encodeURIComponent(cleanName)}&background=random&color=fff&size=500&font-size=0.33`
       };
     });
 
