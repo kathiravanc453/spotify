@@ -1,7 +1,10 @@
 {
   "version": 2,
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite",
   "functions": {
-    "api/songs.js": { "maxDuration": 30 },
+    "api/songs.js":   { "maxDuration": 30 },
     "api/artwork.js": { "maxDuration": 15 }
   },
   "rewrites": [
