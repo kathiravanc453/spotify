@@ -261,44 +261,49 @@ export function PlayerProvider({ children, user }) {
       let cachedCovers = {};
       try { cachedCovers = JSON.parse(localStorage.getItem('rhythmix_album_covers_v4') || '{}') || {}; } catch {}
 
+      // Pre-filter songs that actually need fetching
+      const songsToHydrate = [];
       for (const song of allSongs) {
-        if (!isSubscribed) break;
-
-        // If the song already has a real custom cover, use it directly — no API call needed
         if (!needsArtwork(song) && cachedCovers[song.id] === undefined) {
+          // Has real cover embedded, save to cache immediately
           cachedCovers[song.id] = song.cover;
           setAlbumCovers(prev => {
             const next = { ...prev, [song.id]: song.cover };
             localStorage.setItem('rhythmix_album_covers_v4', JSON.stringify(next));
             return next;
           });
-          continue;
+        } else if (!cachedCovers[song.id] || GENERIC_COVERS.includes(cachedCovers[song.id])) {
+          songsToHydrate.push(song);
         }
+      }
 
-        // Skip if already searched and got a real result
-        if (cachedCovers[song.id] && !GENERIC_COVERS.includes(cachedCovers[song.id])) continue;
+      // Process concurrently in batches of 8 for maximum speed without hitting rate limits
+      const BATCH_SIZE = 8;
+      for (let i = 0; i < songsToHydrate.length; i += BATCH_SIZE) {
+        if (!isSubscribed) break;
+        
+        const batch = songsToHydrate.slice(i, i + BATCH_SIZE);
+        
+        await Promise.all(batch.map(async (song) => {
+          try {
+            const params = new URLSearchParams({ title: song.title, artist: song.artist || '' });
+            const res = await fetch(`/api/artwork?${params}`);
+            const data = await res.json();
+            
+            const coverUrl = data.coverUrl || song.cover || null;
+            
+            setAlbumCovers(prev => {
+              const next = { ...prev, [song.id]: coverUrl };
+              localStorage.setItem('rhythmix_album_covers_v4', JSON.stringify(next));
+              return next;
+            });
+          } catch (err) {
+            console.error(`[Artwork] Failed for "${song.title}":`, err);
+          }
+        }));
 
-        try {
-          // Small stagger so we don't fire 100 requests at once
-          await new Promise(r => setTimeout(r, 350));
-          if (!isSubscribed) break;
-
-          // Call Vercel serverless — searches iTunes first, then Deezer
-          const params = new URLSearchParams({ title: song.title, artist: song.artist || '' });
-          const res = await fetch(`/api/artwork?${params}`);
-          const data = await res.json();
-          // If API found something use it, else keep the existing cover (may be generic)
-          const coverUrl = data.coverUrl || song.cover || null;
-
-          cachedCovers[song.id] = coverUrl;
-          setAlbumCovers(prev => {
-            const next = { ...prev, [song.id]: coverUrl };
-            localStorage.setItem('rhythmix_album_covers_v4', JSON.stringify(next));
-            return next;
-          });
-        } catch (err) {
-          console.error(`[Artwork] Failed for "${song.title}":`, err);
-        }
+        // Tiny 50ms pause between batches to prevent Vercel/iTunes API rejection
+        await new Promise(r => setTimeout(r, 50));
       }
     };
 
