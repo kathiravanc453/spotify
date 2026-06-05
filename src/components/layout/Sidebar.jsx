@@ -85,7 +85,7 @@ export default function Sidebar({ user }) {
       {/* ── Mobile: Hamburger button inside header area ───────────── */}
       <button
         id="mobile-sidebar-toggle"
-        className={`md:hidden fixed top-3.5 left-4 z-[50] w-9 h-9 rounded-xl flex items-center justify-center text-white/60 hover:text-white hover:bg-white/[0.06] transition-all duration-200 border border-white/5 ${mobileOpen ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}
+        className={`md:hidden fixed top-3.5 left-4 z-[50] w-9 h-9 rounded-xl flex items-center justify-center text-white/60 hover:text-white hover:bg-white/[0.06] transition-all duration-200 border border-white/5 ${(mobileOpen || activeSection === 'now-playing') ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}
         onClick={() => setMobileOpen(true)}
         aria-label="Open menu"
       >

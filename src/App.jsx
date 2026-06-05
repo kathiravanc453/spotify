@@ -141,31 +141,35 @@ function AppContent({ user, onLogout, onLogin }) {
         {/* Sidebar — desktop only */}
         <Sidebar user={user} />
 
-        {/* Main content area — Header always stays visible */}
+        {/* Main content area */}
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-          <Header search={search} setSearch={handleSearch} user={user} onLogout={onLogout} />
+          {activeSection !== 'now-playing' && (
+            <Header search={search} setSearch={handleSearch} user={user} onLogout={onLogout} />
+          )}
 
           {/* Pull-to-refresh indicator */}
-          <div
-            className="overflow-hidden transition-all duration-300 flex items-center justify-center"
-            style={{ height: isPulling ? '40px' : Math.min(pullY * 0.4, 40) + 'px', opacity: isPulling || pullY > 20 ? 1 : 0 }}
-          >
-            <div className={`flex items-center gap-2 text-cyan-400 text-xs font-bold ${isPulling ? 'animate-pulse' : ''}`}>
-              <div className={`w-4 h-4 border-2 border-cyan-400 border-t-transparent rounded-full ${isPulling ? 'animate-spin' : ''}`} />
-              {isPulling ? 'Syncing...' : 'Release to sync'}
+          {activeSection !== 'now-playing' && (
+            <div
+              className="overflow-hidden transition-all duration-300 flex items-center justify-center"
+              style={{ height: isPulling ? '40px' : Math.min(pullY * 0.4, 40) + 'px', opacity: isPulling || pullY > 20 ? 1 : 0 }}
+            >
+              <div className={`flex items-center gap-2 text-cyan-400 text-xs font-bold ${isPulling ? 'animate-pulse' : ''}`}>
+                <div className={`w-4 h-4 border-2 border-cyan-400 border-t-transparent rounded-full ${isPulling ? 'animate-spin' : ''}`} />
+                {isPulling ? 'Syncing...' : 'Release to sync'}
+              </div>
             </div>
-          </div>
+          )}
 
           <main 
             ref={mainRef}
-            className="flex-1 overflow-y-auto pb-[148px] md:pb-36"
+            className={`flex-1 overflow-y-auto ${activeSection === 'now-playing' ? 'pb-[60px] md:pb-0' : 'pb-[148px] md:pb-36'}`}
             style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}
             onTouchStart={onTouchStart}
             onTouchMove={onTouchMove}
             onTouchEnd={onTouchEnd}
           >
             {/* Native PWA Install Banner */}
-            {installPrompt && (
+            {installPrompt && activeSection !== 'now-playing' && (
               <div className="mx-4 md:mx-8 mt-4 mb-4 p-4 rounded-2xl bg-gradient-to-r from-cyan-900/40 to-violet-900/40 border border-cyan-500/20 shadow-lg shadow-cyan-500/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">
                 <div>
                   <h3 className="text-white font-bold text-sm">Install Rhythmix</h3>
