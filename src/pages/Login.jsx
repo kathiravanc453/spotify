@@ -1,172 +1,74 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import {
-  RecaptchaVerifier,
-  signInWithPhoneNumber,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
 } from 'firebase/auth';
 import { auth } from '../firebase';
-import { Phone, ShieldCheck, ArrowRight, Music2, Loader2, RefreshCw, Chrome } from 'lucide-react';
+import { Mail, Lock, ShieldCheck, ArrowRight, Music2, Loader2, UserPlus } from 'lucide-react';
 
-const ADMIN_PHONE = import.meta.env.VITE_ADMIN_PHONE || '';
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'admin@rhythmix.com';
 
 export default function Login({ onLogin }) {
-  const [step, setStep]               = useState('phone'); // 'phone' | 'otp'
-  const [phone, setPhone]             = useState('');
-  const [otp, setOtp]                 = useState(['', '', '', '', '', '']);
+  const [isSignUp, setIsSignUp]       = useState(false);
+  const [email, setEmail]             = useState('');
+  const [password, setPassword]       = useState('');
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState('');
-  const [resendTimer, setResendTimer] = useState(0);
-  const [confirmResult, setConfirmResult] = useState(null);
-  
-  const recaptchaRef = useRef(null);
-  const otpRefs      = useRef([]);
-  const timerRef     = useRef(null);
 
-  // Countdown timer for resend
-  useEffect(() => {
-    if (resendTimer > 0) {
-      timerRef.current = setTimeout(() => setResendTimer(t => t - 1), 1000);
-    }
-    return () => clearTimeout(timerRef.current);
-  }, [resendTimer]);
-
-  // Initialize invisible reCAPTCHA
-  const setupRecaptcha = () => {
-    if (!recaptchaRef.current) {
-      recaptchaRef.current = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        size: 'invisible',
-        callback: () => {},
-      });
-    }
-    return recaptchaRef.current;
-  };
-
-  // Format phone: user can type 10-digit Indian number, we add +91
-  const formatPhone = (raw) => {
-    const digits = raw.replace(/\D/g, '');
-    if (digits.startsWith('91') && digits.length === 12) return `+${digits}`;
-    if (digits.length === 10) return `+91${digits}`;
-    return `+${digits}`;
-  };
-
-  const handleSendOTP = async (e) => {
-    e.preventDefault();
-    setError('');
-
-    if (!auth) {
-      setError('Firebase is not configured! Please add your VITE_FIREBASE_API_KEY in .env.local to use the OTP login.');
-      return;
-    }
-
-    const fullPhone = formatPhone(phone);
-    setLoading(true);
+  const finalizeLogin = (user) => {
+    // Check if the logged-in email matches the admin email
+    const isSystemAdmin = user.email === ADMIN_EMAIL;
     
-    try {
-      const appVerifier = setupRecaptcha();
-      const result = await signInWithPhoneNumber(auth, fullPhone, appVerifier);
-      setConfirmResult(result);
-      setStep('otp');
-      setResendTimer(30);
-      setTimeout(() => otpRefs.current[0]?.focus(), 300);
-    } catch (err) {
-      console.error(err);
-      recaptchaRef.current = null;
-      if (err.code === 'auth/invalid-phone-number') {
-        setError('Invalid phone number. Please enter a valid Indian mobile number.');
-      } else if (err.code === 'auth/too-many-requests') {
-        setError('Too many attempts. Please wait a few minutes and try again.');
-      } else {
-        // Show the exact Firebase error message for debugging, PLUS the key it tried to use
-        const currentKey = import.meta.env.VITE_FIREBASE_API_KEY || 'EMPTY/UNDEFINED';
-        setError(`Error: ${err.message || 'Failed to send OTP.'} (Key used: ${currentKey})`);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+    const sessionData = {
+      name: isSystemAdmin ? 'Admin' : user.email.split('@')[0],
+      email: user.email,
+      avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.email)}`,
+      role: isSystemAdmin ? 'admin' : 'user',
+      uid: user.uid,
+    };
 
-  const handleOtpChange = (index, value) => {
-    if (!/^\d*$/.test(value)) return; // digits only
-    const newOtp = [...otp];
-    newOtp[index] = value.slice(-1); // only last char
-    setOtp(newOtp);
-    // Auto-advance
-    if (value && index < 5) otpRefs.current[index + 1]?.focus();
-    // Auto-verify when all 6 digits filled
-    if (newOtp.every(d => d !== '') && newOtp.join('').length === 6) {
-      verifyOTP(newOtp.join(''));
-    }
-  };
-
-  const handleOtpKeyDown = (index, e) => {
-    if (e.key === 'Backspace' && !otp[index] && index > 0) {
-      otpRefs.current[index - 1]?.focus();
-    }
-  };
-
-  const finalizeLogin = (sessionData) => {
     localStorage.setItem('rhythmix_session', JSON.stringify(sessionData));
     
-    // Also save to admin session if role is admin so AdminUpload works seamlessly
-    if (sessionData.role === 'admin') {
+    if (isSystemAdmin) {
       localStorage.setItem('rhythmix_admin_session', JSON.stringify(sessionData));
     }
     
     onLogin(sessionData);
   };
 
-  const verifyOTP = async (code) => {
-    if (!confirmResult) return;
+  const handleAuth = async (e) => {
+    e.preventDefault();
     setError('');
+    
+    if (!auth) {
+      setError('Firebase is not configured! Please add your VITE_FIREBASE_API_KEY in .env.local');
+      return;
+    }
+
     setLoading(true);
+    
     try {
-      const result = await confirmResult.confirm(code);
-      const user = result.user;
-      
-      const isSystemAdmin = ADMIN_PHONE && user.phoneNumber === ADMIN_PHONE;
-      
-      const session = {
-        name: isSystemAdmin ? 'Admin' : 'User',
-        phone: user.phoneNumber,
-        avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.phoneNumber)}`,
-        role: isSystemAdmin ? 'admin' : 'user',
-        uid: user.uid,
-      };
-      
-      finalizeLogin(session);
+      let result;
+      if (isSignUp) {
+        result = await createUserWithEmailAndPassword(auth, email, password);
+      } else {
+        result = await signInWithEmailAndPassword(auth, email, password);
+      }
+      finalizeLogin(result.user);
     } catch (err) {
       console.error(err);
-      setError('Incorrect OTP. Please try again.');
-      setOtp(['', '', '', '', '', '']);
-      otpRefs.current[0]?.focus();
+      if (err.code === 'auth/email-already-in-use') {
+        setError('An account with this email already exists. Please sign in.');
+      } else if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+        setError('Invalid email or password.');
+      } else if (err.code === 'auth/weak-password') {
+        setError('Password should be at least 6 characters.');
+      } else {
+        setError(`Error: ${err.message}`);
+      }
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleVerify = async (e) => {
-    e.preventDefault();
-    await verifyOTP(otp.join(''));
-  };
-
-  const handleResend = async () => {
-    if (resendTimer > 0) return;
-    setOtp(['', '', '', '', '', '']);
-    setError('');
-    setStep('phone');
-    setConfirmResult(null);
-    recaptchaRef.current = null;
-  };
-
-  // Development bypass methods
-  const handleDevBypass = (role) => {
-    const session = {
-      name: role === 'admin' ? 'Admin' : 'Demo User',
-      phone: role === 'admin' ? '+919876543210' : '+919999999999',
-      avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${role}`,
-      role: role,
-      uid: `dev_bypass_${role}`
-    };
-    finalizeLogin(session);
   };
 
   return (
@@ -174,9 +76,6 @@ export default function Login({ onLogin }) {
       {/* Animated background blobs */}
       <div className="absolute top-[-15%] left-[-15%] w-[55%] h-[55%] rounded-full bg-gradient-to-br from-cyan-500/10 to-violet-500/0 blur-[130px] pointer-events-none animate-pulse" style={{ animationDuration: '8s' }} />
       <div className="absolute bottom-[-15%] right-[-15%] w-[60%] h-[60%] rounded-full bg-gradient-to-tl from-violet-600/10 to-pink-500/0 blur-[150px] pointer-events-none animate-pulse" style={{ animationDuration: '11s' }} />
-
-      {/* Invisible reCAPTCHA anchor */}
-      <div id="recaptcha-container" />
 
       {/* Glass card */}
       <div className="relative z-10 w-full max-w-sm bg-white/[0.025] border border-white/8 backdrop-blur-2xl rounded-3xl p-7 shadow-2xl flex flex-col gap-6">
@@ -188,26 +87,8 @@ export default function Login({ onLogin }) {
           </div>
           <h1 className="text-white font-extrabold text-2xl tracking-tight mt-1">Rhythmix</h1>
           <p className="text-white/40 text-xs font-medium">
-            {step === 'phone' ? 'Enter your mobile number to log in' : 'Enter the 6-digit OTP sent to your phone'}
+            {isSignUp ? 'Create a new account' : 'Log in to your account'}
           </p>
-        </div>
-
-        {/* Step indicator */}
-        <div className="flex items-center gap-2 justify-center">
-          {['phone', 'otp'].map((s, i) => (
-            <div key={s} className="flex items-center gap-2">
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-extrabold transition-all duration-500 ${
-                step === s
-                  ? 'bg-gradient-to-tr from-cyan-400 to-violet-500 text-white shadow-md shadow-cyan-500/20'
-                  : s === 'otp' && step === 'otp'
-                    ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                    : 'bg-white/5 text-white/30 border border-white/10'
-              }`}>
-                {i + 1}
-              </div>
-              {i === 0 && <div className={`w-8 h-[2px] rounded-full transition-all duration-500 ${step === 'otp' ? 'bg-cyan-400/60' : 'bg-white/10'}`} />}
-            </div>
-          ))}
         </div>
 
         {/* Error */}
@@ -218,96 +99,73 @@ export default function Login({ onLogin }) {
           </div>
         )}
 
-        {/* ── Step 1: Phone number ─────────────────────────────────── */}
-        {step === 'phone' && (
-          <form onSubmit={handleSendOTP} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-white/50 text-[10px] font-extrabold uppercase tracking-widest pl-1">
-                Mobile Number
-              </label>
-              <div className="relative">
-                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" size={16} />
-                <div className="absolute left-11 top-1/2 -translate-y-1/2 text-white/40 text-sm font-bold border-r border-white/10 pr-2.5 mr-1">+91</div>
-                <input
-                  type="tel"
-                  placeholder="98765 43210"
-                  value={phone}
-                  onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                  maxLength={10}
-                  required
-                  autoFocus
-                  className="w-full bg-white/[0.04] hover:bg-white/[0.06] focus:bg-white/[0.07] border border-white/8 focus:border-cyan-500/50 text-white placeholder-white/20 text-sm rounded-2xl pl-24 pr-4 py-3.5 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all duration-300 font-semibold tracking-widest"
-                />
-              </div>
+        <form onSubmit={handleAuth} className="flex flex-col gap-4">
+          
+          {/* Email Input */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-white/50 text-[10px] font-extrabold uppercase tracking-widest pl-1">
+              Email Address
+            </label>
+            <div className="relative">
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" size={16} />
+              <input
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                required
+                className="w-full bg-white/[0.04] hover:bg-white/[0.06] focus:bg-white/[0.07] border border-white/8 focus:border-cyan-500/50 text-white placeholder-white/20 text-sm rounded-2xl pl-11 pr-4 py-3.5 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all duration-300 font-semibold"
+              />
             </div>
+          </div>
 
-            <button
-              type="submit"
-              disabled={loading || phone.length < 10}
-              className="w-full bg-gradient-to-tr from-cyan-400 to-violet-500 hover:from-cyan-300 hover:to-violet-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3.5 px-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/15 hover:scale-[1.02] active:scale-95 transition-all duration-300 cursor-pointer"
-            >
-              {loading
-                ? <Loader2 size={18} className="animate-spin" />
-                : <><Phone size={15} /><span>Get OTP</span><ArrowRight size={15} /></>
-              }
-            </button>
-          </form>
-        )}
-
-        {/* ── Step 2: OTP verification ─────────────────────────────── */}
-        {step === 'otp' && (
-          <form onSubmit={handleVerify} className="flex flex-col gap-5">
-            <div className="flex flex-col gap-3">
-              <label className="text-white/50 text-[10px] font-extrabold uppercase tracking-widest pl-1 text-center">
-                Enter OTP sent to +91{phone}
-              </label>
-
-              {/* 6-box OTP input */}
-              <div className="flex gap-2.5 justify-center">
-                {otp.map((digit, i) => (
-                  <input
-                    key={i}
-                    ref={el => otpRefs.current[i] = el}
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={1}
-                    value={digit}
-                    onChange={e => handleOtpChange(i, e.target.value)}
-                    onKeyDown={e => handleOtpKeyDown(i, e)}
-                    className={`w-11 h-13 text-center text-xl font-extrabold rounded-xl border transition-all duration-300 focus:outline-none bg-white/[0.05] text-white
-                      ${digit
-                        ? 'border-cyan-400/60 bg-cyan-500/10 shadow-md shadow-cyan-500/10'
-                        : 'border-white/10 focus:border-cyan-400/50 focus:bg-white/[0.08]'
-                      }`}
-                    style={{ height: '52px' }}
-                  />
-                ))}
-              </div>
+          {/* Password Input */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-white/50 text-[10px] font-extrabold uppercase tracking-widest pl-1">
+              Password
+            </label>
+            <div className="relative">
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" size={16} />
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+                minLength={6}
+                className="w-full bg-white/[0.04] hover:bg-white/[0.06] focus:bg-white/[0.07] border border-white/8 focus:border-cyan-500/50 text-white placeholder-white/20 text-sm rounded-2xl pl-11 pr-4 py-3.5 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all duration-300 font-semibold"
+              />
             </div>
+          </div>
 
-            <button
-              type="submit"
-              disabled={loading || otp.some(d => d === '')}
-              className="w-full bg-gradient-to-tr from-cyan-400 to-violet-500 hover:from-cyan-300 hover:to-violet-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3.5 px-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/15 hover:scale-[1.02] active:scale-95 transition-all duration-300 cursor-pointer"
-            >
-              {loading
-                ? <Loader2 size={18} className="animate-spin" />
-                : <><ShieldCheck size={15} /><span>Verify & Login</span></>
-              }
-            </button>
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={loading || !email || !password}
+            className="w-full bg-gradient-to-tr from-cyan-400 to-violet-500 hover:from-cyan-300 hover:to-violet-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3.5 px-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/15 hover:scale-[1.02] active:scale-95 transition-all duration-300 cursor-pointer mt-2"
+          >
+            {loading
+              ? <Loader2 size={18} className="animate-spin" />
+              : isSignUp 
+                ? <><UserPlus size={15} /><span>Sign Up</span></>
+                : <><ArrowRight size={15} /><span>Log In</span></>
+            }
+          </button>
+        </form>
 
-            {/* Resend */}
-            <button
-              type="button"
-              onClick={handleResend}
-              disabled={resendTimer > 0}
-              className="flex items-center justify-center gap-1.5 text-white/30 hover:text-white/60 text-xs font-semibold transition-colors disabled:cursor-not-allowed"
-            >
-              <RefreshCw size={12} className={resendTimer > 0 ? '' : 'hover:rotate-180 transition-transform duration-500'} />
-              {resendTimer > 0 ? `Resend OTP in ${resendTimer}s` : 'Resend OTP'}
-            </button>
-          </form>
-        )}
+        {/* Toggle Sign Up / Log In */}
+        <div className="text-center mt-2">
+          <button
+            type="button"
+            onClick={() => {
+              setIsSignUp(!isSignUp);
+              setError('');
+            }}
+            className="text-xs font-semibold text-white/40 hover:text-cyan-400 transition-colors"
+          >
+            {isSignUp ? "Already have an account? Log in" : "Don't have an account? Sign up"}
+          </button>
+        </div>
 
         {/* Footer */}
         <div className="border-t border-white/5 pt-4 text-center opacity-30 mt-2">
