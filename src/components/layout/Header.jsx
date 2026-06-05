@@ -1,9 +1,24 @@
 import { useState, useRef, useEffect } from 'react';
 import { Search, X, ChevronDown, LogOut } from 'lucide-react';
 
+function getDynamicGreeting() {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12)  return { text: 'Good morning',   emoji: '🌅' };
+  if (hour >= 12 && hour < 17) return { text: 'Good afternoon', emoji: '☀️' };
+  if (hour >= 17 && hour < 21) return { text: 'Good evening',   emoji: '👋' };
+  return                                { text: 'Good night',     emoji: '🌙' };
+}
+
 export default function Header({ search, setSearch, user, onLogout }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [greeting, setGreeting] = useState(getDynamicGreeting);
   const dropdownRef = useRef(null);
+
+  // Update greeting every minute so it stays accurate if app is left open
+  useEffect(() => {
+    const tick = setInterval(() => setGreeting(getDynamicGreeting()), 60000);
+    return () => clearInterval(tick);
+  }, []);
 
   useEffect(() => {
     const clickOutside = (e) => {
@@ -21,9 +36,9 @@ export default function Header({ search, setSearch, user, onLogout }) {
       {/* Left: spacer for mobile hamburger (hamburger is fixed positioned in Sidebar.jsx) */}
       <div className="w-10 md:hidden flex-shrink-0" />
 
-      {/* Page title — desktop only */}
+      {/* Page title — desktop only, dynamic time-based greeting */}
       <h1 className="hidden md:block text-white font-bold text-xl tracking-tight flex-shrink-0">
-        Good evening 👋
+        {greeting.text} {greeting.emoji}
       </h1>
 
       {/* Search bar */}
