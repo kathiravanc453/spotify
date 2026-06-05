@@ -257,27 +257,46 @@ export function PlayerProvider({ children, user }) {
     };
 
     const hydrateCovers = async () => {
-      // v4 cache — fresh start so songs that previously returned null get retried
-      let cachedCovers = {};
-      try { cachedCovers = JSON.parse(localStorage.getItem('rhythmix_album_covers_v4') || '{}') || {}; } catch {}
+      // New cache that stores full metadata { cover, artist, album }
+      let cachedMeta = {};
+      try { cachedMeta = JSON.parse(localStorage.getItem('rhythmix_metadata_v1') || '{}') || {}; } catch {}
 
-      // Pre-filter songs that actually need fetching
       const songsToHydrate = [];
+      let hasInstantUpdates = false;
+      const initialUpdates = {};
+
       for (const song of allSongs) {
-        if (!needsArtwork(song) && cachedCovers[song.id] === undefined) {
-          // Has real cover embedded, save to cache immediately
-          cachedCovers[song.id] = song.cover;
-          setAlbumCovers(prev => {
-            const next = { ...prev, [song.id]: song.cover };
-            localStorage.setItem('rhythmix_album_covers_v4', JSON.stringify(next));
-            return next;
-          });
-        } else if (!cachedCovers[song.id] || GENERIC_COVERS.includes(cachedCovers[song.id])) {
+        if (!isSubscribed) break;
+
+        const meta = cachedMeta[song.id];
+        const needsArt = !meta?.cover || GENERIC_COVERS.includes(meta.cover);
+        
+        // If we already have cached metadata for this song, apply it immediately
+        if (meta && (meta.artist || meta.album || !needsArt)) {
+          initialUpdates[song.id] = meta;
+          hasInstantUpdates = true;
+        }
+
+        // Only hit the API if we don't have metadata or the cover is generic
+        if (!meta || needsArt || (song.artist === 'Unknown Artist' && !meta.artist)) {
           songsToHydrate.push(song);
         }
       }
 
-      // Process concurrently in batches of 8 for maximum speed without hitting rate limits
+      // Apply cached metadata instantly before doing API calls
+      if (hasInstantUpdates) {
+        setAllSongs(prev => prev.map(s => {
+          const m = initialUpdates[s.id];
+          if (!m) return s;
+          return {
+            ...s,
+            cover: m.cover && !GENERIC_COVERS.includes(m.cover) ? m.cover : s.cover,
+            artist: m.artist && m.artist !== 'Unknown Artist' ? m.artist : s.artist,
+            album: m.album && m.album !== 'Cloudinary Singles' ? m.album : s.album
+          };
+        }));
+      }
+
       const BATCH_SIZE = 8;
       for (let i = 0; i < songsToHydrate.length; i += BATCH_SIZE) {
         if (!isSubscribed) break;
@@ -290,34 +309,32 @@ export function PlayerProvider({ children, user }) {
             const res = await fetch(`/api/artwork?${params}`);
             const data = await res.json();
             
-            const coverUrl = data.coverUrl || song.cover || null;
+            const finalCover = data.coverUrl || song.cover || null;
+            const finalArtist = data.artist && data.artist !== 'Unknown Artist' ? data.artist : null;
+            const finalAlbum = data.album && data.album !== 'Cloudinary Singles' ? data.album : null;
             
-            setAlbumCovers(prev => {
-              const next = { ...prev, [song.id]: coverUrl };
-              localStorage.setItem('rhythmix_album_covers_v4', JSON.stringify(next));
-              return next;
-            });
-
-            // Also update Artist and Album if the API found them!
-            if (data.artist || data.album) {
-              setAllSongs(prevSongs => prevSongs.map(s => {
-                if (s.id === song.id) {
-                  return {
-                    ...s,
-                    artist: data.artist && data.artist !== 'Unknown Artist' ? data.artist : s.artist,
-                    album: data.album && data.album !== 'Cloudinary Singles' ? data.album : s.album
-                  };
-                }
-                return s;
-              }));
-            }
+            // Save to local cache
+            cachedMeta[song.id] = { cover: finalCover, artist: finalArtist, album: finalAlbum };
+            localStorage.setItem('rhythmix_metadata_v1', JSON.stringify(cachedMeta));
+            
+            // Update state
+            setAllSongs(prevSongs => prevSongs.map(s => {
+              if (s.id === song.id) {
+                return {
+                  ...s,
+                  cover: finalCover && !GENERIC_COVERS.includes(finalCover) ? finalCover : s.cover,
+                  artist: finalArtist || s.artist,
+                  album: finalAlbum || s.album
+                };
+              }
+              return s;
+            }));
 
           } catch (err) {
             console.error(`[Artwork] Failed for "${song.title}":`, err);
           }
         }));
 
-        // Tiny 50ms pause between batches to prevent Vercel/iTunes API rejection
         await new Promise(r => setTimeout(r, 50));
       }
     };
