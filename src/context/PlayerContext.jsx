@@ -304,7 +304,8 @@ export function PlayerProvider({ children, user }) {
         });
       }
 
-      const BATCH_SIZE = 8;
+      // Prevent Apple Music / Deezer from rate-limiting us by fetching slower
+      const BATCH_SIZE = 3; 
       for (let i = 0; i < songsToHydrate.length; i += BATCH_SIZE) {
         if (!isSubscribed) break;
         
@@ -320,9 +321,11 @@ export function PlayerProvider({ children, user }) {
             const finalArtist = data.artist && data.artist !== 'Unknown Artist' ? data.artist : null;
             const finalAlbum = data.album && data.album !== 'Cloudinary Singles' ? data.album : null;
             
-            // Save to local cache
-            cachedMeta[song.id] = { cover: finalCover, artist: finalArtist, album: finalAlbum };
-            localStorage.setItem('rhythmix_metadata_v1', JSON.stringify(cachedMeta));
+            // Save to local cache - ONLY save if it actually found the artist/cover to prevent caching failures permanently
+            if (finalArtist || (finalCover && !GENERIC_COVERS.includes(finalCover))) {
+              cachedMeta[song.id] = { cover: finalCover, artist: finalArtist, album: finalAlbum };
+              localStorage.setItem('rhythmix_metadata_v1', JSON.stringify(cachedMeta));
+            }
             
             // Update state safely to avoid React infinite loops
             setAllSongs(prevSongs => {
@@ -348,7 +351,8 @@ export function PlayerProvider({ children, user }) {
           }
         }));
 
-        await new Promise(r => setTimeout(r, 50));
+        // Mandatory delay to prevent API IP blocking
+        await new Promise(r => setTimeout(r, 400));
       }
     };
 
