@@ -84,6 +84,8 @@ export default async function handler(req, res) {
       
       let cover = 'https://images.unsplash.com/photo-1493225457124-a1a2a5d5facf?w=500';
       let album = 'Cloudinary Singles';
+      let title = cloud.display_name || cloud.filename || 'Unknown';
+      let artist = 'Unknown Artist';
 
       try {
         if (cloud.context && cloud.context.custom) {

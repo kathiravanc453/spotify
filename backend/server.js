@@ -196,15 +196,14 @@ const syncWithCloudinary = async () => {
   
   try {
     const result = await cloudinary.search
-      .expression('resource_type:video')
-      .with_field('tags')
+      .expression('resource_type:video AND (format:mp3 OR format:m4a)')
       .with_field('context')
+      .sort_by('created_at', 'desc')
       .max_results(500)
       .execute();
 
     const cloudSongs = result.resources
-      .filter(r => r.format === 'mp3' || r.format === 'm4a')
-      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     console.log(`🎵 I found ${cloudSongs.length} songs in your Cloudinary account.`);
 
     if (cloudSongs.length > 0) {
@@ -280,24 +279,46 @@ const syncWithCloudinary = async () => {
       }
       seenCleanTitles.add(cleanName);
 
-      const artist = 'Cloud Artist';
-      const defaultCover = `https://image.pollinations.ai/prompt/${encodeURIComponent(`artistic album cover for the song "${name}" by ${artist}, high resolution music art`)}?width=512&height=512&nologo=true&seed=${getStableId(cloud.public_id)}`;
-      
-      // Check for overrides or resolve via auto-resolver
-      const songOverride = overrides[cloud.public_id];
-      let coverUrl = `https://res.cloudinary.com/dm1cwbbfg/image/upload/${cloud.public_id}.jpg`;
-      let fallbackUrl = defaultCover;
-      let albumName = 'Singles';
+      let cover = 'https://images.unsplash.com/photo-1493225457124-a1a2a5d5facf?w=500';
+      let fallbackUrl = cover;
+      let albumName = 'Cloudinary Singles';
       let songArtist = artist;
 
+      try {
+        if (cloud.context && cloud.context.custom) {
+          if (cloud.context.custom.mood) folderMood = cloud.context.custom.mood;
+          if (cloud.context.custom.cover) {
+            cover = cloud.context.custom.cover;
+            fallbackUrl = cover;
+          }
+          if (cloud.context.custom.artist) songArtist = cloud.context.custom.artist;
+          if (cloud.context.custom.title) name = cloud.context.custom.title;
+          if (cloud.context.custom.album) albumName = cloud.context.custom.album;
+        }
+      } catch (e) {}
+
+      if (name === cloud.public_id.split('/').pop().split('.')[0].replace(/_/g, ' ') || name === cloud.filename) {
+        name = cleanSearchTerm(name);
+        if (name.includes('-') && songArtist === 'Cloud Artist') {
+          const parts = name.split('-');
+          if (parts.length >= 2) {
+            songArtist = parts[0].trim();
+            name = parts.slice(1).join('-').trim();
+          }
+        }
+      }
+
+      // Check for overrides or resolve via auto-resolver if no explicit cover in context
+      const songOverride = overrides[cloud.public_id];
+
       if (songOverride) {
-        coverUrl = songOverride.cover || coverUrl;
+        cover = songOverride.cover || cover;
         fallbackUrl = songOverride.cover || fallbackUrl;
         albumName = songOverride.album || albumName;
-      } else {
+      } else if (cover === 'https://images.unsplash.com/photo-1493225457124-a1a2a5d5facf?w=500') {
         const resolved = await resolveMusicMetadata(cloud.public_id, name);
         if (resolved.cover) {
-          coverUrl = resolved.cover;
+          cover = resolved.cover;
           fallbackUrl = resolved.cover;
         }
         albumName = resolved.album || albumName;
@@ -309,7 +330,7 @@ const syncWithCloudinary = async () => {
         title: name,
         artist: songArtist,
         src: cloud.secure_url,
-        cover: coverUrl,
+        cover: cover,
         fallbackCover: fallbackUrl,
         album: albumName,
         mood: folderMood,
