@@ -45,8 +45,9 @@ export default function PlayerFooter() {
  
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 md:bottom-5 md:left-5 md:right-5 z-50 rounded-none md:rounded-2xl border border-white/10 shadow-2xl overflow-hidden transition-all duration-300 animate-in slide-in-from-bottom-5"
+      className="fixed left-0 right-0 md:left-5 md:right-5 z-50 rounded-none md:rounded-2xl border-t md:border border-white/10 shadow-2xl overflow-hidden transition-all duration-300 animate-in slide-in-from-bottom-5 md:!bottom-5"
       style={{
+        bottom: 'calc(55px + env(safe-area-inset-bottom, 0px))',
         background: 'rgba(10, 10, 15, 0.75)',
         backdropFilter: 'blur(24px)',
         WebkitBackdropFilter: 'blur(24px)',

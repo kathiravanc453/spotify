@@ -72,7 +72,7 @@ export default function Playback() {
 
   return (
     <div
-      className="relative min-h-[calc(100vh-140px)] w-full flex flex-col p-4 md:p-8 overflow-x-hidden"
+      className="relative min-h-[calc(100vh-55px)] md:min-h-[calc(100vh-140px)] pb-4 md:pb-8 w-full flex flex-col p-4 md:p-8 overflow-x-hidden"
     >
       {/* Blurred background cover art */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none select-none z-0">
