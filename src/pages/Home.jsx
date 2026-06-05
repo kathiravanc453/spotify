@@ -33,7 +33,7 @@ function SectionHeader({ icon: Icon, title, gradient }) {
 }
 
 export default function Home({ search = '', activeSection = 'home' }) {
-  const { recentlyPlayed = [], allSongs = [], loading = false, playSong, currentSong, playCounts = {}, albumCovers = {} } = usePlayer() || {};
+  const { recentlyPlayed = [], allSongs = [], loading = false, playSong, currentSong, playCounts = {}, albumCovers = {}, setActiveArtist, setActiveSection: setGlobalSection } = usePlayer() || {};
   const [selectedMood, setSelectedMood] = useState(null);
   const [moodSearch, setMoodSearch] = useState('');
 
@@ -406,20 +406,29 @@ export default function Home({ search = '', activeSection = 'home' }) {
 
         {topArtists.length > 0 && (
           <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <SectionHeader icon={Star} title="Top Artists" gradient="from-pink-500 to-rose-500 shadow-pink-500/20" />
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-white text-2xl font-bold tracking-tight">Popular artists</h2>
+              <button className="text-white/60 hover:text-white text-sm font-semibold transition-colors">Show all</button>
+            </div>
+            <div className="flex gap-6 overflow-x-auto scroll-snap-x scrollbar-none pb-4">
               {topArtists.map(artist => (
-                <div key={artist.name} className="group cursor-pointer">
-                  <div className="relative aspect-square rounded-full overflow-hidden mb-3 border border-white/10 shadow-lg group-hover:shadow-2xl transition-all duration-300 group-hover:scale-105">
+                <div 
+                  key={artist.name} 
+                  className="group cursor-pointer flex-shrink-0 w-36 sm:w-40 scroll-snap-x"
+                  style={{ scrollSnapAlign: 'start' }}
+                  onClick={() => {
+                    setActiveArtist(artist.name);
+                    setGlobalSection('artist');
+                  }}
+                >
+                  <div className="relative aspect-square rounded-full overflow-hidden mb-4 shadow-lg group-hover:shadow-2xl transition-all duration-300 group-hover:scale-[1.02]">
                     <img src={artist.cover} alt={artist.name} className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <Music2 size={24} fill="#fff" color="#fff" />
+                      <Play size={28} fill="#fff" color="#fff" className="ml-1 drop-shadow-md" />
                     </div>
                   </div>
-                  <h3 className="text-white text-sm font-bold text-center truncate px-1">{artist.name}</h3>
-                  <p className="text-white/40 text-xs text-center mt-0.5">
-                    {artist.count} {artist.count === 1 ? 'song' : 'songs'}
-                  </p>
+                  <h3 className="text-white text-base font-bold truncate px-1">{artist.name}</h3>
+                  <p className="text-white/50 text-sm truncate px-1 mt-0.5">Artist</p>
                 </div>
               ))}
             </div>

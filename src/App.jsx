@@ -10,6 +10,7 @@ import Albums from './pages/Albums';
 import Login from './pages/Login';
 import Playback from './pages/Playback';
 import AdminUpload from './pages/AdminUpload';
+import Artist from './pages/Artist';
 import ToastProvider from './components/ui/Toast';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import useMediaSession from './hooks/useMediaSession';
@@ -124,6 +125,7 @@ function AppContent({ user, onLogout, onLogin }) {
     if (activeSection === 'library' || activeSection === 'favorites') return <Library />;
     if (activeSection === 'albums')      return <Albums />;
     if (activeSection === 'now-playing') return <Playback />;
+    if (activeSection === 'artist')      return <Artist />;
     return <Home search={search} activeSection={activeSection} />;
   };
 
