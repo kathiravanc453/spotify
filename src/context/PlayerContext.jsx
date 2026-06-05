@@ -64,8 +64,9 @@ export function PlayerProvider({ children, user }) {
     } catch (e) { console.error(e); }
   }, []);
 
-  // ─── Fetch songs — FIXED: no `loading` in dep array (caused infinite loop) ─
+  // ─── Fetch songs — with direct Cloudinary fallback ───────────────────────
   const fetchSongs = useCallback(async () => {
+    // 1. Try Vercel serverless API first
     try {
       const res         = await fetch(`/api/songs?t=${Date.now()}`);
       const contentType = res.headers.get('content-type') || '';
@@ -73,18 +74,89 @@ export function PlayerProvider({ children, user }) {
         throw new Error(`Backend unavailable (${res.status})`);
       }
       const data = await res.json();
-      if (Array.isArray(data)) setAllSongs(data);
-    } catch {
-      if (!loadedRef.current) console.warn('[Rhythmix] Backend offline — using static fallback.');
-      try {
-        const mod = await import('../data/songs.json');
-        if (Array.isArray(mod.default) && mod.default.length > 0) {
-          setAllSongs(prev => prev.length === 0 ? mod.default : prev);
-        }
-      } catch {}
-    } finally {
-      if (!loadedRef.current) { loadedRef.current = true; setLoading(false); }
+      if (Array.isArray(data) && data.length > 0) {
+        setAllSongs(data);
+        if (!loadedRef.current) { loadedRef.current = true; setLoading(false); }
+        return;
+      }
+      throw new Error('API returned empty array');
+    } catch (err) {
+      console.warn('[Rhythmix] Vercel API failed:', err.message, '— trying Cloudinary direct...');
     }
+
+    // 2. Try Cloudinary REST API directly from the browser
+    try {
+      const CLOUD_NAME = 'dm1cwbbfg';
+      const API_KEY    = '969989851682274';
+      const API_SECRET = '6N9cJ9fhanGad1sj--3gssD-vCk';
+      const auth = btoa(`${API_KEY}:${API_SECRET}`);
+
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/resources/video?resource_type=video&max_results=500&type=upload`,
+        { headers: { Authorization: `Basic ${auth}` } }
+      );
+      const data = await res.json();
+      const resources = data.resources || [];
+
+      const getStableId = (str) => {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+          hash = (hash << 5) - hash + str.charCodeAt(i);
+          hash |= 0;
+        }
+        return Math.abs(hash);
+      };
+
+      const songs = resources
+        .filter(r => r.format === 'mp3' || r.format === 'm4a')
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        .map(r => {
+          let title = (r.display_name || r.public_id.split('/').pop() || 'Unknown')
+            .replace(/[-_]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .replace(/\b[a-z0-9]{6}\b$/i, '')
+            .replace(/(high quality|audio|bass boosted|mp3|m4a|128k|320k)/gi, '')
+            .replace(/\s{2,}/g, ' ').trim();
+          let artist = 'Unknown Artist';
+          if (title.includes(' - ')) {
+            const parts = title.split(' - ');
+            artist = parts[0].trim();
+            title  = parts.slice(1).join(' - ').trim();
+          }
+          return {
+            id:           getStableId(r.secure_url),
+            title,
+            artist,
+            src:          r.secure_url,
+            cover:        'https://images.unsplash.com/photo-1493225457124-a1a2a5d5facf?w=500',
+            fallbackCover:'https://images.unsplash.com/photo-1493225457124-a1a2a5d5facf?w=500',
+            album:        'Cloudinary',
+            mood:         'Melody',
+            genre:        'Tamil',
+            uploadedAt:   r.created_at,
+            duration:     r.duration || 0,
+          };
+        });
+
+      if (songs.length > 0) {
+        console.log(`[Rhythmix] Loaded ${songs.length} songs directly from Cloudinary`);
+        setAllSongs(songs);
+        if (!loadedRef.current) { loadedRef.current = true; setLoading(false); }
+        return;
+      }
+    } catch (err) {
+      console.warn('[Rhythmix] Cloudinary direct fetch failed:', err.message);
+    }
+
+    // 3. Final fallback: static songs.json
+    console.warn('[Rhythmix] Using static fallback songs.json');
+    try {
+      const mod = await import('../data/songs.json');
+      if (Array.isArray(mod.default) && mod.default.length > 0) {
+        setAllSongs(mod.default);
+      }
+    } catch {}
+    if (!loadedRef.current) { loadedRef.current = true; setLoading(false); }
   }, []); // ← empty deps: stable reference, no re-render loop
 
   useEffect(() => {
