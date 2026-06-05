@@ -62,16 +62,15 @@ export default async function handler(req, res) {
 
   try {
     const result = await cloudinary.search
-      .expression('resource_type:video')
-      .with_field('tags')
+      .expression('resource_type:video AND (format:mp3 OR format:m4a)')
       .with_field('context')
-      .sort_by('created_at', 'desc')  // newest uploads first
+      .sort_by('created_at', 'desc')
       .max_results(500)
       .execute();
 
     const cloudSongs = result.resources
-      .filter(r => r.format === 'mp3' || r.format === 'm4a')
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()); // newest first
+
 
     const mappedSongs = cloudSongs.map(cloud => {
       let folderMood = null;
