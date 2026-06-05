@@ -79,7 +79,11 @@ export default function Home({ search = '', activeSection = 'home' }) {
   const maleArtistsData = useMemo(() => {
     const counts = {};
     MALE_ARTISTS.forEach(artist => {
-      counts[artist] = { count: 0, name: artist, cover: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500' };
+      counts[artist] = { 
+        count: 0, 
+        name: artist, 
+        cover: `https://ui-avatars.com/api/?name=${encodeURIComponent(artist)}&background=random&color=fff&size=500&font-size=0.33`
+      };
     });
 
     allSongs.forEach(song => {
@@ -87,7 +91,7 @@ export default function Home({ search = '', activeSection = 'home' }) {
       const prefMatch = MALE_ARTISTS.find(p => rawName.toLowerCase().replace(/\s/g, '').includes(p.toLowerCase().replace(/\s/g, '')) || p.toLowerCase().replace(/\s/g, '').includes(rawName.toLowerCase().replace(/\s/g, '')));
       if (prefMatch) {
         counts[prefMatch].count++;
-        if (counts[prefMatch].cover === 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500' && song.cover) {
+        if (counts[prefMatch].cover.includes('ui-avatars.com') && song.cover) {
            counts[prefMatch].cover = albumCovers[song.id] || song.cover;
         }
       }
@@ -99,7 +103,11 @@ export default function Home({ search = '', activeSection = 'home' }) {
   const femaleArtistsData = useMemo(() => {
     const counts = {};
     FEMALE_ARTISTS.forEach(artist => {
-      counts[artist] = { count: 0, name: artist, cover: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500' };
+      counts[artist] = { 
+        count: 0, 
+        name: artist, 
+        cover: `https://ui-avatars.com/api/?name=${encodeURIComponent(artist)}&background=random&color=fff&size=500&font-size=0.33`
+      };
     });
 
     allSongs.forEach(song => {
@@ -107,7 +115,7 @@ export default function Home({ search = '', activeSection = 'home' }) {
       const prefMatch = FEMALE_ARTISTS.find(p => rawName.toLowerCase().replace(/\s/g, '').includes(p.toLowerCase().replace(/\s/g, '')) || p.toLowerCase().replace(/\s/g, '').includes(rawName.toLowerCase().replace(/\s/g, '')));
       if (prefMatch) {
         counts[prefMatch].count++;
-        if (counts[prefMatch].cover === 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500' && song.cover) {
+        if (counts[prefMatch].cover.includes('ui-avatars.com') && song.cover) {
            counts[prefMatch].cover = albumCovers[song.id] || song.cover;
         }
       }
