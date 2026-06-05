@@ -260,9 +260,12 @@ const syncWithCloudinary = async () => {
 
       console.log(`  > "${cloud.public_id}" detected folder: "${rawFolder || 'root'}" -> Assigned Mood: "${folderMood}"`);
 
-      let name = cloud.public_id.split('/').pop().split('.')[0].replace(/_/g, ' ');
+      let rawName = cloud.public_id.split('/').pop().split('.')[0];
+      if (/_[a-zA-Z0-9]{6}$/.test(rawName)) {
+        rawName = rawName.substring(0, rawName.length - 7);
+      }
+      let name = rawName.replace(/_/g, ' ');
       
-      // Clean title duplicate check
       const cleanName = cleanSearchTerm(name).toLowerCase();
       if (seenCleanTitles.has(cleanName)) {
         console.warn(`⚠️ [Duplicate Protection] Detected duplicate song "${name}" (ID: ${cloud.public_id}). Deleting duplicate from Cloudinary...`);
