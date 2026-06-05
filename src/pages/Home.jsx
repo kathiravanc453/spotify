@@ -412,7 +412,43 @@ export default function Home({ search = '', activeSection = 'home' }) {
         </section>
       );
     }
- 
+
+    const renderArtistCarousel = (title, artistsList) => {
+      if (!artistsList || artistsList.length === 0) return null;
+      return (
+        <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-white text-2xl font-bold tracking-tight">{title}</h2>
+            <button className="text-white/60 hover:text-white text-sm font-semibold transition-colors">Show all</button>
+          </div>
+          <div className="flex gap-4 overflow-x-auto scroll-snap-x scrollbar-none pb-4">
+            {artistsList.map(artist => (
+              <div 
+                key={artist.name} 
+                className="group cursor-pointer flex-shrink-0 w-44 sm:w-48 scroll-snap-x p-4 rounded-xl hover:bg-white/[0.08] transition-colors duration-300"
+                style={{ scrollSnapAlign: 'start' }}
+                onClick={() => {
+                  setActiveArtist(artist.name);
+                  setGlobalSection('artist');
+                }}
+              >
+                <div className="relative aspect-square rounded-full overflow-hidden mb-4 shadow-[0_8px_24px_rgba(0,0,0,0.5)]">
+                  <img src={artist.cover} alt={artist.name} className="w-full h-full object-cover" />
+                  <div className="absolute right-2 bottom-2 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 z-10">
+                    <div className="w-12 h-12 rounded-full bg-[#1db954] hover:bg-[#1ed760] hover:scale-105 flex items-center justify-center shadow-xl">
+                      <Play size={24} fill="#000" color="#000" className="ml-1" />
+                    </div>
+                  </div>
+                </div>
+                <h3 className="text-white text-base font-bold truncate">{artist.name}</h3>
+                <p className="text-[#a7a7a7] text-sm mt-1">Artist</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      );
+    };
+
     // Default Home view
     return (
       <>
@@ -453,42 +489,7 @@ export default function Home({ search = '', activeSection = 'home' }) {
             </div>
           </section>
         )}
- 
-  const renderArtistCarousel = (title, artistsList) => {
-    if (!artistsList || artistsList.length === 0) return null;
-    return (
-      <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-white text-2xl font-bold tracking-tight">{title}</h2>
-          <button className="text-white/60 hover:text-white text-sm font-semibold transition-colors">Show all</button>
-        </div>
-        <div className="flex gap-4 overflow-x-auto scroll-snap-x scrollbar-none pb-4">
-          {artistsList.map(artist => (
-            <div 
-              key={artist.name} 
-              className="group cursor-pointer flex-shrink-0 w-44 sm:w-48 scroll-snap-x p-4 rounded-xl hover:bg-white/[0.08] transition-colors duration-300"
-              style={{ scrollSnapAlign: 'start' }}
-              onClick={() => {
-                setActiveArtist(artist.name);
-                setGlobalSection('artist');
-              }}
-            >
-              <div className="relative aspect-square rounded-full overflow-hidden mb-4 shadow-[0_8px_24px_rgba(0,0,0,0.5)]">
-                <img src={artist.cover} alt={artist.name} className="w-full h-full object-cover" />
-                <div className="absolute right-2 bottom-2 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 z-10">
-                  <div className="w-12 h-12 rounded-full bg-[#1db954] hover:bg-[#1ed760] hover:scale-105 flex items-center justify-center shadow-xl">
-                    <Play size={24} fill="#000" color="#000" className="ml-1" />
-                  </div>
-                </div>
-              </div>
-              <h3 className="text-white text-base font-bold truncate">{artist.name}</h3>
-              <p className="text-[#a7a7a7] text-sm mt-1">Artist</p>
-            </div>
-          ))}
-        </div>
-      </section>
-    );
-  };
+
 
         {renderArtistCarousel('Male Artists', maleArtistsData)}
         {renderArtistCarousel('Female Artists', femaleArtistsData)}
