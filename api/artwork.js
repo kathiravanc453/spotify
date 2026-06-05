@@ -126,6 +126,14 @@ export default async function handler(req, res) {
     }
   }
 
+  // 4. Final Fallback: AI Generated Custom Cover for Rhythmix
+  if (!coverUrl) {
+    const prompt = encodeURIComponent(`Beautiful dynamic aesthetic album art for the song "${title}", vibrant colors, no text, music streaming cover`);
+    // Seed ensures the same song always gets the exact same image
+    const seed = title.length * 42; 
+    coverUrl = `https://image.pollinations.ai/prompt/${prompt}?width=600&height=600&nologo=true&seed=${seed}`;
+  }
+
   return res.status(200).json({ coverUrl });
 }
 
