@@ -198,16 +198,16 @@ function AppContent({ user, onLogout, onLogin }) {
             </div>
           </main>
         </div>
+
+        {/* Fixed bottom music player — always on top */}
+        <PlayerFooter />
+
+        {/* Mobile bottom navigation bar */}
+        <MobileNav />
+
+        {/* Global toast notifications */}
+        <ToastProvider />
       </div>
-
-      {/* Fixed bottom music player — always on top */}
-      <PlayerFooter />
-
-      {/* Mobile bottom navigation bar */}
-      <MobileNav />
-
-      {/* Global toast notifications */}
-      <ToastProvider />
 
       {/* Keyboard shortcuts hint (bottom-left, desktop only) */}
       <div className="hidden lg:flex fixed bottom-24 left-6 z-30 flex-col gap-0.5 opacity-0 hover:opacity-100 transition-opacity duration-500 group pointer-events-none">
