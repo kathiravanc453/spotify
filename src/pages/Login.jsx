@@ -1,9 +1,4 @@
 import { useState } from 'react';
-import {
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-} from 'firebase/auth';
-import { auth } from '../firebase';
 import { Mail, Lock, ShieldCheck, ArrowRight, Music2, Loader2, UserPlus } from 'lucide-react';
 
 const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'admin@rhythmix.com';
@@ -40,33 +35,36 @@ export default function Login({ onLogin }) {
   const handleAuth = async (e) => {
     e.preventDefault();
     setError('');
-    
-    if (!auth) {
-      setError('Firebase is not configured! Please add your VITE_FIREBASE_API_KEY in .env.local');
-      return;
-    }
-
     setLoading(true);
     
     try {
-      let result;
-      if (isSignUp) {
-        result = await createUserWithEmailAndPassword(auth, email, password);
-      } else {
-        result = await signInWithEmailAndPassword(auth, email, password);
+      const endpoint = isSignUp ? 'http://localhost:3001/api/register' : 'http://localhost:3001/api/login';
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: email.split('@')[0], // Use part of email as name for signup
+          email,
+          password
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Authentication failed');
       }
-      finalizeLogin(result.user);
+
+      // Convert the backend session object to match our frontend format
+      const userObj = {
+        email: data.email,
+        uid: Date.now().toString(), // Mock UID for local auth
+      };
+
+      finalizeLogin(userObj);
     } catch (err) {
       console.error(err);
-      if (err.code === 'auth/email-already-in-use') {
-        setError('An account with this email already exists. Please sign in.');
-      } else if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-        setError('Invalid email or password.');
-      } else if (err.code === 'auth/weak-password') {
-        setError('Password should be at least 6 characters.');
-      } else {
-        setError(`Error: ${err.message}`);
-      }
+      setError(`Error: ${err.message}`);
     } finally {
       setLoading(false);
     }
