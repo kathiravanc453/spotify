@@ -60,9 +60,7 @@ export default function Home({ search = '', activeSection = 'home' }) {
     return withCounts.reduce((best, s) =>
       (playCounts[s.id] || 0) > (playCounts[best.id] || 0) ? s : best
     );
-  }, [allSongs, playCounts]);
-
-  const PREFERRED_ARTISTS = [
+  }, [allSongs, playCounts]);  const MALE_ARTISTS = [
     "A.R. Rahman", "S.P. Balasubrahmanyam", "K. J. Yesudas", "T. M. Soundararajan", 
     "P. B. Srinivas", "Seerkazhi Govindarajan", "Malaysia Vasudevan", "Mano", 
     "Hariharan", "Unnikrishnan", "Srinivas", "Shankar Mahadevan", "Karthik", 
@@ -71,51 +69,68 @@ export default function Home({ search = '', activeSection = 'home' }) {
     "Javed Ali", "Sriram Parthasarathy"
   ];
 
-  const topArtists = useMemo(() => {
+  const FEMALE_ARTISTS = [
+    "P. Susheela", "S. Janaki", "K. S. Chithra", "Sujatha Mohan", "Swarnalatha", 
+    "Anuradha Sriram", "Harini", "Bombay Jayashri", "Shreya Ghoshal", "Chinmayi", 
+    "Saindhavi", "Shweta Mohan", "Andrea Jeremiah", "Jonita Gandhi", "Dhee", 
+    "Shakthisree Gopalan", "Mahalakshmi Iyer", "Shashaa Tirupati"
+  ];
+
+  const maleArtistsData = useMemo(() => {
     const counts = {};
-    
-    // 1. Force the preferred artists into the object first with 0 counts
-    PREFERRED_ARTISTS.forEach(artist => {
-      counts[artist] = { 
-        count: 0, 
-        name: artist, 
-        cover: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500' 
-      };
+    MALE_ARTISTS.forEach(artist => {
+      counts[artist] = { count: 0, name: artist, cover: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500' };
     });
 
-    // 2. Tally songs
     allSongs.forEach(song => {
       const rawName = song.artist && song.artist.trim() !== '' ? song.artist.trim() : 'Unknown Artist';
-      
-      // Check if it matches a preferred artist to merge spelling differences
-      const prefMatch = PREFERRED_ARTISTS.find(p => rawName.toLowerCase().includes(p.toLowerCase()) || p.toLowerCase().includes(rawName.toLowerCase()));
-      const artistName = prefMatch || rawName;
+      const prefMatch = MALE_ARTISTS.find(p => rawName.toLowerCase().replace(/\s/g, '').includes(p.toLowerCase().replace(/\s/g, '')) || p.toLowerCase().replace(/\s/g, '').includes(rawName.toLowerCase().replace(/\s/g, '')));
+      if (prefMatch) {
+        counts[prefMatch].count++;
+        if (counts[prefMatch].cover === 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500' && song.cover) {
+           counts[prefMatch].cover = albumCovers[song.id] || song.cover;
+        }
+      }
+    });
+    
+    return Object.values(counts).sort((a, b) => MALE_ARTISTS.indexOf(a.name) - MALE_ARTISTS.indexOf(b.name));
+  }, [allSongs, albumCovers]);
 
+  const femaleArtistsData = useMemo(() => {
+    const counts = {};
+    FEMALE_ARTISTS.forEach(artist => {
+      counts[artist] = { count: 0, name: artist, cover: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500' };
+    });
+
+    allSongs.forEach(song => {
+      const rawName = song.artist && song.artist.trim() !== '' ? song.artist.trim() : 'Unknown Artist';
+      const prefMatch = FEMALE_ARTISTS.find(p => rawName.toLowerCase().replace(/\s/g, '').includes(p.toLowerCase().replace(/\s/g, '')) || p.toLowerCase().replace(/\s/g, '').includes(rawName.toLowerCase().replace(/\s/g, '')));
+      if (prefMatch) {
+        counts[prefMatch].count++;
+        if (counts[prefMatch].cover === 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500' && song.cover) {
+           counts[prefMatch].cover = albumCovers[song.id] || song.cover;
+        }
+      }
+    });
+    
+    return Object.values(counts).sort((a, b) => FEMALE_ARTISTS.indexOf(a.name) - FEMALE_ARTISTS.indexOf(b.name));
+  }, [allSongs, albumCovers]);
+
+  const topArtists = useMemo(() => {
+    const counts = {};
+    allSongs.forEach(song => {
+      const artistName = song.artist && song.artist.trim() !== '' ? song.artist.trim() : 'Unknown Artist';
       if (!counts[artistName]) {
         counts[artistName] = { count: 0, name: artistName, cover: albumCovers[song.id] || song.cover };
       }
       counts[artistName].count++;
-      
-      // Update cover for preferred artist if they just had the fallback
-      if (counts[artistName].cover === 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500' && song.cover) {
-         counts[artistName].cover = albumCovers[song.id] || song.cover;
-      }
     });
     
-    return Object.values(counts).sort((a, b) => {
-      // Prioritize preferred list exactly in the order provided
-      const idxA = PREFERRED_ARTISTS.findIndex(p => a.name === p);
-      const idxB = PREFERRED_ARTISTS.findIndex(p => b.name === p);
-      
-      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-      if (idxA !== -1) return -1;
-      if (idxB !== -1) return 1;
-      
-      // Fallback to song count for other artists
-      return b.count - a.count;
-    });
+    return Object.values(counts)
+      .filter(artist => !MALE_ARTISTS.includes(artist.name) && !FEMALE_ARTISTS.includes(artist.name)) // Hide predefined artists from the general popular list to avoid duplication
+      .sort((a, b) => b.count - a.count);
   }, [allSongs, albumCovers]);
- 
+  
   if (loading && allSongs.length === 0) {
     return (
       <div className="p-6 md:p-8 space-y-10">
@@ -439,38 +454,45 @@ export default function Home({ search = '', activeSection = 'home' }) {
           </section>
         )}
  
-        {topArtists.length > 0 && (
-          <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-white text-2xl font-bold tracking-tight">Popular artists</h2>
-              <button className="text-white/60 hover:text-white text-sm font-semibold transition-colors">Show all</button>
-            </div>
-            <div className="flex gap-4 overflow-x-auto scroll-snap-x scrollbar-none pb-4">
-              {topArtists.map(artist => (
-                <div 
-                  key={artist.name} 
-                  className="group cursor-pointer flex-shrink-0 w-44 sm:w-48 scroll-snap-x p-4 rounded-xl hover:bg-white/[0.08] transition-colors duration-300"
-                  style={{ scrollSnapAlign: 'start' }}
-                  onClick={() => {
-                    setActiveArtist(artist.name);
-                    setGlobalSection('artist');
-                  }}
-                >
-                  <div className="relative aspect-square rounded-full overflow-hidden mb-4 shadow-[0_8px_24px_rgba(0,0,0,0.5)]">
-                    <img src={artist.cover} alt={artist.name} className="w-full h-full object-cover" />
-                    <div className="absolute right-2 bottom-2 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 z-10">
-                      <div className="w-12 h-12 rounded-full bg-[#1db954] hover:bg-[#1ed760] hover:scale-105 flex items-center justify-center shadow-xl">
-                        <Play size={24} fill="#000" color="#000" className="ml-1" />
-                      </div>
-                    </div>
+  const renderArtistCarousel = (title, artistsList) => {
+    if (!artistsList || artistsList.length === 0) return null;
+    return (
+      <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-white text-2xl font-bold tracking-tight">{title}</h2>
+          <button className="text-white/60 hover:text-white text-sm font-semibold transition-colors">Show all</button>
+        </div>
+        <div className="flex gap-4 overflow-x-auto scroll-snap-x scrollbar-none pb-4">
+          {artistsList.map(artist => (
+            <div 
+              key={artist.name} 
+              className="group cursor-pointer flex-shrink-0 w-44 sm:w-48 scroll-snap-x p-4 rounded-xl hover:bg-white/[0.08] transition-colors duration-300"
+              style={{ scrollSnapAlign: 'start' }}
+              onClick={() => {
+                setActiveArtist(artist.name);
+                setGlobalSection('artist');
+              }}
+            >
+              <div className="relative aspect-square rounded-full overflow-hidden mb-4 shadow-[0_8px_24px_rgba(0,0,0,0.5)]">
+                <img src={artist.cover} alt={artist.name} className="w-full h-full object-cover" />
+                <div className="absolute right-2 bottom-2 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 z-10">
+                  <div className="w-12 h-12 rounded-full bg-[#1db954] hover:bg-[#1ed760] hover:scale-105 flex items-center justify-center shadow-xl">
+                    <Play size={24} fill="#000" color="#000" className="ml-1" />
                   </div>
-                  <h3 className="text-white text-base font-bold truncate">{artist.name}</h3>
-                  <p className="text-[#a7a7a7] text-sm mt-1">Artist</p>
                 </div>
-              ))}
+              </div>
+              <h3 className="text-white text-base font-bold truncate">{artist.name}</h3>
+              <p className="text-[#a7a7a7] text-sm mt-1">Artist</p>
             </div>
-          </section>
-        )}
+          ))}
+        </div>
+      </section>
+    );
+  };
+
+        {renderArtistCarousel('Male Artists', maleArtistsData)}
+        {renderArtistCarousel('Female Artists', femaleArtistsData)}
+        {renderArtistCarousel('Popular Artists', topArtists)}
 
         <section>
           <SectionHeader icon={Music} title="Your Library" gradient="from-violet-500 to-fuchsia-500 shadow-violet-500/20" />
