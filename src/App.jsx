@@ -241,6 +241,7 @@ export default function App() {
 
   const handleLogout = () => {
     localStorage.removeItem('rhythmix_session');
+    localStorage.removeItem('rhythmix_admin_session');
     setUser(null);
   };
 
