@@ -160,7 +160,74 @@ export function PlayerProvider({ children, user }) {
   }, []); // ← empty deps: stable reference, no re-render loop
 
   useEffect(() => {
+    // Initial load
     fetchSongs();
+
+    // 🔄 Auto-refresh every 30 seconds — new Cloudinary uploads appear automatically
+    const poll = setInterval(async () => {
+      try {
+        const CLOUD_NAME = 'dm1cwbbfg';
+        const API_KEY    = '969989851682274';
+        const API_SECRET = '6N9cJ9fhanGad1sj--3gssD-vCk';
+        const auth = btoa(`${API_KEY}:${API_SECRET}`);
+
+        const res = await fetch(
+          `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/resources/video?resource_type=video&max_results=500&type=upload`,
+          { headers: { Authorization: `Basic ${auth}` } }
+        );
+        const data = await res.json();
+        const resources = data.resources || [];
+
+        const getStableId = (str) => {
+          let hash = 0;
+          for (let i = 0; i < str.length; i++) {
+            hash = (hash << 5) - hash + str.charCodeAt(i);
+            hash |= 0;
+          }
+          return Math.abs(hash);
+        };
+
+        const freshSongs = resources
+          .filter(r => r.format === 'mp3' || r.format === 'm4a')
+          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+          .map(r => {
+            let title = (r.display_name || r.public_id.split('/').pop() || 'Unknown')
+              .replace(/[-_]/g, ' ')
+              .replace(/\s+/g, ' ')
+              .replace(/\b[a-z0-9]{6}\b$/i, '')
+              .replace(/(high quality|audio|bass boosted|mp3|m4a|128k|320k)/gi, '')
+              .replace(/\s{2,}/g, ' ').trim();
+            let artist = 'Unknown Artist';
+            if (title.includes(' - ')) {
+              const parts = title.split(' - ');
+              artist = parts[0].trim();
+              title  = parts.slice(1).join(' - ').trim();
+            }
+            return {
+              id: getStableId(r.secure_url), title, artist, src: r.secure_url,
+              cover: 'https://images.unsplash.com/photo-1493225457124-a1a2a5d5facf?w=500',
+              fallbackCover: 'https://images.unsplash.com/photo-1493225457124-a1a2a5d5facf?w=500',
+              album: 'Cloudinary', mood: 'Melody', genre: 'Tamil',
+              uploadedAt: r.created_at, duration: r.duration || 0,
+            };
+          });
+
+        if (freshSongs.length > 0) {
+          setAllSongs(prev => {
+            // Only update if we have new songs (avoids unnecessary re-renders)
+            if (freshSongs.length !== prev.length) {
+              console.log(`[Rhythmix] 🔄 Auto-synced: ${freshSongs.length} songs (was ${prev.length})`);
+              return freshSongs;
+            }
+            return prev;
+          });
+        }
+      } catch (err) {
+        // Silently ignore poll errors — don't disrupt the user
+      }
+    }, 30000); // every 30 seconds
+
+    return () => clearInterval(poll);
   }, [fetchSongs]);
 
   // ─── Play count tracking ──────────────────────────────────────────────────
