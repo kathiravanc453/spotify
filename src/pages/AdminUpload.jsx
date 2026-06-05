@@ -2,9 +2,9 @@ import { useState, useCallback, useEffect } from 'react';
 import { usePlayer } from '../context/PlayerContext';
 import { Upload, Music, Image, CheckCircle, AlertCircle, X, Plus, Loader2, TrendingUp, Star, Download, LogOut, ShieldAlert } from 'lucide-react';
 
-const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/cloudinary/auto/upload';
+const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dm1cwbbfg/auto/upload';
 const CLOUDINARY_PRESET = 'j4mjnnll';
-const API_BASE = '/api'; // Handled by Vite proxy
+const API_BASE = '/api';
 
 function DropZone({ label, accept, icon: Icon, file, onFile, color, type }) {
   const [dragging, setDragging] = useState(false);
