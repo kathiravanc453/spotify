@@ -55,19 +55,17 @@ function DropZone({ label, accept, icon: Icon, file, onFile, color, type }) {
 export default function AdminUpload() {
   const { allSongs, refreshSongs } = usePlayer();
 
-  // ── Firebase Phone Auth gate ──────────────────────────────────────────
-  const [adminSession, setAdminSession] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('rhythmix_admin_session') || 'null'); } catch { return null; }
-  });
-
-  const handleAdminVerified = (session) => setAdminSession(session);
+  // ── Email Auth gate — reads from main rhythmix_session ──────────────────
+  const adminSession = (() => {
+    try { return JSON.parse(localStorage.getItem('rhythmix_session') || 'null'); } catch { return null; }
+  })();
 
   const handleAdminLogout = () => {
-    localStorage.removeItem('rhythmix_admin_session');
-    setAdminSession(null);
+    localStorage.removeItem('rhythmix_session');
+    window.location.reload();
   };
 
-  // Show phone OTP login if not authenticated as admin
+  // Show Access Denied if not logged in OR not an admin
   if (!adminSession || adminSession.role !== 'admin') {
     return (
       <div className="flex flex-col items-center justify-center h-[70vh] text-center px-4 animate-in fade-in zoom-in duration-500">
@@ -76,12 +74,12 @@ export default function AdminUpload() {
         </div>
         <h1 className="text-white text-3xl font-extrabold tracking-tight mb-2">Access Denied</h1>
         <p className="text-white/50 text-sm max-w-md">
-          You need an Administrator account to upload songs. Please log out and log in with the authorized admin mobile number.
+          You need to be logged in as the Admin to upload songs. Please log out and sign in with your admin email.
         </p>
       </div>
     );
   }
-  // ─────────────────────────────────────────────────────────────────────
+  // ──────────────────────────────────────────────────────────────────────────
 
   const [audioFile, setAudioFile] = useState(null);
   const [coverFile, setCoverFile] = useState(null);
@@ -216,7 +214,7 @@ export default function AdminUpload() {
           <p className="text-white/50 text-sm">Upload songs directly to your cloud and view app statistics.</p>
           <div className="flex items-center gap-2 mt-2">
             <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-            <span className="text-green-400 text-xs font-semibold">Verified · {adminSession?.phone}</span>
+            <span className="text-green-400 text-xs font-semibold">Admin · {adminSession?.email}</span>
           </div>
         </div>
         <button
