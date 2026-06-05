@@ -94,14 +94,15 @@ export default function Sidebar({ user }) {
       {/* ── Mobile Sidebar Overlay ────────────────────────────────── */}
       {/* Backdrop */}
       <div
-        className={`md:hidden fixed inset-0 z-[55] bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${mobileOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+        className={`md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${mobileOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+        style={{ zIndex: 60 }}
         onClick={() => setMobileOpen(false)}
       />
 
       {/* Slide-in panel */}
       <div
-        className={`md:hidden fixed top-0 left-0 bottom-0 z-[56] w-72 bg-[#0d0d12]/98 border-r border-white/[0.06] shadow-2xl transition-transform duration-300 ease-out backdrop-blur-2xl`}
-        style={{ transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)' }}
+        className={`md:hidden fixed top-0 left-0 bottom-0 w-72 bg-[#0d0d12]/98 border-r border-white/[0.06] shadow-2xl transition-transform duration-300 ease-out backdrop-blur-2xl`}
+        style={{ zIndex: 70, transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)' }}
       >
         {/* Close button inside panel */}
         <button
