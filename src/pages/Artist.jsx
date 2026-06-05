@@ -78,7 +78,14 @@ export default function Artist() {
               {activeArtist}
             </h1>
             <p className="text-white/80 font-medium text-xs md:text-base">
-              {artistSongs.length} {artistSongs.length === 1 ? 'Track' : 'Tracks'} available in library
+              {artistSongs.length} {artistSongs.length === 1 ? 'Track' : 'Tracks'} 
+              {(() => {
+                const totalSecs = artistSongs.reduce((acc, song) => acc + (song.duration || 0), 0);
+                if (!totalSecs) return '';
+                const h = Math.floor(totalSecs / 3600);
+                const m = Math.floor((totalSecs % 3600) / 60);
+                return h > 0 ? ` • ${h} hr ${m} min` : ` • ${m} min`;
+              })()}
             </p>
           </div>
         </div>
