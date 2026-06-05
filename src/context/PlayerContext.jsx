@@ -285,16 +285,23 @@ export function PlayerProvider({ children, user }) {
 
       // Apply cached metadata instantly before doing API calls
       if (hasInstantUpdates) {
-        setAllSongs(prev => prev.map(s => {
-          const m = initialUpdates[s.id];
-          if (!m) return s;
-          return {
-            ...s,
-            cover: m.cover && !GENERIC_COVERS.includes(m.cover) ? m.cover : s.cover,
-            artist: m.artist && m.artist !== 'Unknown Artist' ? m.artist : s.artist,
-            album: m.album && m.album !== 'Cloudinary Singles' ? m.album : s.album
-          };
-        }));
+        setAllSongs(prev => {
+          let changed = false;
+          const next = prev.map(s => {
+            const m = initialUpdates[s.id];
+            if (!m) return s;
+            const newCover = m.cover && !GENERIC_COVERS.includes(m.cover) ? m.cover : s.cover;
+            const newArtist = m.artist && m.artist !== 'Unknown Artist' ? m.artist : s.artist;
+            const newAlbum = m.album && m.album !== 'Cloudinary Singles' ? m.album : s.album;
+            
+            if (s.cover !== newCover || s.artist !== newArtist || s.album !== newAlbum) {
+              changed = true;
+              return { ...s, cover: newCover, artist: newArtist, album: newAlbum };
+            }
+            return s;
+          });
+          return changed ? next : prev;
+        });
       }
 
       const BATCH_SIZE = 8;
@@ -317,18 +324,24 @@ export function PlayerProvider({ children, user }) {
             cachedMeta[song.id] = { cover: finalCover, artist: finalArtist, album: finalAlbum };
             localStorage.setItem('rhythmix_metadata_v1', JSON.stringify(cachedMeta));
             
-            // Update state
-            setAllSongs(prevSongs => prevSongs.map(s => {
-              if (s.id === song.id) {
-                return {
-                  ...s,
-                  cover: finalCover && !GENERIC_COVERS.includes(finalCover) ? finalCover : s.cover,
-                  artist: finalArtist || s.artist,
-                  album: finalAlbum || s.album
-                };
-              }
-              return s;
-            }));
+            // Update state safely to avoid React infinite loops
+            setAllSongs(prevSongs => {
+              let changed = false;
+              const next = prevSongs.map(s => {
+                if (s.id === song.id) {
+                  const newCover = finalCover && !GENERIC_COVERS.includes(finalCover) ? finalCover : s.cover;
+                  const newArtist = finalArtist || s.artist;
+                  const newAlbum = finalAlbum || s.album;
+                  
+                  if (s.cover !== newCover || s.artist !== newArtist || s.album !== newAlbum) {
+                    changed = true;
+                    return { ...s, cover: newCover, artist: newArtist, album: newAlbum };
+                  }
+                }
+                return s;
+              });
+              return changed ? next : prevSongs;
+            });
 
           } catch (err) {
             console.error(`[Artwork] Failed for "${song.title}":`, err);
