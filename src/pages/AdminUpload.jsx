@@ -87,7 +87,7 @@ export default function AdminUpload() {
   const [coverFile, setCoverFile] = useState(null);
   const [form, setForm] = useState({
     title: '', artist: '', album: '', genre: 'Tamil',
-    trending: false, recommended: false
+    trending: false, recommended: false, coverUrl: ''
   });
   const [status, setStatus] = useState('idle'); // idle, uploading, syncing, success, error
   const [errorMsg, setErrorMsg] = useState('');
@@ -119,11 +119,14 @@ export default function AdminUpload() {
     }
   };
 
-  const uploadToCloudinary = async (file, type) => {
+  const uploadToCloudinary = async (file, type, contextString = '') => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', CLOUDINARY_PRESET);
     formData.append('resource_type', type === 'audio' ? 'video' : 'image');
+    if (contextString) {
+      formData.append('context', contextString);
+    }
 
     const res = await fetch(CLOUDINARY_URL, {
       method: 'POST',
@@ -165,14 +168,15 @@ export default function AdminUpload() {
     setStatus('uploading');
 
     try {
-      // 1. Upload Audio to Cloudinary
-      const audioUrl = await uploadToCloudinary(audioFile, 'audio');
-      
-      // 2. Upload Cover to Cloudinary (if exists)
-      let coverUrl = '/favicon.svg';
+      // 1. Upload Cover to Cloudinary (if exists), else use URL, else use generic music fallback
+      let finalCoverUrl = form.coverUrl || 'https://images.unsplash.com/photo-1493225457124-a1a2a5d5facf?w=500';
       if (coverFile) {
-        coverUrl = await uploadToCloudinary(coverFile, 'image');
+        finalCoverUrl = await uploadToCloudinary(coverFile, 'image');
       }
+
+      // 2. Upload Audio to Cloudinary WITH metadata context attached so it remembers the cover!
+      const contextString = `cover=${finalCoverUrl}|artist=${form.artist}|title=${form.title}|album=${form.album}`;
+      const audioUrl = await uploadToCloudinary(audioFile, 'audio', contextString);
 
       // 3. Sync metadata to local songs.json via our backend
       setStatus('syncing');
@@ -182,7 +186,7 @@ export default function AdminUpload() {
         body: JSON.stringify({
           ...form,
           src: audioUrl,
-          cover: coverUrl,
+          cover: finalCoverUrl,
           duration: 0 // Cloudinary can provide this but 0 is safe for now
         })
       });
@@ -192,7 +196,7 @@ export default function AdminUpload() {
       setStatus('success');
       setAudioFile(null);
       setCoverFile(null);
-      setForm({ title: '', artist: '', album: '', genre: 'Tamil', trending: false, recommended: false });
+      setForm({ title: '', artist: '', album: '', genre: 'Tamil', trending: false, recommended: false, coverUrl: '' });
       
       if (refreshSongs) refreshSongs();
       setTimeout(() => setStatus('idle'), 5000);
@@ -260,6 +264,12 @@ export default function AdminUpload() {
                 <option value="English" className="bg-spotify-black">English</option>
                 <option value="Hindi" className="bg-spotify-black">Hindi</option>
               </select>
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <label className="text-white/60 text-sm">Or paste a Cover Image URL (optional)</label>
+              <input value={form.coverUrl} onChange={e => setForm({...form, coverUrl: e.target.value})}
+                placeholder="https://example.com/album-art.jpg" className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-spotify-green transition-all" />
+              <p className="text-white/30 text-[10px]">If you drag and drop an image above, it will override this link.</p>
             </div>
           </div>
 

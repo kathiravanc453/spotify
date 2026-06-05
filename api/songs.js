@@ -82,22 +82,28 @@ export default async function handler(req, res) {
         rawFolder = parts.join('/');
       } 
       
+      let cover = 'https://images.unsplash.com/photo-1493225457124-a1a2a5d5facf?w=500';
+      let album = 'Cloudinary Singles';
+
       try {
-        if (cloud.context && cloud.context.custom && cloud.context.custom.mood) {
-          folderMood = cloud.context.custom.mood;
+        if (cloud.context && cloud.context.custom) {
+          if (cloud.context.custom.mood) folderMood = cloud.context.custom.mood;
+          if (cloud.context.custom.cover) cover = cloud.context.custom.cover;
+          if (cloud.context.custom.artist) artist = cloud.context.custom.artist;
+          if (cloud.context.custom.title) title = cloud.context.custom.title;
+          if (cloud.context.custom.album) album = cloud.context.custom.album;
         }
       } catch (e) {}
 
       let mood = folderMood || getMoodFromFolder(rawFolder);
-      let title = cloud.display_name || cloud.filename || 'Unknown Title';
-      title = cleanSearchTerm(title);
-      
-      let artist = 'Unknown Artist';
-      if (title.includes('-')) {
-        const parts = title.split('-');
-        if (parts.length >= 2) {
-          artist = parts[0].trim();
-          title = parts.slice(1).join('-').trim();
+      if (title === cloud.display_name || title === cloud.filename) {
+        title = cleanSearchTerm(title);
+        if (title.includes('-') && artist === 'Unknown Artist') {
+          const parts = title.split('-');
+          if (parts.length >= 2) {
+            artist = parts[0].trim();
+            title = parts.slice(1).join('-').trim();
+          }
         }
       }
 
@@ -106,9 +112,9 @@ export default async function handler(req, res) {
         title,
         artist,
         src: cloud.secure_url,
-        cover: '/favicon.svg',
-        fallbackCover: '/favicon.svg',
-        album: 'Cloudinary Singles',
+        cover,
+        fallbackCover: 'https://images.unsplash.com/photo-1493225457124-a1a2a5d5facf?w=500',
+        album,
         mood,
         genre: 'Tamil',
         uploadedAt: cloud.created_at,
