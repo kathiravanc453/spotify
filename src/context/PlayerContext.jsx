@@ -297,6 +297,21 @@ export function PlayerProvider({ children, user }) {
               localStorage.setItem('rhythmix_album_covers_v4', JSON.stringify(next));
               return next;
             });
+
+            // Also update Artist and Album if the API found them!
+            if (data.artist || data.album) {
+              setAllSongs(prevSongs => prevSongs.map(s => {
+                if (s.id === song.id) {
+                  return {
+                    ...s,
+                    artist: data.artist && data.artist !== 'Unknown Artist' ? data.artist : s.artist,
+                    album: data.album && data.album !== 'Cloudinary Singles' ? data.album : s.album
+                  };
+                }
+                return s;
+              }));
+            }
+
           } catch (err) {
             console.error(`[Artwork] Failed for "${song.title}":`, err);
           }

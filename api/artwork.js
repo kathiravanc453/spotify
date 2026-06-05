@@ -13,8 +13,13 @@ const searchItunes = async (query) => {
   const res = await fetch(url);
   const data = await res.json();
   if (data.results && data.results.length > 0) {
-    const art = data.results[0].artworkUrl100;
-    if (art) return art.replace('100x100bb.jpg', '600x600bb.jpg');
+    const track = data.results[0];
+    const art = track.artworkUrl100;
+    return {
+      coverUrl: art ? art.replace('100x100bb.jpg', '600x600bb.jpg') : null,
+      artist: track.artistName || null,
+      album: track.collectionName ? track.collectionName.replace(/\(Original Motion Picture Soundtrack\)/gi, '').replace(/- EP/gi, '').trim() : null
+    };
   }
   return null;
 };
@@ -24,7 +29,12 @@ const searchDeezer = async (query) => {
   const res = await fetch(url);
   const data = await res.json();
   if (data.data && data.data.length > 0) {
-    return data.data[0].album?.cover_xl || data.data[0].album?.cover_big || null;
+    const track = data.data[0];
+    return {
+      coverUrl: track.album?.cover_xl || track.album?.cover_big || null,
+      artist: track.artist?.name || null,
+      album: track.album?.title || null
+    };
   }
   return null;
 };
@@ -36,11 +46,18 @@ const searchSaavn = async (query) => {
     const data = await res.json();
     const results = data?.data?.results;
     if (results && results.length > 0) {
-      const images = results[0].image;
+      const track = results[0];
+      const images = track.image;
+      let coverUrl = null;
       if (Array.isArray(images)) {
         const hq = images.find(i => i.quality === '500x500') || images[images.length - 1];
-        return hq?.url || null;
+        coverUrl = hq?.url || null;
       }
+      return {
+        coverUrl,
+        artist: track.primaryArtists || null,
+        album: track.album?.name || null
+      };
     }
   } catch (_) {}
   return null;
@@ -107,33 +124,35 @@ export default async function handler(req, res) {
     queries.push(words.slice(0, 3).join(' '));
   }
 
-  let coverUrl = null;
+  let result = null;
 
   for (const q of queries) {
-    if (coverUrl) break;
+    if (result && result.coverUrl) break;
 
     // 1. iTunes (best quality, global)
-    try { coverUrl = await searchItunes(q); } catch (_) {}
+    try { result = await searchItunes(q); } catch (_) {}
 
     // 2. Deezer (good for Indian music)
-    if (!coverUrl) {
-      try { coverUrl = await searchDeezer(q); } catch (_) {}
+    if (!result || !result.coverUrl) {
+      try { result = await searchDeezer(q); } catch (_) {}
     }
 
     // 3. Saavn (best for Tamil/Hindi songs)
-    if (!coverUrl) {
-      try { coverUrl = await searchSaavn(q); } catch (_) {}
+    if (!result || !result.coverUrl) {
+      try { result = await searchSaavn(q); } catch (_) {}
     }
   }
 
+  // Ensure result object exists
+  if (!result) result = { coverUrl: null, artist: null, album: null };
+
   // 4. Final Fallback: AI Generated Custom Cover for Rhythmix
-  if (!coverUrl) {
+  if (!result.coverUrl) {
     const prompt = encodeURIComponent(`Beautiful dynamic aesthetic album art for the song "${title}", vibrant colors, no text, music streaming cover`);
-    // Seed ensures the same song always gets the exact same image
     const seed = title.length * 42; 
-    coverUrl = `https://image.pollinations.ai/prompt/${prompt}?width=600&height=600&nologo=true&seed=${seed}`;
+    result.coverUrl = `https://image.pollinations.ai/prompt/${prompt}?width=600&height=600&nologo=true&seed=${seed}`;
   }
 
-  return res.status(200).json({ coverUrl });
+  return res.status(200).json(result);
 }
 
