@@ -15,7 +15,7 @@ import ErrorBoundary from './components/ui/ErrorBoundary';
 import useMediaSession from './hooks/useMediaSession';
 import UpdateNotification from './components/UpdateNotification';
 
-function AppContent({ user, onLogout }) {
+function AppContent({ user, onLogout, onLogin }) {
   const { activeSection, setActiveSection, refreshSongs } = usePlayer();
   const [search, setSearch] = useState('');
   const [isPulling, setIsPulling] = useState(false);
@@ -112,6 +112,14 @@ function AppContent({ user, onLogout }) {
   };
 
   const renderContent = () => {
+    if (activeSection === 'login' && !user) {
+      return (
+        <div className="fixed inset-0 z-[100] bg-[#07070a]">
+          <Login onLogin={(u) => { onLogin(u); setActiveSection('home'); }} />
+        </div>
+      );
+    }
+    
     if (activeSection === 'admin')       return <AdminUpload />;
     if (activeSection === 'library' || activeSection === 'favorites') return <Library />;
     if (activeSection === 'albums')      return <Albums />;
@@ -230,14 +238,15 @@ export default function App() {
     setUser(null);
   };
 
-  if (!user) return <Login onLogin={setUser} />;
+  // Remove the strict !user check here so users can browse without logging in
+  // if (!user) return <Login onLogin={setUser} />;
 
   return (
     <ErrorBoundary>
       <div className="bg-[#07070a] min-h-screen">
         <UpdateNotification />
-        <PlayerProvider>
-          <AppContent user={user} onLogout={handleLogout} />
+        <PlayerProvider user={user}>
+          <AppContent user={user} onLogout={handleLogout} onLogin={setUser} />
         </PlayerProvider>
       </div>
     </ErrorBoundary>

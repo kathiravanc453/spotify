@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useRef, useEffect, useCallback, us
 
 const PlayerContext = createContext(null);
 
-export function PlayerProvider({ children }) {
+export function PlayerProvider({ children, user }) {
   const [allSongs, setAllSongs]         = useState([]);
   const [currentSong, setCurrentSong]   = useState(null);
   const [isPlaying, setIsPlaying]       = useState(false);
@@ -148,6 +148,11 @@ export function PlayerProvider({ children }) {
 
   // ─── Play song ────────────────────────────────────────────────────────────
   const playSong = useCallback((song) => {
+    if (!user) {
+      setActiveSection('login');
+      return;
+    }
+
     const audio = audioRef.current;
     if (currentSong?.id === song.id) {
       if (isPlaying) { audio.pause(); setIsPlaying(false); }
@@ -167,7 +172,7 @@ export function PlayerProvider({ children }) {
       const filtered = prev.filter(s => s.id !== song.id);
       return [song, ...filtered].slice(0, 10);
     });
-  }, [currentSong, isPlaying, incrementPlayCount]);
+  }, [currentSong, isPlaying, incrementPlayCount, user]);
 
   const togglePlay = useCallback(() => {
     const audio = audioRef.current;
