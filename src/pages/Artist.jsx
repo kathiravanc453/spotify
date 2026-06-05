@@ -63,21 +63,21 @@ export default function Artist() {
         </button>
 
         {/* Content Container */}
-        <div className="absolute bottom-0 left-0 p-6 md:p-8 w-full flex items-end gap-6 z-10">
-          <div className="w-32 h-32 md:w-48 md:h-48 rounded-full overflow-hidden shadow-[0_8px_40px_rgba(0,0,0,0.5)] flex-shrink-0 border-none">
+        <div className="absolute bottom-0 left-0 p-4 md:p-8 w-full flex flex-col md:flex-row items-center md:items-end gap-4 md:gap-6 z-10 text-center md:text-left">
+          <div className="w-28 h-28 md:w-48 md:h-48 rounded-full overflow-hidden shadow-[0_8px_40px_rgba(0,0,0,0.5)] flex-shrink-0 border-none">
             <img src={artistCover} alt={activeArtist} className="w-full h-full object-cover" />
           </div>
-          <div className="flex-1 pb-2">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
-                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+          <div className="flex-1 pb-0 md:pb-2 flex flex-col items-center md:items-start w-full overflow-hidden">
+            <div className="flex items-center gap-2 mb-1 md:mb-2">
+              <div className="w-4 h-4 md:w-5 md:h-5 rounded-full bg-blue-500 flex items-center justify-center">
+                <svg className="w-2.5 h-2.5 md:w-3 md:h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
               </div>
-              <span className="text-white text-sm font-medium">Verified Artist</span>
+              <span className="text-white text-xs md:text-sm font-medium">Verified Artist</span>
             </div>
-            <h1 className="text-white text-5xl md:text-7xl font-extrabold tracking-tighter mb-4 truncate drop-shadow-lg">
+            <h1 className="text-white text-3xl sm:text-4xl md:text-7xl font-extrabold tracking-tighter mb-2 md:mb-4 w-full truncate drop-shadow-lg">
               {activeArtist}
             </h1>
-            <p className="text-white/80 font-medium text-sm md:text-base">
+            <p className="text-white/80 font-medium text-xs md:text-base">
               {artistSongs.length} {artistSongs.length === 1 ? 'Track' : 'Tracks'} available in library
             </p>
           </div>
