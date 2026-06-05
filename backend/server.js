@@ -287,6 +287,24 @@ const syncWithCloudinary = async () => {
       let albumName = 'Cloudinary Singles';
       let songArtist = 'Unknown Artist';
 
+      // Load existing song data to prevent overwriting valid data
+      try {
+        const existingSongs = JSON.parse(fs.readFileSync(SONGS_JSON, 'utf8'));
+        const existing = existingSongs.find(s => s.id === getStableId(cloud.public_id));
+        if (existing) {
+          if (existing.artist && existing.artist !== 'Unknown Artist' && existing.artist !== 'Cloud Artist') {
+            songArtist = existing.artist;
+          }
+          if (existing.album && existing.album !== 'Cloudinary Singles') {
+            albumName = existing.album;
+          }
+          if (existing.cover && existing.cover !== 'https://images.unsplash.com/photo-1493225457124-a1a2a5d5facf?w=500') {
+            cover = existing.cover;
+            fallbackUrl = existing.fallbackCover || existing.cover;
+          }
+        }
+      } catch (e) {}
+
       try {
         if (cloud.context && cloud.context.custom) {
           if (cloud.context.custom.mood) folderMood = cloud.context.custom.mood;
@@ -325,8 +343,10 @@ const syncWithCloudinary = async () => {
           cover = resolved.cover;
           fallbackUrl = resolved.cover;
         }
-        albumName = resolved.album || albumName;
-        songArtist = resolved.artist || songArtist;
+        albumName = (resolved.album && resolved.album !== 'Singles') ? resolved.album : albumName;
+        if (resolved.artist && resolved.artist !== 'Cloud Artist') {
+          songArtist = resolved.artist;
+        }
       }
 
       localSongs.push({
