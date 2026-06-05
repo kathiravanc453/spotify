@@ -260,7 +260,7 @@ const syncWithCloudinary = async () => {
 
       console.log(`  > "${cloud.public_id}" detected folder: "${rawFolder || 'root'}" -> Assigned Mood: "${folderMood}"`);
 
-      const name = cloud.public_id.split('/').pop().split('.')[0].replace(/_/g, ' ');
+      let name = cloud.public_id.split('/').pop().split('.')[0].replace(/_/g, ' ');
       
       // Clean title duplicate check
       const cleanName = cleanSearchTerm(name).toLowerCase();
