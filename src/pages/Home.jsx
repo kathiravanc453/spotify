@@ -5,7 +5,7 @@ import SongRow from '../components/shared/SongRow';
 import { SongCardSkeleton, SongRowSkeleton } from '../components/ui/Skeleton';
 import { TrendingUp, Star, Clock, Music, Loader2, Music2, Heart, Zap, Coffee, Sparkles, Search, X, Play } from 'lucide-react';
 import { cleanTitle } from '../utils/cleanTitle';
-
+import artistImages from '../data/artistImages.json';
 // YOUR 5 MASTER CATEGORIES
 const MASTER_MOODS = ['love', 'melody', 'romance', 'vibes', 'energy boost'];
 
@@ -82,7 +82,7 @@ export default function Home({ search = '', activeSection = 'home' }) {
       counts[artist] = { 
         count: 0, 
         name: artist, 
-        cover: `https://ui-avatars.com/api/?name=${encodeURIComponent(artist)}&background=random&color=fff&size=500&font-size=0.33`
+        cover: artistImages[artist] || `https://ui-avatars.com/api/?name=${encodeURIComponent(artist)}&background=random&color=fff&size=500&font-size=0.33`
       };
     });
 
@@ -91,7 +91,8 @@ export default function Home({ search = '', activeSection = 'home' }) {
       const prefMatch = MALE_ARTISTS.find(p => rawName.toLowerCase().replace(/\s/g, '').includes(p.toLowerCase().replace(/\s/g, '')) || p.toLowerCase().replace(/\s/g, '').includes(rawName.toLowerCase().replace(/\s/g, '')));
       if (prefMatch) {
         counts[prefMatch].count++;
-        if (counts[prefMatch].cover.includes('ui-avatars.com') && song.cover) {
+        // If they don't have a Wiki image, use the song cover instead of the UI Avatar
+        if (!artistImages[prefMatch] && counts[prefMatch].cover.includes('ui-avatars.com') && song.cover) {
            counts[prefMatch].cover = albumCovers[song.id] || song.cover;
         }
       }
@@ -106,7 +107,7 @@ export default function Home({ search = '', activeSection = 'home' }) {
       counts[artist] = { 
         count: 0, 
         name: artist, 
-        cover: `https://ui-avatars.com/api/?name=${encodeURIComponent(artist)}&background=random&color=fff&size=500&font-size=0.33`
+        cover: artistImages[artist] || `https://ui-avatars.com/api/?name=${encodeURIComponent(artist)}&background=random&color=fff&size=500&font-size=0.33`
       };
     });
 
@@ -115,7 +116,7 @@ export default function Home({ search = '', activeSection = 'home' }) {
       const prefMatch = FEMALE_ARTISTS.find(p => rawName.toLowerCase().replace(/\s/g, '').includes(p.toLowerCase().replace(/\s/g, '')) || p.toLowerCase().replace(/\s/g, '').includes(rawName.toLowerCase().replace(/\s/g, '')));
       if (prefMatch) {
         counts[prefMatch].count++;
-        if (counts[prefMatch].cover.includes('ui-avatars.com') && song.cover) {
+        if (!artistImages[prefMatch] && counts[prefMatch].cover.includes('ui-avatars.com') && song.cover) {
            counts[prefMatch].cover = albumCovers[song.id] || song.cover;
         }
       }
