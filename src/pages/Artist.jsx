@@ -28,40 +28,67 @@ export default function Artist() {
     }
   };
 
+  const getArtistColor = (name) => {
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const h = Math.abs(hash) % 360;
+    // Return a rich, vibrant color typical of Spotify artist pages
+    return `hsl(${h}, 60%, 35%)`;
+  };
+
+  const dominantColor = getArtistColor(activeArtist);
+
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-32">
-      {/* Hero Banner */}
-      <div className="relative h-64 md:h-80 w-full mb-8">
+    <div className="animate-in fade-in duration-500 pb-32 h-full overflow-y-auto scrollbar-none bg-[#121212]">
+      {/* Hero Banner with Dynamic Gradient */}
+      <div 
+        className="relative h-[40vh] min-h-[340px] w-full mb-8 transition-colors duration-700"
+        style={{ backgroundColor: dominantColor }}
+      >
         <div 
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${artistCover})`, filter: 'brightness(0.5)' }}
+          className="absolute inset-0 bg-cover bg-center opacity-30 mix-blend-overlay"
+          style={{ backgroundImage: `url(${artistCover})` }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#07070a] via-[#07070a]/60 to-transparent" />
+        {/* Spotify-style gradient fade to bottom */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-[#121212]" />
         
         {/* Back Button */}
         <button 
           onClick={() => setActiveSection('home')}
-          className="absolute top-6 left-6 z-10 w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/60 transition-colors border border-white/10"
+          className="absolute top-6 left-6 z-10 w-8 h-8 rounded-full bg-black/50 hover:bg-black/80 flex items-center justify-center text-white transition-colors"
         >
           <ArrowLeft size={20} />
         </button>
 
-        <div className="absolute bottom-0 left-0 p-6 md:p-10 w-full flex items-end gap-6">
-          <div className="w-32 h-32 md:w-48 md:h-48 rounded-full overflow-hidden shadow-2xl border-4 border-[#07070a] flex-shrink-0">
+        {/* Content Container */}
+        <div className="absolute bottom-0 left-0 p-6 md:p-8 w-full flex items-end gap-6 z-10">
+          <div className="w-32 h-32 md:w-48 md:h-48 rounded-full overflow-hidden shadow-[0_8px_40px_rgba(0,0,0,0.5)] flex-shrink-0 border-none">
             <img src={artistCover} alt={activeArtist} className="w-full h-full object-cover" />
           </div>
           <div className="flex-1 pb-2">
-            <h1 className="text-white text-4xl md:text-6xl font-extrabold tracking-tight mb-2 truncate">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
+                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+              </div>
+              <span className="text-white text-sm font-medium">Verified Artist</span>
+            </div>
+            <h1 className="text-white text-5xl md:text-7xl font-extrabold tracking-tighter mb-4 truncate drop-shadow-lg">
               {activeArtist}
             </h1>
-            <p className="text-white/60 font-medium">
-              {artistSongs.length} {artistSongs.length === 1 ? 'song' : 'songs'}
+            <p className="text-white/80 font-medium text-sm md:text-base">
+              {artistSongs.length} {artistSongs.length === 1 ? 'Track' : 'Tracks'} available in library
             </p>
           </div>
         </div>
       </div>
 
-      <div className="px-6 md:px-10">
+      {/* Main Content Area with extended gradient */}
+      <div 
+        className="px-6 md:px-8 relative min-h-screen"
+        style={{ backgroundImage: `linear-gradient(to bottom, ${dominantColor}40 0%, transparent 400px)` }}
+      >
         {/* Controls */}
         <div className="flex items-center gap-4 mb-8">
           <button 
