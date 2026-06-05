@@ -73,24 +73,45 @@ export default function Home({ search = '', activeSection = 'home' }) {
 
   const topArtists = useMemo(() => {
     const counts = {};
+    
+    // 1. Force the preferred artists into the object first with 0 counts
+    PREFERRED_ARTISTS.forEach(artist => {
+      counts[artist] = { 
+        count: 0, 
+        name: artist, 
+        cover: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500' 
+      };
+    });
+
+    // 2. Tally songs
     allSongs.forEach(song => {
-      const artistName = song.artist && song.artist.trim() !== '' ? song.artist.trim() : 'Unknown Artist';
+      const rawName = song.artist && song.artist.trim() !== '' ? song.artist.trim() : 'Unknown Artist';
+      
+      // Check if it matches a preferred artist to merge spelling differences
+      const prefMatch = PREFERRED_ARTISTS.find(p => rawName.toLowerCase().includes(p.toLowerCase()) || p.toLowerCase().includes(rawName.toLowerCase()));
+      const artistName = prefMatch || rawName;
+
       if (!counts[artistName]) {
         counts[artistName] = { count: 0, name: artistName, cover: albumCovers[song.id] || song.cover };
       }
       counts[artistName].count++;
+      
+      // Update cover for preferred artist if they just had the fallback
+      if (counts[artistName].cover === 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500' && song.cover) {
+         counts[artistName].cover = albumCovers[song.id] || song.cover;
+      }
     });
     
     return Object.values(counts).sort((a, b) => {
-      // Prioritize preferred list
-      const idxA = PREFERRED_ARTISTS.findIndex(p => a.name.toLowerCase().includes(p.toLowerCase()));
-      const idxB = PREFERRED_ARTISTS.findIndex(p => b.name.toLowerCase().includes(p.toLowerCase()));
+      // Prioritize preferred list exactly in the order provided
+      const idxA = PREFERRED_ARTISTS.findIndex(p => a.name === p);
+      const idxB = PREFERRED_ARTISTS.findIndex(p => b.name === p);
       
       if (idxA !== -1 && idxB !== -1) return idxA - idxB;
       if (idxA !== -1) return -1;
       if (idxB !== -1) return 1;
       
-      // Fallback to song count
+      // Fallback to song count for other artists
       return b.count - a.count;
     });
   }, [allSongs, albumCovers]);
@@ -418,13 +439,6 @@ export default function Home({ search = '', activeSection = 'home' }) {
           </section>
         )}
  
-        <section>
-          <SectionHeader icon={Music} title="Your Library" gradient="from-violet-500 to-fuchsia-500 shadow-violet-500/20" />
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-6">
-            {allSongs.map(song => <SongCard key={song?.id} song={song} />)}
-          </div>
-        </section>
-
         {topArtists.length > 0 && (
           <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex items-center justify-between mb-6">
@@ -457,6 +471,13 @@ export default function Home({ search = '', activeSection = 'home' }) {
             </div>
           </section>
         )}
+
+        <section>
+          <SectionHeader icon={Music} title="Your Library" gradient="from-violet-500 to-fuchsia-500 shadow-violet-500/20" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-6">
+            {allSongs.map(song => <SongCard key={song?.id} song={song} />)}
+          </div>
+        </section>
       </>
     );
   };
