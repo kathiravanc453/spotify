@@ -577,6 +577,18 @@ app.post('/api/register', (req, res) => {
   }
 });
 
+let lastGlobalLogoutAt = 0;
+
+app.post('/api/admin/logout-all', (req, res) => {
+  lastGlobalLogoutAt = Date.now();
+  console.log(`🔒 ADMIN ACTION: Force logged out all users at ${new Date(lastGlobalLogoutAt).toISOString()}`);
+  res.json({ success: true, message: 'All users have been forcefully logged out.', lastGlobalLogoutAt });
+});
+
+app.get('/api/auth/status', (req, res) => {
+  res.json({ lastGlobalLogoutAt });
+});
+
 app.post('/api/login', (req, res) => {
   try {
     const { email, password } = req.body;

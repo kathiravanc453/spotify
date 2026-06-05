@@ -244,6 +244,31 @@ export default function App() {
     setUser(null);
   };
 
+  useEffect(() => {
+    if (!user) return;
+    
+    const checkAuthStatus = async () => {
+      try {
+        const res = await fetch('http://localhost:3001/api/auth/status');
+        const data = await res.json();
+        const userLoginTime = user.loggedInAt || 0;
+        
+        // If the admin triggered a global logout AFTER this user logged in, kick them out
+        if (data.lastGlobalLogoutAt && data.lastGlobalLogoutAt > userLoginTime) {
+          handleLogout();
+          // Optional: You could dispatch a toast event here to inform them why they were logged out
+        }
+      } catch (err) {
+        // Silently ignore network errors to avoid spamming the console
+      }
+    };
+
+    // Check immediately, then every 15 seconds
+    checkAuthStatus();
+    const interval = setInterval(checkAuthStatus, 15000);
+    return () => clearInterval(interval);
+  }, [user]);
+
   // Remove the strict !user check here so users can browse without logging in
   // if (!user) return <Login onLogin={setUser} />;
 

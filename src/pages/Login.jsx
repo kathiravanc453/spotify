@@ -25,6 +25,7 @@ export default function Login({ onLogin }) {
       avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.email)}`,
       role: isSystemAdmin ? 'admin' : 'user',
       uid: user.uid,
+      loggedInAt: Date.now(),
     };
 
     localStorage.setItem('rhythmix_session', JSON.stringify(sessionData));

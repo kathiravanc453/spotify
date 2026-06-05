@@ -65,6 +65,17 @@ export default function AdminUpload() {
     window.location.reload();
   };
 
+  const handleGlobalLogout = async () => {
+    if (window.confirm("Are you sure you want to force logout EVERY active user from the app?")) {
+      try {
+        await fetch('http://localhost:3001/api/admin/logout-all', { method: 'POST' });
+        alert("All users have been successfully logged out globally!");
+      } catch (err) {
+        alert("Failed to execute global logout.");
+      }
+    }
+  };
+
   // Show Access Denied if not logged in OR not an admin
   if (!adminSession || adminSession.role !== 'admin') {
     return (
@@ -217,12 +228,21 @@ export default function AdminUpload() {
             <span className="text-green-400 text-xs font-semibold">Admin · {adminSession?.email}</span>
           </div>
         </div>
-        <button
-          onClick={handleAdminLogout}
-          className="flex items-center gap-2 bg-white/5 hover:bg-rose-500/10 border border-white/10 hover:border-rose-500/30 text-white/50 hover:text-rose-400 text-xs font-bold px-4 py-2.5 rounded-xl transition-all duration-300 cursor-pointer flex-shrink-0"
-        >
-          <LogOut size={14} /> Logout
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handleGlobalLogout}
+            className="flex items-center gap-2 bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500 hover:border-rose-500 text-rose-400 hover:text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all duration-300 cursor-pointer flex-shrink-0"
+            title="Kick every user off the app immediately"
+          >
+            <ShieldAlert size={14} /> Global Logout
+          </button>
+          <button
+            onClick={handleAdminLogout}
+            className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white/50 hover:text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all duration-300 cursor-pointer flex-shrink-0"
+          >
+            <LogOut size={14} /> Exit Admin
+          </button>
+        </div>
       </div>
 
 

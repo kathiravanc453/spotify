@@ -2,24 +2,12 @@ const https = require('https');
 const fs = require('fs');
 
 const titles = {
-  'A. R. Rahman': 'A.R. Rahman',
-  'S. P. Balasubrahmanyam': 'S.P. Balasubrahmanyam',
-  'P. B. Sreenivas': 'P. B. Srinivas', 
-  'Seerkazhi Govindarajan': 'Seerkazhi Govindarajan',
-  'Malaysia Vasudevan': 'Malaysia Vasudevan',
-  'Hariharan (singer)': 'Hariharan',
-  'Shankar Mahadevan': 'Shankar Mahadevan',
-  'Anirudh Ravichander': 'Anirudh Ravichander',
-  'Sid Sriram': 'Sid Sriram',
-  'Shreya Ghoshal': 'Shreya Ghoshal',
-  'Swarnalatha': 'Swarnalatha',
+  'Sirkazhi Govindarajan': 'Seerkazhi Govindarajan',
   'Bombay Jayashri': 'Bombay Jayashri',
-  'Chinmayi': 'Chinmayi',
-  'Shweta Mohan': 'Shweta Mohan',
-  'Andrea Jeremiah': 'Andrea Jeremiah',
-  'Karthik (singer)': 'Karthik',
-  'Benny Dayal': 'Benny Dayal',
-  'Srinivas (singer)': 'Srinivas'
+  'Dhee': 'Dhee',
+  'Shakthisree Gopalan': 'Shakthisree Gopalan',
+  'Mahalakshmi Iyer': 'Mahalakshmi Iyer',
+  'Shashaa Tirupati': 'Shashaa Tirupati'
 };
 
 const mapPath = 'src/data/artistImages.json';
@@ -41,7 +29,7 @@ async function fetchWiki() {
             const p = j.query.pages;
             const pid = Object.keys(p)[0];
             if (pid !== '-1' && p[pid].thumbnail) {
-               console.log(appName + ' Found');
+               console.log(appName + ' Found: ' + p[pid].thumbnail.source);
                existingMap[appName] = p[pid].thumbnail.source;
             }
             else {
