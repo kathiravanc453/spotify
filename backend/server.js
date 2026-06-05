@@ -318,6 +318,7 @@ const syncWithCloudinary = async () => {
         cover = songOverride.cover || cover;
         fallbackUrl = songOverride.cover || fallbackUrl;
         albumName = songOverride.album || albumName;
+        songArtist = songOverride.artist || songArtist;
       } else if (cover === 'https://images.unsplash.com/photo-1493225457124-a1a2a5d5facf?w=500') {
         const resolved = await resolveMusicMetadata(cloud.public_id, name);
         if (resolved.cover) {
