@@ -4,7 +4,7 @@ import SongCard from '../components/shared/SongCard';
 import SongRow from '../components/shared/SongRow';
 import { SongCardSkeleton, SongRowSkeleton } from '../components/ui/Skeleton';
 import { TrendingUp, Star, Clock, Music, Loader2, Music2, Heart, Zap, Coffee, Sparkles, Search, X, Play } from 'lucide-react';
-import { cleanTitle } from '../utils/cleanTitle';
+import { cleanTitle, splitArtists } from '../utils/cleanTitle';
 import artistImages from '../data/artistImages.json';
 // YOUR 5 MASTER CATEGORIES
 const MASTER_MOODS = ['love', 'melody', 'romance', 'vibes', 'energy boost'];
@@ -130,11 +130,17 @@ export default function Home({ search = '', activeSection = 'home' }) {
   const topArtists = useMemo(() => {
     const counts = {};
     allSongs.forEach(song => {
-      const artistName = song.artist && song.artist.trim() !== '' ? song.artist.trim() : 'Unknown Artist';
-      if (!counts[artistName]) {
-        counts[artistName] = { count: 0, name: artistName, cover: albumCovers[song.id] || song.cover };
-      }
-      counts[artistName].count++;
+      const artistNames = splitArtists(song.artist);
+      artistNames.forEach(artistName => {
+        if (!counts[artistName]) {
+          counts[artistName] = { count: 0, name: artistName, cover: albumCovers[song.id] || song.cover };
+        }
+        counts[artistName].count++;
+        // Use latest non-null cover
+        if (!counts[artistName].cover && (albumCovers[song.id] || song.cover)) {
+          counts[artistName].cover = albumCovers[song.id] || song.cover;
+        }
+      });
     });
     
     return Object.values(counts)
@@ -221,6 +227,29 @@ export default function Home({ search = '', activeSection = 'home' }) {
                   </button>
                 );
               })}
+            </div>
+          </div>
+
+          <div>
+            <SectionHeader icon={Music2} title="Browse Artists" gradient="from-blue-400 to-indigo-500 shadow-blue-500/20" />
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              {topArtists.map(artist => (
+                <button
+                  key={artist.name}
+                  onClick={() => {
+                    setActiveArtist(artist.name);
+                    setGlobalSection('artist');
+                  }}
+                  className="group text-left cursor-pointer transition-all duration-300 hover:bg-white/[0.04] p-4 rounded-2xl border border-transparent hover:border-white/5"
+                >
+                  <div className="relative aspect-square rounded-full overflow-hidden mb-4 shadow-xl">
+                    <img src={artist.cover} alt={artist.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors" />
+                  </div>
+                  <h3 className="text-white font-bold truncate text-center">{artist.name}</h3>
+                  <p className="text-white/40 text-xs text-center mt-1 font-medium">{artist.count} {artist.count === 1 ? 'track' : 'tracks'}</p>
+                </button>
+              ))}
             </div>
           </div>
         </section>

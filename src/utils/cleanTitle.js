@@ -64,3 +64,16 @@ export function moodAccent(mood = '') {
   // default
   return { text: 'text-violet-400', bg: 'bg-violet-500/10', border: 'border-violet-500/30', glow: 'shadow-violet-500/20', hex: '#a78bfa' };
 }
+
+/**
+ * Splits a song's artist string into an array of individual artist names.
+ * Handles common separators like commas, ampersands, 'and', 'feat', etc.
+ */
+export function splitArtists(artistString = '') {
+  if (!artistString || artistString.trim() === '') return ['Unknown Artist'];
+  // Split by comma, ampersand, 'and', 'feat.' (case insensitive)
+  return artistString
+    .split(/\s*[,&]\s*|\s+and\s+|\s+feat\.?\s+/i)
+    .map(a => a.trim())
+    .filter(a => a.length > 0);
+}

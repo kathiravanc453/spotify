@@ -42,9 +42,11 @@ function CoverCollage({ songs, albumCovers }) {
 }
 
 export default function Library() {
-  const { allSongs = [], favorites = [], activeSection, setActiveSection, albumCovers = {} } = usePlayer() || {};
+  const { allSongs = [], favorites = [], activeSection, setActiveSection, albumCovers = {}, setActiveArtist } = usePlayer() || {};
   const [selectedMood, setSelectedMood] = useState(null);
+  const [showArtistsList, setShowArtistsList] = useState(false);
   const [moodSearchQuery, setMoodSearchQuery] = useState('');
+  const [artistSearchQuery, setArtistSearchQuery] = useState('');
 
   const showLiked = activeSection === 'favorites';
 
@@ -57,6 +59,24 @@ export default function Library() {
       s.artist?.toLowerCase().includes(moodSearchQuery.toLowerCase())
     );
   }, [selectedMood, allSongs, moodSearchQuery]);
+
+  const uniqueArtists = useMemo(() => {
+    const artistMap = {};
+    allSongs.forEach(song => {
+      if (!song.artist || song.artist === 'Unknown Artist') return;
+      if (!artistMap[song.artist]) {
+        artistMap[song.artist] = { name: song.artist, cover: song.cover || '', count: 1 };
+      } else {
+        artistMap[song.artist].count++;
+        if (!artistMap[song.artist].cover && song.cover) {
+          artistMap[song.artist].cover = song.cover;
+        }
+      }
+    });
+    const list = Object.values(artistMap).sort((a, b) => b.count - a.count);
+    if (!artistSearchQuery.trim()) return list;
+    return list.filter(a => a.name.toLowerCase().includes(artistSearchQuery.toLowerCase()));
+  }, [allSongs, artistSearchQuery]);
 
   const likedSongs = useMemo(() => allSongs.filter(s => favorites.includes(s.id)), [favorites, allSongs]);
 
@@ -174,7 +194,6 @@ export default function Library() {
           onClick={() => setActiveSection('favorites')}
           className="ripple-container group relative overflow-hidden rounded-3xl aspect-[16/9] flex flex-col justify-end p-6 border border-white/8 card-hover-lift text-left shadow-lg hover:shadow-rose-500/10 cursor-pointer"
         >
-          {/* Cover collage bg */}
           <CoverCollage songs={likedSongs.slice(0,4)} albumCovers={albumCovers} />
           <div className="absolute inset-0 bg-gradient-to-tr from-rose-600/20 to-pink-500/10 opacity-100 group-hover:opacity-100" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#07070a] via-[#07070a]/75 to-[#07070a]/30" />
@@ -201,7 +220,6 @@ export default function Library() {
               onClick={() => setSelectedMood(moodKey)}
               className={`ripple-container group relative overflow-hidden rounded-3xl aspect-[16/9] flex flex-col justify-end p-6 border border-white/8 card-hover-lift text-left shadow-lg ${theme.glow} cursor-pointer`}
             >
-              {/* Real album art collage as background */}
               <CoverCollage songs={moodSongs} albumCovers={albumCovers} />
               <div className={`absolute inset-0 bg-gradient-to-tr ${theme.grad} opacity-15 group-hover:opacity-25 transition-opacity duration-500`} />
               <div className="absolute inset-0 bg-gradient-to-t from-[#07070a] via-[#07070a]/75 to-[#07070a]/30" />

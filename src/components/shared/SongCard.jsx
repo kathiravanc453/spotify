@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Play, Pause } from 'lucide-react';
 import { usePlayer } from '../../context/PlayerContext';
-import { cleanTitle, moodAccent } from '../../utils/cleanTitle';
+import { cleanTitle, moodAccent, splitArtists } from '../../utils/cleanTitle';
 import { useLongPress } from '../../hooks/useGestures';
 import SongContextSheet from '../ui/SongContextSheet';
 
@@ -31,7 +31,7 @@ function Equalizer() {
 }
 
 export default function SongCard({ song }) {
-  const { currentSong, isPlaying, playSong, progress, duration, playCounts = {}, albumCovers = {} } = usePlayer();
+  const { currentSong, isPlaying, playSong, progress, duration, playCounts = {}, albumCovers = {}, setActiveArtist, setActiveSection } = usePlayer();
   const [showContext, setShowContext] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
 
@@ -111,7 +111,25 @@ export default function SongCard({ song }) {
           <p className={`font-bold text-sm truncate transition-colors duration-300 ${isActive ? accent.text : 'text-white'}`}>
             {displayTitle}
           </p>
-          <p className="text-white/45 text-xs truncate mt-0.5 font-medium">{song.artist}</p>
+          <div className="text-white/45 text-xs truncate mt-0.5 font-medium w-full text-left flex items-center gap-1">
+            {splitArtists(song.artist).map((artistName, i, arr) => (
+              <span key={artistName} className="truncate max-w-full">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (artistName && artistName !== 'Unknown Artist') {
+                      setActiveArtist(artistName);
+                      setActiveSection('artist');
+                    }
+                  }}
+                  className="hover:text-white hover:underline transition-colors cursor-pointer"
+                >
+                  {artistName}
+                </button>
+                {i < arr.length - 1 && <span>, </span>}
+              </span>
+            ))}
+          </div>
           <div className="flex items-center justify-between mt-1.5 flex-shrink-0">
             <p className="text-white/25 text-[10px] sm:text-xs font-semibold tracking-wider flex items-center gap-1 min-w-[36px]">
               {isCurrentlyPlaying && <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse mr-0.5" />}

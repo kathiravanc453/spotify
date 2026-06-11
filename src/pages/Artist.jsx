@@ -1,6 +1,7 @@
 import { usePlayer } from '../context/PlayerContext';
 import SongRow from '../components/shared/SongRow';
 import { ArrowLeft, Play, Shuffle } from 'lucide-react';
+import { splitArtists } from '../utils/cleanTitle';
 
 export default function Artist() {
   const { allSongs, activeArtist, setActiveSection, playSong, setIsShuffle } = usePlayer();
@@ -10,7 +11,7 @@ export default function Artist() {
     return null;
   }
 
-  const artistSongs = allSongs.filter(s => s.artist === activeArtist);
+  const artistSongs = allSongs.filter(s => splitArtists(s.artist).includes(activeArtist));
   const artistCover = artistSongs[0]?.cover || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500';
 
   const handlePlayAll = () => {

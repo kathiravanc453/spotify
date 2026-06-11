@@ -1,5 +1,5 @@
 import { usePlayer } from '../../context/PlayerContext';
-import { cleanTitle, moodAccent } from '../../utils/cleanTitle';
+import { cleanTitle, moodAccent, splitArtists } from '../../utils/cleanTitle';
 import {
   Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Heart, X, Timer
 } from 'lucide-react';
@@ -34,7 +34,7 @@ export default function PlayerFooter() {
     currentSong, isPlaying, progress, duration, volume,
     togglePlay, playNext, playPrev, seek, changeVolume,
     favorites = [], toggleLike, activeSection, setActiveSection, stopPlayback,
-    sleepTimer, startSleepTimer, cancelSleepTimer, albumCovers = {},
+    sleepTimer, startSleepTimer, cancelSleepTimer, albumCovers = {}, setActiveArtist,
   } = usePlayer();
  
   if (!currentSong || activeSection === 'now-playing') return null;
@@ -86,7 +86,25 @@ export default function PlayerFooter() {
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-white text-xs md:text-sm font-bold truncate group-hover/info:text-cyan-300 transition-colors">{displayTitle}</p>
-              <p className="text-white/50 text-[10px] md:text-xs truncate mt-0.5 font-medium">{currentSong.artist}</p>
+              <div className="text-white/50 text-[10px] md:text-xs truncate mt-0.5 font-medium w-full text-left flex items-center gap-1">
+                {splitArtists(currentSong.artist).map((artistName, i, arr) => (
+                  <span key={artistName} className="truncate max-w-full">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (artistName && artistName !== 'Unknown Artist') {
+                          setActiveArtist(artistName);
+                          setActiveSection('artist');
+                        }
+                      }}
+                      className="hover:text-white hover:underline transition-colors cursor-pointer"
+                    >
+                      {artistName}
+                    </button>
+                    {i < arr.length - 1 && <span>, </span>}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
           <button

@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { splitArtists } from '../utils/cleanTitle';
 
 const PlayerContext = createContext(null);
 
@@ -358,11 +359,33 @@ export function PlayerProvider({ children, user }) {
       }).slice(0, 10);
     }
     
-    // Suggestion engine: 1. Same mood, 2. Same artist
-    const related = allSongs.filter(s => s.id !== currentSong.id && (s.mood === currentSong.mood || s.artist === currentSong.artist));
-    const others = allSongs.filter(s => s.id !== currentSong.id && s.mood !== currentSong.mood && s.artist !== currentSong.artist);
+    // Suggestion engine: 1. Same artist, 2. Same mood
+    const currentArtists = splitArtists(currentSong.artist);
     
-    return [...related, ...others].slice(0, 10);
+    // Group 1: Shared Artist
+    const sameArtist = allSongs.filter(s => 
+      s.id !== currentSong.id && 
+      splitArtists(s.artist).some(a => currentArtists.includes(a))
+    );
+    
+    const sameArtistIds = new Set(sameArtist.map(s => s.id));
+    
+    // Group 2: Shared Mood
+    const sameMood = allSongs.filter(s => 
+      s.id !== currentSong.id && 
+      !sameArtistIds.has(s.id) && 
+      s.mood === currentSong.mood
+    );
+    
+    const relatedIds = new Set([...sameArtist, ...sameMood].map(s => s.id));
+    
+    // Group 3: Everything else
+    const others = allSongs.filter(s => 
+      s.id !== currentSong.id && 
+      !relatedIds.has(s.id)
+    );
+    
+    return [...sameArtist, ...sameMood, ...others];
   }, [currentSong, allSongs, isShuffle]);
 
   // ─── Next / Prev ──────────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 import { useMemo, useCallback } from 'react';
 import { usePlayer } from '../context/PlayerContext';
-import { cleanTitle, moodAccent } from '../utils/cleanTitle';
+import { cleanTitle, moodAccent, splitArtists } from '../utils/cleanTitle';
 import { useSwipe } from '../hooks/useGestures';
 import { toast } from '../components/ui/Toast';
 import {
@@ -20,7 +20,7 @@ export default function Playback() {
     currentSong, isPlaying, progress, duration, volume,
     allSongs = [], favorites = [], isShuffle, setIsShuffle,
     repeatMode, setRepeatMode, playSong, togglePlay, playNext,
-    playPrev, seek, changeVolume, toggleLike, setActiveSection, albumCovers = {}
+    playPrev, seek, changeVolume, toggleLike, setActiveSection, albumCovers = {}, setActiveArtist
   } = usePlayer() || {};
 
   const accent = moodAccent(currentSong?.mood);
@@ -135,7 +135,25 @@ export default function Playback() {
             <div className="flex items-center justify-between gap-4">
               <div className="min-w-0 flex-1 text-left">
                 <h1 className="text-white text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight truncate">{displayTitle}</h1>
-                <p className="text-white/50 text-xs sm:text-sm md:text-base font-semibold mt-0.5 md:mt-1 truncate">{currentSong.artist}</p>
+                <div className="text-white/50 text-xs sm:text-sm md:text-base font-semibold mt-0.5 md:mt-1 w-full text-left flex items-center gap-1">
+                  {splitArtists(currentSong.artist).map((artistName, i, arr) => (
+                    <span key={artistName} className="truncate max-w-full">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (artistName && artistName !== 'Unknown Artist') {
+                            setActiveArtist(artistName);
+                            setActiveSection('artist');
+                          }
+                        }}
+                        className="hover:text-white hover:underline transition-colors cursor-pointer"
+                      >
+                        {artistName}
+                      </button>
+                      {i < arr.length - 1 && <span>, </span>}
+                    </span>
+                  ))}
+                </div>
               </div>
               <button
                 id="heart-btn"
@@ -322,7 +340,25 @@ export default function Playback() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <h4 className="text-white text-xs font-bold truncate group-hover:text-cyan-300 transition-colors">{song.title}</h4>
-                      <p className="text-white/40 text-[10px] mt-0.5 font-medium truncate">{song.artist}</p>
+                      <div className="text-white/40 text-[10px] mt-0.5 font-medium truncate flex items-center gap-1 w-full text-left">
+                        {splitArtists(song.artist).map((artistName, i, arr) => (
+                          <span key={artistName} className="truncate max-w-full">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (artistName && artistName !== 'Unknown Artist') {
+                                  setActiveArtist(artistName);
+                                  setActiveSection('artist');
+                                }
+                              }}
+                              className="hover:text-white hover:underline transition-colors cursor-pointer"
+                            >
+                              {artistName}
+                            </button>
+                            {i < arr.length - 1 && <span>, </span>}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                     {song.mood && (
                       <div className="text-[10px] text-white/30 font-semibold px-2 py-0.5 bg-white/[0.03] rounded-md border border-white/5 capitalize">

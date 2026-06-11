@@ -1,6 +1,6 @@
 import { Play, Pause, Clock3, Heart } from 'lucide-react';
 import { usePlayer } from '../../context/PlayerContext';
-import { cleanTitle } from '../../utils/cleanTitle';
+import { cleanTitle, splitArtists } from '../../utils/cleanTitle';
 
 function formatTime(secs) {
   if (!secs || isNaN(secs)) return '0:00';
@@ -10,7 +10,7 @@ function formatTime(secs) {
 }
 
 export default function SongRow({ song, index }) {
-  const { currentSong, isPlaying, playSong, favorites = [], toggleLike, progress, duration, albumCovers = {} } = usePlayer();
+  const { currentSong, isPlaying, playSong, favorites = [], toggleLike, progress, duration, albumCovers = {}, setActiveArtist, setActiveSection } = usePlayer();
   const isActive = currentSong?.id === song.id;
   const isCurrentlyPlaying = isActive && isPlaying;
   const displayTitle = cleanTitle(song.title);
@@ -60,7 +60,25 @@ export default function SongRow({ song, index }) {
         <p className={`text-sm font-semibold truncate transition-colors duration-300 ${isActive ? 'text-cyan-400' : 'text-white'}`}>
           {displayTitle}
         </p>
-        <p className="text-white/40 text-xs truncate mt-0.5 font-medium">{song.artist}</p>
+        <div className="text-white/40 text-xs truncate mt-0.5 font-medium w-full text-left flex items-center gap-1">
+          {splitArtists(song.artist).map((artistName, i, arr) => (
+            <span key={artistName} className="truncate max-w-full">
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (artistName && artistName !== 'Unknown Artist') {
+                    setActiveArtist(artistName);
+                    setActiveSection('artist');
+                  }
+                }}
+                className="hover:text-white hover:underline transition-colors cursor-pointer"
+              >
+                {artistName}
+              </button>
+              {i < arr.length - 1 && <span>, </span>}
+            </span>
+          ))}
+        </div>
       </div>
  
       {/* Album */}
