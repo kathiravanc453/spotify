@@ -3,7 +3,7 @@ import * as mm from 'music-metadata';
 import path from 'path';
 import https from 'https';
 
-const songsPath = path.join(process.cwd(), 'songs.json');
+const songsPath = path.join(process.cwd(), 'backend', 'songs.json');
 
 async function getDurationFromUrl(url) {
   return new Promise((resolve, reject) => {

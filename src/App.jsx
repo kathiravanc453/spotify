@@ -11,6 +11,7 @@ import Login from './pages/Login';
 import Playback from './pages/Playback';
 import AdminUpload from './pages/AdminUpload';
 import Artist from './pages/Artist';
+import Actor from './pages/Actor';
 import ToastProvider from './components/ui/Toast';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import useMediaSession from './hooks/useMediaSession';
@@ -126,6 +127,7 @@ function AppContent({ user, onLogout, onLogin }) {
     if (activeSection === 'albums')      return <Albums />;
     if (activeSection === 'now-playing') return <Playback />;
     if (activeSection === 'artist')      return <Artist />;
+    if (activeSection === 'actor')       return <Actor />;
     return <Home search={search} activeSection={activeSection} />;
   };
 

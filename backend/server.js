@@ -286,6 +286,9 @@ const syncWithCloudinary = async () => {
       let fallbackUrl = cover;
       let albumName = 'Cloudinary Singles';
       let songArtist = 'Unknown Artist';
+      let existingMood = null;
+      let existingActor = null;
+      let existingDuration = 0;
 
       // Load existing song data to prevent overwriting valid data
       try {
@@ -302,6 +305,9 @@ const syncWithCloudinary = async () => {
             cover = existing.cover;
             fallbackUrl = existing.fallbackCover || existing.cover;
           }
+          if (existing.actor) existingActor = existing.actor;
+          if (existing.mood) existingMood = existing.mood;
+          if (existing.duration) existingDuration = existing.duration;
         }
       } catch (e) {}
 
@@ -357,7 +363,9 @@ const syncWithCloudinary = async () => {
         cover: cover,
         fallbackCover: fallbackUrl,
         album: albumName,
-        mood: folderMood,
+        mood: existingMood || folderMood,
+        actor: existingActor,
+        duration: existingDuration || 0,
         genre: 'Tamil',
         uploadedAt: cloud.created_at
       });

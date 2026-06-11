@@ -33,7 +33,7 @@ function SectionHeader({ icon: Icon, title, gradient }) {
 }
 
 export default function Home({ search = '', activeSection = 'home' }) {
-  const { recentlyPlayed = [], allSongs = [], loading = false, playSong, currentSong, playCounts = {}, albumCovers = {}, setActiveArtist, setActiveSection: setGlobalSection } = usePlayer() || {};
+  const { recentlyPlayed = [], allSongs = [], loading = false, playSong, currentSong, playCounts = {}, albumCovers = {}, setActiveArtist, setActiveActor, setActiveSection: setGlobalSection } = usePlayer() || {};
   const [selectedMood, setSelectedMood] = useState(null);
   const [moodSearch, setMoodSearch] = useState('');
 
@@ -68,6 +68,42 @@ export default function Home({ search = '', activeSection = 'home' }) {
     "Anirudh Ravichander", "Dhanush", "Sean Roldan", "S. P. Charan", "Ranjith", 
     "Javed Ali", "Sriram Parthasarathy"
   ];
+
+  const POPULAR_ACTORS = [
+    "Vijay", "Ajith Kumar", "Suriya", "Vikram", "Dhanush", 
+    "Vijay Sethupathi", "Sivakarthikeyan", "Karthi", 
+    "Rajinikanth", "Kamal Haasan", "Sivaji Ganesan", 
+    "M. G. Ramachandran", "Gemini Ganesan", "Jaishankar",
+    "Arya", "Jayam Ravi", "Jiiva", "Vishal", "Silambarasan", 
+    "Atharvaa", "Bharath", "Shaam", "Prashanth", "Arvind Swamy", "Madhavan"
+  ];
+
+  const ACTOR_IMAGES = {
+    "Vijay": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/C._Joseph_Vijay_%28cropped%29.jpg/500px-C._Joseph_Vijay_%28cropped%29.jpg",
+    "Ajith Kumar": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Ajith_Kumar_at_Irungattukottai_Race_Track.jpg/500px-Ajith_Kumar_at_Irungattukottai_Race_Track.jpg",
+    "Suriya": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Retro_audio_launch_-_Suriya.jpg/500px-Retro_audio_launch_-_Suriya.jpg",
+    "Vikram": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Tamil-Actor-Vikram-Looking-Very-Smart-And-Stylish-Photos-20.jpg/500px-Tamil-Actor-Vikram-Looking-Very-Smart-And-Stylish-Photos-20.jpg",
+    "Dhanush": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/Dhanush_at_the_%E2%80%98Asuran%E2%80%99_Success_Meet_%28cropped%29.jpg/500px-Dhanush_at_the_%E2%80%98Asuran%E2%80%99_Success_Meet_%28cropped%29.jpg",
+    "Vijay Sethupathi": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/Vijay_Sethupathi.jpg/500px-Vijay_Sethupathi.jpg",
+    "Sivakarthikeyan": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/76/Sivakarthikeyan_%28cropped%29.jpg/500px-Sivakarthikeyan_%28cropped%29.jpg",
+    "Karthi": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Karthi_Sivakumar_at_Nenjil_Thunivirunthal_Audio_Launch_%28cropped%29.jpg/500px-Karthi_Sivakumar_at_Nenjil_Thunivirunthal_Audio_Launch_%28cropped%29.jpg",
+    "Rajinikanth": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Rajinikanth_in_2019.jpg/500px-Rajinikanth_in_2019.jpg",
+    "Kamal Haasan": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Kamal_Haasan_at_2023_San_Diego_Comic-Con_International_by_Gage_Skidmore%2C_005_%28cropped%29.jpg/500px-Kamal_Haasan_at_2023_San_Diego_Comic-Con_International_by_Gage_Skidmore%2C_005_%28cropped%29.jpg",
+    "Sivaji Ganesan": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/Sivaji_ganesan_%28cropped%29.jpg/500px-Sivaji_ganesan_%28cropped%29.jpg",
+    "M. G. Ramachandran": "https://upload.wikimedia.org/wikipedia/commons/4/44/MGR_portrait%2C_from_2017_Stamp.jpg",
+    "Gemini Ganesan": "https://upload.wikimedia.org/wikipedia/commons/c/c0/Gemini_Ganesan_2006_stamp_of_India_%28cropped%29.jpg",
+    "Arya": "https://upload.wikimedia.org/wikipedia/commons/5/58/Arya_viewing_CCL_match%2C_India_%28cropped%29.jpg",
+    "Jayam Ravi": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/Jayam_Ravi_at_Naya_Gadget_Shop_Launch_Event.jpg/500px-Jayam_Ravi_at_Naya_Gadget_Shop_Launch_Event.jpg",
+    "Jiiva": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/Jiiva_latest_photoshoot.jpg/500px-Jiiva_latest_photoshoot.jpg",
+    "Vishal": "https://upload.wikimedia.org/wikipedia/commons/8/86/Vishal_at_CCL_4_Launch_%28cropped%29.jpg",
+    "Silambarasan": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Simbu_At_The_Inimey_Ippadithaan_Audio_Launch_%28cropped%29.jpg/500px-Simbu_At_The_Inimey_Ippadithaan_Audio_Launch_%28cropped%29.jpg",
+    "Atharvaa": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/Atharvaa_at_Eetti_Success_Meet_%28cropped%29.jpg/500px-Atharvaa_at_Eetti_Success_Meet_%28cropped%29.jpg",
+    "Bharath": "https://ui-avatars.com/api/?name=Bharath&background=random&color=fff",
+    "Shaam": "https://ui-avatars.com/api/?name=Shaam&background=random&color=fff",
+    "Prashanth": "https://ui-avatars.com/api/?name=Prashanth&background=random&color=fff",
+    "Arvind Swamy": "https://ui-avatars.com/api/?name=Arvind%20Swamy&background=random&color=fff",
+    "Madhavan": "https://ui-avatars.com/api/?name=Madhavan&background=random&color=fff"
+  };
 
   const FEMALE_ARTISTS = [
     "P. Susheela", "S. Janaki", "K. S. Chithra", "Sujatha Mohan", "Swarnalatha", 
@@ -146,6 +182,28 @@ export default function Home({ search = '', activeSection = 'home' }) {
     return Object.values(counts)
       .filter(artist => !MALE_ARTISTS.includes(artist.name) && !FEMALE_ARTISTS.includes(artist.name)) // Hide predefined artists from the general popular list to avoid duplication
       .sort((a, b) => b.count - a.count);
+  }, [allSongs, albumCovers]);
+
+  const popularActorsData = useMemo(() => {
+    const counts = {};
+    POPULAR_ACTORS.forEach(actor => {
+      const cleanName = actor.replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+      counts[actor] = { 
+        count: 0, 
+        name: actor, 
+        cover: ACTOR_IMAGES[actor] || `https://ui-avatars.com/api/?name=${encodeURIComponent(cleanName)}&background=random&color=fff&size=500&font-size=0.33`,
+        isActor: true
+      };
+    });
+
+    allSongs.forEach(song => {
+      if (song.actor && POPULAR_ACTORS.includes(song.actor)) {
+        counts[song.actor].count++;
+      }
+    });
+    
+    // Filter out actors with 0 songs if desired, or keep them all. The request asked to create a library for them.
+    return Object.values(counts).sort((a, b) => b.count - a.count);
   }, [allSongs, albumCovers]);
   
   if (loading && allSongs.length === 0) {
@@ -468,8 +526,13 @@ export default function Home({ search = '', activeSection = 'home' }) {
                 className="group cursor-pointer flex-shrink-0 w-32 sm:w-44 md:w-48 scroll-snap-x p-2 sm:p-4 rounded-xl hover:bg-white/[0.08] transition-colors duration-300"
                 style={{ scrollSnapAlign: 'start' }}
                 onClick={() => {
-                  setActiveArtist(artist.name);
-                  setGlobalSection('artist');
+                  if (artist.isActor) {
+                    setActiveActor(artist.name);
+                    setGlobalSection('actor');
+                  } else {
+                    setActiveArtist(artist.name);
+                    setGlobalSection('artist');
+                  }
                 }}
               >
                 <div className="relative aspect-square rounded-full overflow-hidden mb-3 sm:mb-4 shadow-[0_8px_24px_rgba(0,0,0,0.5)]">
@@ -482,7 +545,7 @@ export default function Home({ search = '', activeSection = 'home' }) {
                   </div>
                 </div>
                 <h3 className="text-white text-sm sm:text-base font-bold truncate">{artist.name}</h3>
-                <p className="text-[#a7a7a7] text-xs sm:text-sm mt-1">Artist</p>
+                <p className="text-[#a7a7a7] text-xs sm:text-sm mt-1">{artist.isActor ? 'Actor' : 'Artist'}</p>
               </div>
             ))}
           </div>
@@ -535,6 +598,7 @@ export default function Home({ search = '', activeSection = 'home' }) {
         {renderArtistCarousel('Male Artists', maleArtistsData)}
         {renderArtistCarousel('Female Artists', femaleArtistsData)}
         {renderArtistCarousel('Popular Artists', topArtists)}
+        {renderArtistCarousel('Popular Actors', popularActorsData)}
 
         <section>
           <SectionHeader icon={Music} title="Your Library" gradient="from-violet-500 to-fuchsia-500 shadow-violet-500/20" />

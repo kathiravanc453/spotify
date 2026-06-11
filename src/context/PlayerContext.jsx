@@ -15,6 +15,7 @@ export function PlayerProvider({ children, user }) {
   const [favorites, setFavorites]       = useState([]);
   const [activeSection, setActiveSection] = useState('home');
   const [activeArtist, setActiveArtist] = useState(null);
+  const [activeActor, setActiveActor] = useState(null);
   const [sleepTimer, setSleepTimer]     = useState(null); // minutes remaining
   const [playCounts, setPlayCounts]     = useState(() => {
     try { return JSON.parse(localStorage.getItem('rhythmix_playcounts') || '{}') || {}; } catch { return {}; }
@@ -536,6 +537,7 @@ export function PlayerProvider({ children, user }) {
       recentlyPlayed, allSongs, loading, favorites, playCounts, albumCovers,
       playSong, togglePlay, playNext, playPrev, seek, changeVolume, toggleLike,
       activeSection, setActiveSection, activeArtist, setActiveArtist,
+      activeActor, setActiveActor,
       isShuffle, setIsShuffle, repeatMode, setRepeatMode,
       stopPlayback,
       sleepTimer, startSleepTimer, cancelSleepTimer,
