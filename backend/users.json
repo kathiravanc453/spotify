@@ -38,5 +38,13 @@
     "avatar": "https://api.dicebear.com/7.x/initials/svg?seed=kathiravanc453",
     "role": "user",
     "registeredAt": "2026-06-11T05:40:59.219Z"
+  },
+  {
+    "name": "test",
+    "email": "test@test.com",
+    "password": "123",
+    "avatar": "https://api.dicebear.com/7.x/initials/svg?seed=test",
+    "role": "user",
+    "registeredAt": "2026-06-13T07:16:00.942Z"
   }
 ]

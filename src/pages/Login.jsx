@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { Mail, Lock, ShieldCheck, ArrowRight, Music2, Loader2, UserPlus } from 'lucide-react';
+import { auth, db } from '../firebase';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 
 const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'admin@rhythmix.com';
 
@@ -17,7 +20,7 @@ export default function Login({ onLogin }) {
     const sessionData = {
       name: isSystemAdmin ? 'Admin' : user.email.split('@')[0],
       email: user.email,
-      avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.email)}`,
+      avatar: user.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.email)}`,
       role: isSystemAdmin ? 'admin' : 'user',
       uid: user.uid,
       loggedInAt: Date.now(),
@@ -38,33 +41,51 @@ export default function Login({ onLogin }) {
     setLoading(true);
     
     try {
-      const endpoint = isSignUp ? '/api/register' : '/api/login';
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: email.split('@')[0], // Use part of email as name for signup
-          email,
-          password
-        })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Authentication failed');
+      if (!auth) {
+        throw new Error('Firebase Auth is not properly initialized. Check your .env file!');
       }
 
-      // Convert the backend session object to match our frontend format
+      let userCredential;
+      const generatedName = email.split('@')[0];
+      const generatedAvatar = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(email)}`;
+      const isSystemAdmin = email === ADMIN_EMAIL;
+
+      if (isSignUp) {
+        userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const fbUser = userCredential.user;
+        
+        // 1. Update Firebase Auth Profile
+        await updateProfile(fbUser, { displayName: generatedName, photoURL: generatedAvatar });
+
+        // 2. Save User to Cloud Firestore Database
+        if (db) {
+          await setDoc(doc(db, "users", fbUser.uid), {
+            name: isSystemAdmin ? 'Admin' : generatedName,
+            email: fbUser.email,
+            avatar: generatedAvatar,
+            role: isSystemAdmin ? 'admin' : 'user',
+            createdAt: new Date().toISOString()
+          });
+        }
+      } else {
+        userCredential = await signInWithEmailAndPassword(auth, email, password);
+      }
+
+      const fbUser = userCredential.user;
+
+      // Convert Firebase user object to match our frontend format
       const userObj = {
-        email: data.email,
-        uid: Date.now().toString(), // Mock UID for local auth
+        email: fbUser.email,
+        uid: fbUser.uid,
+        avatar: fbUser.photoURL,
       };
 
       finalizeLogin(userObj);
     } catch (err) {
-      console.error(err);
-      setError(`Error: ${err.message}`);
+      console.error('Firebase Auth Error:', err);
+      // Clean up Firebase error codes for users
+      const cleanMessage = err.code ? err.code.replace('auth/', '').replace(/-/g, ' ') : err.message;
+      setError(`Error: ${cleanMessage}`);
     } finally {
       setLoading(false);
     }
