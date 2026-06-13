@@ -110,6 +110,16 @@ export function PlayerProvider({ children, user }) {
         return Math.abs(hash);
       };
 
+      const guessMoodFromTitle = (title) => {
+        if (!title) return 'Melody';
+        const clean = title.toLowerCase().replace(/[^a-z0-9]/g, ' ');
+        if (/(kuthu|mass|adichu|beat|dance|vathi|theri|local|verithanam|banger)/.test(clean)) return 'Kuthu';
+        if (/(kadhal|love|unnai|ennai|heart|baby|uyir|anbe|romance|romantic)/.test(clean)) return 'Romance';
+        if (/(vali|pain|sad|cry|kaneer|thaniye|broken|alone|grief|tears)/.test(clean)) return 'Sad';
+        if (/(melody|vibe|chill|lofi|acoustic|breeze)/.test(clean)) return 'Melody';
+        return 'Vibes';
+      };
+
       const songs = resources
         .filter(r => r.format === 'mp3' || r.format === 'm4a')
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
@@ -140,7 +150,7 @@ export function PlayerProvider({ children, user }) {
             cover:        r.context?.custom?.cover || 'https://images.unsplash.com/photo-1493225457124-a1a2a5d5facf?w=500',
             fallbackCover: r.context?.custom?.cover || 'https://images.unsplash.com/photo-1493225457124-a1a2a5d5facf?w=500',
             album:        r.context?.custom?.album || 'Cloudinary',
-            mood:         r.context?.custom?.mood || 'Melody',
+            mood:         r.context?.custom?.mood || guessMoodFromTitle(title),
             genre:        'Tamil',
             uploadedAt:   r.created_at,
             duration:     r.duration || 0,
