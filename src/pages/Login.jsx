@@ -57,15 +57,15 @@ export default function Login({ onLogin }) {
         // 1. Update Firebase Auth Profile
         await updateProfile(fbUser, { displayName: generatedName, photoURL: generatedAvatar });
 
-        // 2. Save User to Cloud Firestore Database
+        // 2. Save User to Cloud Firestore Database (Non-blocking)
         if (db) {
-          await setDoc(doc(db, "users", fbUser.uid), {
+          setDoc(doc(db, "users", fbUser.uid), {
             name: isSystemAdmin ? 'Admin' : generatedName,
             email: fbUser.email,
             avatar: generatedAvatar,
             role: isSystemAdmin ? 'admin' : 'user',
             createdAt: new Date().toISOString()
-          });
+          }).catch(err => console.error("Firestore Error (Did you create the database?):", err));
         }
       } else {
         userCredential = await signInWithEmailAndPassword(auth, email, password);
