@@ -4,14 +4,16 @@ import SongCard from '../components/shared/SongCard';
 import SongRow from '../components/shared/SongRow';
 import { Heart, Zap, Coffee, Sparkles, Music2, ChevronLeft, Music, Search, X, Play } from 'lucide-react';
 
-const MASTER_MOODS = ['love', 'melody', 'romance', 'vibes', 'energy boost'];
+import { CloudRain } from 'lucide-react'; // Need CloudRain for Sad mood
+
+const MASTER_MOODS = ['kuthu', 'romance', 'melody', 'sad', 'vibes'];
 
 const MOOD_THEMES = {
-  'love':         { label: 'Love',         icon: Heart,    grad: 'from-rose-600 via-pink-600 to-rose-800',    desc: 'Deeply in Love',        glow: 'shadow-rose-500/30' },
-  'melody':       { label: 'Melody',       icon: Sparkles, grad: 'from-cyan-600 via-blue-600 to-cyan-800',    desc: 'Pure musical bliss',    glow: 'shadow-cyan-500/30' },
-  'romance':      { label: 'Romance',      icon: Heart,    grad: 'from-fuchsia-600 via-rose-500 to-pink-800', desc: 'Sweet & Romantic',      glow: 'shadow-fuchsia-500/30' },
-  'vibes':        { label: 'Vibes',        icon: Coffee,   grad: 'from-amber-600 via-orange-500 to-amber-800',desc: 'Chill & Relax',         glow: 'shadow-amber-500/30' },
-  'energy boost': { label: 'Energy Boost', icon: Zap,      grad: 'from-violet-600 via-indigo-500 to-violet-800',desc: 'Power up your day',   glow: 'shadow-violet-500/30' },
+  'kuthu':        { label: 'Kuthu',        icon: Zap,        grad: 'from-violet-600 via-indigo-500 to-violet-800',desc: 'High Energy Beats',     glow: 'shadow-violet-500/30' },
+  'romance':      { label: 'Romance',      icon: Heart,      grad: 'from-fuchsia-600 via-rose-500 to-pink-800', desc: 'Sweet & Romantic',      glow: 'shadow-fuchsia-500/30' },
+  'melody':       { label: 'Melody',       icon: Sparkles,   grad: 'from-cyan-600 via-blue-600 to-cyan-800',    desc: 'Pure musical bliss',    glow: 'shadow-cyan-500/30' },
+  'sad':          { label: 'Sad',          icon: CloudRain,  grad: 'from-slate-600 via-gray-600 to-slate-800',  desc: 'Emotional & Broken',    glow: 'shadow-slate-500/30' },
+  'vibes':        { label: 'Vibes',        icon: Coffee,     grad: 'from-amber-600 via-orange-500 to-amber-800',desc: 'Chill & Relax',         glow: 'shadow-amber-500/30' },
 };
 
 // Mini 2×2 collage of song covers for a mood card

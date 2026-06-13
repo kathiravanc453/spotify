@@ -6,17 +6,16 @@ import { SongCardSkeleton, SongRowSkeleton } from '../components/ui/Skeleton';
 import { TrendingUp, Star, Clock, Music, Loader2, Music2, Heart, Zap, Coffee, Sparkles, Search, X, Play } from 'lucide-react';
 import { cleanTitle, splitArtists } from '../utils/cleanTitle';
 import artistImages from '../data/artistImages.json';
+import { CloudRain } from 'lucide-react'; // Added for Sad mood
 // YOUR 5 MASTER CATEGORIES
-const MASTER_MOODS = ['love', 'melody', 'romance', 'vibes', 'energy boost'];
+const MASTER_MOODS = ['kuthu', 'romance', 'melody', 'sad', 'vibes'];
 
 const MOOD_THEMES = {
-  'love': { label: 'Love', icon: Heart, color: 'from-rose-500 to-pink-500 shadow-rose-500/25 text-white' },
-  'melody': { label: 'Melody', icon: Sparkles, color: 'from-cyan-500 to-blue-500 shadow-cyan-500/25 text-white' },
+  'kuthu': { label: 'Kuthu', icon: Zap, color: 'from-violet-600 to-indigo-500 shadow-violet-500/25 text-white' },
   'romance': { label: 'Romance', icon: Heart, color: 'from-fuchsia-500 to-rose-400 shadow-fuchsia-500/25 text-white' },
-  'romances': { label: 'Romance', icon: Heart, color: 'from-fuchsia-500 to-rose-400 shadow-fuchsia-500/25 text-white' },
+  'melody': { label: 'Melody', icon: Sparkles, color: 'from-cyan-500 to-blue-500 shadow-cyan-500/25 text-white' },
+  'sad': { label: 'Sad', icon: CloudRain, color: 'from-slate-600 to-gray-500 shadow-slate-500/25 text-white' },
   'vibes': { label: 'Vibes', icon: Coffee, color: 'from-amber-500 to-orange-500 shadow-orange-500/25 text-white' },
-  'energy boost': { label: 'Energy Boost', icon: Zap, color: 'from-violet-600 to-indigo-500 shadow-violet-500/25 text-white' },
-  'boost energy': { label: 'Energy Boost', icon: Zap, color: 'from-violet-600 to-indigo-500 shadow-violet-500/25 text-white' },
 };
 
 function SectionHeader({ icon: Icon, title, gradient }) {
@@ -371,11 +370,11 @@ export default function Home({ search = '', activeSection = 'home' }) {
       const suggestionRow  = moodSongs.slice(1, 9);
 
       const moodGradients = {
-        love: 'from-rose-900/70 via-pink-900/40 to-transparent',
+        kuthu: 'from-violet-900/70 via-indigo-900/40 to-transparent',
         melody: 'from-cyan-900/70 via-blue-900/40 to-transparent',
         romance: 'from-fuchsia-900/70 via-rose-900/40 to-transparent',
+        sad: 'from-slate-900/70 via-gray-900/40 to-transparent',
         vibes: 'from-amber-900/70 via-orange-900/40 to-transparent',
-        'energy boost': 'from-violet-900/70 via-indigo-900/40 to-transparent',
       };
       const moodGrad = moodGradients[favoriteMood?.toLowerCase()] || 'from-cyan-900/60 via-violet-900/40 to-transparent';
 

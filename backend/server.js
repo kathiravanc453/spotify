@@ -185,20 +185,85 @@ const resolveMusicMetadata = (publicId, title) => {
   });
 };
 
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'YOUR_GEMINI_API_KEY_HERE';
+const AI_MOOD_CACHE_FILE = path.join(process.cwd(), 'ai-mood-cache.json');
+let aiMoodCache = {};
+try {
+  if (fs.existsSync(AI_MOOD_CACHE_FILE)) {
+    aiMoodCache = JSON.parse(fs.readFileSync(AI_MOOD_CACHE_FILE, 'utf8'));
+  }
+} catch (e) {}
+
+const guessMoodWithGemini = async (titlesArray) => {
+  if (!GEMINI_API_KEY || GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
+    return {};
+  }
+
+  const prompt = `
+You are an expert Tamil Music AI. Analyze these Tamil movie song titles.
+Assign EXACTLY ONE of these moods to EACH song: "Kuthu", "Romance", "Sad", "Melody", or "Vibes".
+Rules:
+- Kuthu: Fast beat, dance, mass songs (e.g. "Aaluma Doluma", "Thanjavoor Jillakkari")
+- Romance: Love songs (e.g. "Mun Paniya", "Oru Maalai")
+- Sad: Grief, broken heart (e.g. "Kanave Kalaiyadhe")
+- Melody: Calm, soothing, breezy
+- Vibes: Pop, rap, mixed, or default
+
+Return ONLY a valid JSON object mapping the exact title string to the mood.
+Example: {"Thanjavoor Jillakkari": "Kuthu", "Mun Paniya": "Romance"}
+
+Songs:
+${JSON.stringify(titlesArray)}
+  `;
+
+  try {
+    const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + GEMINI_API_KEY;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { response_mime_type: "application/json" }
+      })
+    });
+    
+    if (!res.ok) {
+      console.error('Gemini API Error:', await res.text());
+      return {};
+    }
+
+    const data = await res.json();
+    const textResp = data.candidates[0].content.parts[0].text;
+    return JSON.parse(textResp);
+  } catch (err) {
+    console.error('Gemini parsing error:', err.message);
+    return {};
+  }
+};
+
 const syncWithCloudinary = async () => {
   console.log('\n====================================================');
   console.log('🛰️ DEEP FOLDER SYNC... (' + new Date().toLocaleTimeString() + ')');
   
   try {
-    const result = await cloudinary.search
-      .expression('resource_type:video AND (format:mp3 OR format:m4a)')
-      .with_field('context')
-      .sort_by('created_at', 'desc')
-      .max_results(500)
-      .execute();
+    let allCloudSongs = [];
+    let nextCursor = null;
 
-    const cloudSongs = result.resources
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    do {
+      const result = await cloudinary.api.resources({
+        resource_type: 'video',
+        max_results: 500,
+        type: 'upload',
+        context: true,
+        next_cursor: nextCursor
+      });
+
+      const audioFiles = result.resources.filter(r => r.format === 'mp3' || r.format === 'm4a');
+      allCloudSongs = allCloudSongs.concat(audioFiles);
+      nextCursor = result.next_cursor;
+    } while (nextCursor);
+
+    const cloudSongs = allCloudSongs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     console.log(`🎵 I found ${cloudSongs.length} songs in your Cloudinary account.`);
 
     if (cloudSongs.length > 0) {
@@ -209,6 +274,44 @@ const syncWithCloudinary = async () => {
         all_keys: Object.keys(cloudSongs[0])
       });
     }
+
+    // --- GEMINI BATCHING ---
+    console.log('🤖 Starting Gemini AI Deep Analysis...');
+    const titlesToAnalyze = [];
+    cloudSongs.forEach(c => {
+      let rawName = c.public_id.split('/').pop().split('.')[0];
+      if (/_[a-zA-Z0-9]{6}$/.test(rawName)) {
+        rawName = rawName.substring(0, rawName.length - 7);
+      }
+      let name = rawName.replace(/_/g, ' ');
+      name = cleanSearchTerm(name);
+
+      if (name && !aiMoodCache[name]) {
+        titlesToAnalyze.push(name);
+      }
+    });
+
+    const uniqueTitles = [...new Set(titlesToAnalyze)];
+    if (uniqueTitles.length > 0) {
+      console.log('🧠 Found ' + uniqueTitles.length + ' new songs for Gemini to analyze!');
+      for (let i = 0; i < uniqueTitles.length; i += 40) {
+        const batch = uniqueTitles.slice(i, i + 40);
+        console.log('   -> Analyzing batch ' + (Math.floor(i/40) + 1) + ' of ' + Math.ceil(uniqueTitles.length / 40) + '...');
+        const results = await guessMoodWithGemini(batch);
+        
+        batch.forEach(title => {
+          aiMoodCache[title] = results[title] || guessMoodFromTitle(title); // fallback to regex if undefined
+        });
+
+        fs.writeFileSync(AI_MOOD_CACHE_FILE, JSON.stringify(aiMoodCache, null, 2));
+
+        if (i + 40 < uniqueTitles.length) {
+          await new Promise(r => setTimeout(r, 4000));
+        }
+      }
+      console.log('✅ Gemini Deep Analysis Complete!');
+    }
+    // -----------------------
 
     // Load metadata overrides
     let overrides = {};
@@ -233,7 +336,8 @@ const syncWithCloudinary = async () => {
       let name = rawName.replace(/_/g, ' ');
 
       // 2. Intelligent Auto-Mood Detection based on the song's title
-      let folderMood = guessMoodFromTitle(name);
+      let nameForCache = cleanSearchTerm(name);
+      let folderMood = aiMoodCache[nameForCache] || guessMoodFromTitle(name);
 
       // Check Cloudinary context.custom as a potential manual override
       try {
@@ -300,7 +404,6 @@ const syncWithCloudinary = async () => {
             fallbackUrl = existing.fallbackCover || existing.cover;
           }
           if (existing.actor) existingActor = existing.actor;
-          if (existing.mood) existingMood = existing.mood;
           if (existing.duration) existingDuration = existing.duration;
         }
       } catch (e) {}
@@ -359,7 +462,7 @@ const syncWithCloudinary = async () => {
         cover: cover,
         fallbackCover: fallbackUrl,
         album: albumName,
-        mood: existingMood || folderMood,
+        mood: folderMood,
         actor: existingActor,
         duration: existingDuration || 0,
         genre: 'Tamil',
@@ -472,8 +575,15 @@ app.get('/api/artwork', async (req, res) => {
   return res.status(200).json(result);
 });
 
-setInterval(syncWithCloudinary, 15000);
-syncWithCloudinary();
+let isSyncing = false;
+const syncLoop = async () => {
+  if (isSyncing) return;
+  isSyncing = true;
+  await syncWithCloudinary();
+  isSyncing = false;
+  setTimeout(syncLoop, 5 * 60 * 1000); // Wait 5 minutes between deep syncs
+};
+syncLoop();
 
 app.get('/api/songs', (req, res) => {
   try {
