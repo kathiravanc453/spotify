@@ -336,7 +336,7 @@ export function PlayerProvider({ children, user }) {
 
     setRecentlyPlayed(prev => {
       const filtered = prev.filter(s => s.id !== song.id);
-      return [song, ...filtered].slice(0, 10);
+      return [song, ...filtered].slice(0, 100);
     });
   }, [currentSong, isPlaying, incrementPlayCount, user]);
 
@@ -350,44 +350,37 @@ export function PlayerProvider({ children, user }) {
   const upNextQueue = useMemo(() => {
     if (!currentSong || allSongs.length === 0) return [];
     
+    // Memory engine: exclude all recently played songs to prevent any loops.
+    // (recentlyPlayed is capped at 100, providing ~8 hours of unrepeated music)
+    const recentIds = new Set(recentlyPlayed.map(s => s.id));
+    const availableSongs = allSongs.filter(s => s.id !== currentSong.id && !recentIds.has(s.id));
+
+    // Shuffle the available songs deterministically based on the current song.
+    // This solves the "top 30" repetition issue by fully randomizing the remaining library!
+    const shuffledAvailable = [...availableSongs].sort((a, b) => {
+      const hashA = String(a.id) + String(currentSong.id);
+      const hashB = String(b.id) + String(currentSong.id);
+      const valA = hashA.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      const valB = hashB.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      return valA - valB;
+    });
+
     if (isShuffle) {
-      const remaining = allSongs.filter(s => s.id !== currentSong.id);
-      // Deterministic pseudo-shuffle based on current song id to prevent rapid reshuffling on re-renders
-      return [...remaining].sort((a, b) => {
-        const hashA = a.title.charCodeAt(0) + (currentSong.id.charCodeAt(0) || 0);
-        const hashB = b.title.charCodeAt(0) + (currentSong.id.charCodeAt(0) || 0);
-        return (hashA % 3) - (hashB % 3);
-      }).slice(0, 10);
+      // Pure random shuffle ignoring mood
+      return shuffledAvailable.slice(0, 50);
     }
     
-    // Suggestion engine: 1. Same artist, 2. Same mood
-    const currentArtists = splitArtists(currentSong.artist);
+    // Per user request: "no depend on the folder... choose the moods while playing"
+    // Priority 1: Strict AI Mood match (Case-insensitive to handle Cloudinary folder name differences)
+    const currentMood = (currentSong.mood || '').toLowerCase();
+    const sameMood = shuffledAvailable.filter(s => (s.mood || '').toLowerCase() === currentMood);
+    const sameMoodIds = new Set(sameMood.map(s => s.id));
     
-    // Group 1: Shared Artist
-    const sameArtist = allSongs.filter(s => 
-      s.id !== currentSong.id && 
-      splitArtists(s.artist).some(a => currentArtists.includes(a))
-    );
+    // Priority 2: Everything else (when the mood runs out)
+    const others = shuffledAvailable.filter(s => !sameMoodIds.has(s.id));
     
-    const sameArtistIds = new Set(sameArtist.map(s => s.id));
-    
-    // Group 2: Shared Mood
-    const sameMood = allSongs.filter(s => 
-      s.id !== currentSong.id && 
-      !sameArtistIds.has(s.id) && 
-      s.mood === currentSong.mood
-    );
-    
-    const relatedIds = new Set([...sameArtist, ...sameMood].map(s => s.id));
-    
-    // Group 3: Everything else
-    const others = allSongs.filter(s => 
-      s.id !== currentSong.id && 
-      !relatedIds.has(s.id)
-    );
-    
-    return [...sameArtist, ...sameMood, ...others];
-  }, [currentSong, allSongs, isShuffle]);
+    return [...sameMood, ...others];
+  }, [currentSong, allSongs, isShuffle, recentlyPlayed]);
 
   // ─── Next / Prev ──────────────────────────────────────────────────────────
   const playNext = useCallback(() => {
