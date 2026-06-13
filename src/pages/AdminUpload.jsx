@@ -68,7 +68,7 @@ export default function AdminUpload() {
   const handleGlobalLogout = async () => {
     if (window.confirm("Are you sure you want to force logout EVERY active user from the app?")) {
       try {
-        await fetch('http://localhost:3001/api/admin/logout-all', { method: 'POST' });
+        await fetch('/api/admin/logout-all', { method: 'POST' });
         alert("All users have been successfully logged out globally!");
       } catch (err) {
         alert("Failed to execute global logout.");

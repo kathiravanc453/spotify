@@ -36,7 +36,7 @@ function AppContent({ user, onLogout, onLogin }) {
     const handleAppInstalled = async () => {
       // PWA has been successfully installed, log it to the backend!
       try {
-        await fetch('http://localhost:3001/api/stats/download', { method: 'POST' });
+        await fetch('/api/stats/download', { method: 'POST' });
       } catch (err) {
         console.error('Failed to log PWA download:', err);
       }
@@ -252,7 +252,7 @@ export default function App() {
     
     const checkAuthStatus = async () => {
       try {
-        const res = await fetch('http://localhost:3001/api/auth/status');
+        const res = await fetch('/api/auth/status');
         const data = await res.json();
         const userLoginTime = user.loggedInAt || 0;
         

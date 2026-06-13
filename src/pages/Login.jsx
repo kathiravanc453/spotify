@@ -38,7 +38,7 @@ export default function Login({ onLogin }) {
     setLoading(true);
     
     try {
-      const endpoint = isSignUp ? 'http://localhost:3001/api/register' : 'http://localhost:3001/api/login';
+      const endpoint = isSignUp ? '/api/register' : '/api/login';
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
