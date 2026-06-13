@@ -34,37 +34,32 @@ const getStableId = (str) => {
   return Math.abs(hash);
 };
 
-const getMoodFromFolder = (folderPath) => {
-  if (!folderPath) return 'Melody';
+const guessMoodFromTitle = (title) => {
+  if (!title) return 'Melody';
+  const clean = title.toLowerCase().replace(/[^a-z0-9]/g, ' ');
 
-  // If the folder is a nested path, prefer the last segment but consider full path for mapping
-  const segments = folderPath.split('/').filter(Boolean);
-  const folder = segments.length ? segments[segments.length - 1] : folderPath;
-
-  // Load optional mappings from backend/mood-mapping.json (case-insensitive keys)
-  try {
-    const mappingsPath = path.join(__dirname, 'mood-mapping.json');
-    if (fs.existsSync(mappingsPath)) {
-      const raw = fs.readFileSync(mappingsPath, 'utf-8');
-      const mappings = JSON.parse(raw);
-      const keys = Object.keys(mappings);
-      const foundKey = keys.find(k => k.toLowerCase() === folder.toLowerCase() || k.toLowerCase() === folderPath.toLowerCase());
-      if (foundKey) return mappings[foundKey];
-    }
-  } catch (e) {
-    console.warn('⚠️ Could not read mood-mapping.json:', e.message);
+  // Kuthu / Mass / Energy
+  if (/(kuthu|mass|adichu|beat|dance|vathi|theri|local|verithanam|banger)/.test(clean)) {
+    return 'Kuthu';
+  }
+  
+  // Romance / Love
+  if (/(kadhal|love|unnai|ennai|heart|baby|uyir|anbe|romance|romantic)/.test(clean)) {
+    return 'Romance';
+  }
+  
+  // Sad / Pain
+  if (/(vali|pain|sad|cry|kaneer|thaniye|broken|alone|grief|tears)/.test(clean)) {
+    return 'Sad';
+  }
+  
+  // Melody / Vibes
+  if (/(melody|vibe|chill|lofi|acoustic|breeze)/.test(clean)) {
+    return 'Melody';
   }
 
-  const clean = folder.toLowerCase().replace(/[_-]/g, ' ').trim();
-
-  if (clean.includes('love')) return 'Love';
-  if (clean.includes('romance') || clean.includes('romantic')) return 'Romance';
-  if (clean.includes('melody') || clean.includes('melodies')) return 'Melody';
-  if (clean.includes('vibe')) return 'Vibes';
-  if (clean.includes('energy') || clean.includes('boost')) return 'Energy Boost';
-
-  // Default: capitalize the folder segment
-  return folder.charAt(0).toUpperCase() + folder.slice(1);
+  // Default fallback if no emotional keywords are found
+  return 'Vibes';
 };
 
 const AUTO_METADATA_CACHE_JSON = path.join(__dirname, 'auto-metadata-cache.json');
@@ -230,41 +225,30 @@ const syncWithCloudinary = async () => {
     const seenCleanTitles = new Set();
 
     for (const cloud of cloudSongs) {
-      // Prefer explicit mood set during upload via tags or context
-      let folderMood = null;
-      let rawFolder = cloud.asset_folder || cloud.folder;
-      
-      if (!rawFolder && cloud.public_id && cloud.public_id.includes('/')) {
-        const parts = cloud.public_id.split('/');
-        parts.pop();
-        rawFolder = parts.join('/');
-      } 
-      
-      // Check Cloudinary context.custom (some SDKs set custom context under context.custom)
+      // 1. Extract and Clean the Song Name FIRST
+      let rawName = cloud.public_id.split('/').pop().split('.')[0];
+      if (/_[a-zA-Z0-9]{6}$/.test(rawName)) {
+        rawName = rawName.substring(0, rawName.length - 7);
+      }
+      let name = rawName.replace(/_/g, ' ');
+
+      // 2. Intelligent Auto-Mood Detection based on the song's title
+      let folderMood = guessMoodFromTitle(name);
+
+      // Check Cloudinary context.custom as a potential manual override
       try {
         if (cloud.context && cloud.context.custom && cloud.context.custom.mood) {
           folderMood = cloud.context.custom.mood;
         }
       } catch (e) {}
 
-      // Check tags like "mood:Melody"
-      if (!folderMood && Array.isArray(cloud.tags)) {
+      // Check explicit tags like "mood:Melody" as a manual override
+      if (Array.isArray(cloud.tags)) {
         const moodTag = cloud.tags.find(t => typeof t === 'string' && t.toLowerCase().startsWith('mood:'));
         if (moodTag) folderMood = moodTag.split(':').slice(1).join(':');
       }
 
-      // Fallback to folder detection
-      if (!folderMood) {
-        folderMood = getMoodFromFolder(rawFolder);
-      }
-
-      console.log(`  > "${cloud.public_id}" detected folder: "${rawFolder || 'root'}" -> Assigned Mood: "${folderMood}"`);
-
-      let rawName = cloud.public_id.split('/').pop().split('.')[0];
-      if (/_[a-zA-Z0-9]{6}$/.test(rawName)) {
-        rawName = rawName.substring(0, rawName.length - 7);
-      }
-      let name = rawName.replace(/_/g, ' ');
+      console.log(`  > "${name}" -> AI Assigned Mood: "${folderMood}"`);
       
       const cleanName = cleanSearchTerm(name).toLowerCase();
       if (seenCleanTitles.has(cleanName)) {
