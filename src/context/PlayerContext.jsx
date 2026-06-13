@@ -428,16 +428,34 @@ export function PlayerProvider({ children, user }) {
       return shuffledAvailable.slice(0, 50);
     }
     
-    // Per user request: "no depend on the folder... choose the moods while playing"
-    // Priority 1: Strict AI Mood match (Case-insensitive to handle Cloudinary folder name differences)
+    // Per user request: "Right now upcoming also relate while playing song"
+    // We now create an ultra-smart related queue!
     const currentMood = (currentSong.mood || '').toLowerCase();
-    const sameMood = shuffledAvailable.filter(s => (s.mood || '').toLowerCase() === currentMood);
-    const sameMoodIds = new Set(sameMood.map(s => s.id));
+    const currentArtist = (currentSong.artist || '').toLowerCase();
+    const currentActor = (currentSong.actor || '').toLowerCase();
     
-    // Priority 2: Everything else (when the mood runs out)
-    const others = shuffledAvailable.filter(s => !sameMoodIds.has(s.id));
+    // Tier 1: Perfect Match (Same Mood AND Same Artist/Actor)
+    const tier1 = shuffledAvailable.filter(s => 
+      (s.mood || '').toLowerCase() === currentMood && 
+      ((s.artist || '').toLowerCase() === currentArtist || (s.actor && (s.actor || '').toLowerCase() === currentActor))
+    );
+    const tier1Ids = new Set(tier1.map(s => s.id));
     
-    return [...sameMood, ...others];
+    // Tier 2: Mood Match
+    const tier2 = shuffledAvailable.filter(s => (s.mood || '').toLowerCase() === currentMood && !tier1Ids.has(s.id));
+    const tier2Ids = new Set(tier2.map(s => s.id));
+
+    // Tier 3: Artist/Actor Match
+    const tier3 = shuffledAvailable.filter(s => 
+      ((s.artist || '').toLowerCase() === currentArtist || (s.actor && (s.actor || '').toLowerCase() === currentActor)) && 
+      !tier1Ids.has(s.id) && !tier2Ids.has(s.id)
+    );
+    const tier3Ids = new Set(tier3.map(s => s.id));
+    
+    // Tier 4: Everything else (when related songs run out)
+    const others = shuffledAvailable.filter(s => !tier1Ids.has(s.id) && !tier2Ids.has(s.id) && !tier3Ids.has(s.id));
+    
+    return [...tier1, ...tier2, ...tier3, ...others];
   }, [currentSong, allSongs, isShuffle, recentlyPlayed]);
 
   // ─── Next / Prev ──────────────────────────────────────────────────────────
