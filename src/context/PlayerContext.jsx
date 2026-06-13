@@ -94,12 +94,20 @@ export function PlayerProvider({ children, user }) {
       const API_SECRET = '6N9cJ9fhanGad1sj--3gssD-vCk';
       const auth = btoa(`${API_KEY}:${API_SECRET}`);
 
-      const res = await fetch(
-        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/resources/video?resource_type=video&max_results=500&type=upload&context=true`,
-        { headers: { Authorization: `Basic ${auth}` } }
-      );
-      const data = await res.json();
-      const resources = data.resources || [];
+      let resources = [];
+      let nextCursor = null;
+      do {
+        let url = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/resources/video?resource_type=video&max_results=500&type=upload&context=true`;
+        if (nextCursor) {
+          url += `&next_cursor=${nextCursor}`;
+        }
+        const res = await fetch(url, { headers: { Authorization: `Basic ${auth}` } });
+        const data = await res.json();
+        if (data.resources) {
+          resources = resources.concat(data.resources);
+        }
+        nextCursor = data.next_cursor;
+      } while (nextCursor);
 
       const getStableId = (str) => {
         let hash = 0;
