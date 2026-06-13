@@ -269,7 +269,17 @@ const syncWithCloudinary = async () => {
       let cover = 'https://images.unsplash.com/photo-1493225457124-a1a2a5d5facf?w=500';
       let fallbackUrl = cover;
       let albumName = 'Cloudinary Singles';
+      
       let songArtist = 'Unknown Artist';
+      // Extract Artist from Cloudinary Inner Folder (e.g. Actors/Vijay/song -> Vijay)
+      if (cloud.public_id && cloud.public_id.includes('/')) {
+        const parts = cloud.public_id.split('/');
+        parts.pop(); // Remove the song filename
+        if (parts.length > 0) {
+          songArtist = parts[parts.length - 1]; // The immediate parent folder
+        }
+      }
+
       let existingMood = null;
       let existingActor = null;
       let existingDuration = 0;
@@ -334,7 +344,9 @@ const syncWithCloudinary = async () => {
           fallbackUrl = resolved.cover;
         }
         albumName = (resolved.album && resolved.album !== 'Singles') ? resolved.album : albumName;
-        if (resolved.artist && resolved.artist !== 'Cloud Artist') {
+        
+        // ONLY update artist from iTunes if we didn't explicitly extract an Actor from the Cloudinary folder!
+        if (songArtist === 'Unknown Artist' && resolved.artist && resolved.artist !== 'Cloud Artist') {
           songArtist = resolved.artist;
         }
       }

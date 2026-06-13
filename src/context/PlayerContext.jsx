@@ -110,6 +110,12 @@ export function PlayerProvider({ children, user }) {
         return Math.abs(hash);
       };
 
+      let staticSongs = [];
+      try {
+        const mod = await import('../data/songs.json');
+        if (Array.isArray(mod.default)) staticSongs = mod.default;
+      } catch {}
+
       const guessMoodFromTitle = (title) => {
         if (!title) return 'Melody';
         const clean = title.toLowerCase().replace(/[^a-z0-9]/g, ' ');
@@ -130,26 +136,60 @@ export function PlayerProvider({ children, user }) {
             .replace(/\b[a-z0-9]{6}\b$/i, '')
             .replace(/(high quality|audio|bass boosted|mp3|m4a|128k|320k)/gi, '')
             .replace(/\s{2,}/g, ' ').trim();
+          
           let artist = 'Unknown Artist';
+          
+          // 1. Extract Artist from Cloudinary Inner Folder (e.g. Actors/Vijay/song -> Vijay)
+          if (r.public_id && r.public_id.includes('/')) {
+            const parts = r.public_id.split('/');
+            parts.pop(); // Remove the song filename
+            if (parts.length > 0) {
+              artist = parts[parts.length - 1]; // The immediate parent folder
+            }
+          }
+
+          // 2. Override if song title specifically has "Title - Artist" format
           if (title.includes(' - ')) {
             const parts = title.split(' - ');
             artist = parts[0].trim();
             title  = parts.slice(1).join(' - ').trim();
           }
           
+          // 3. Cloudinary Custom Metadata override
           if (r.context && r.context.custom) {
             if (r.context.custom.artist) artist = r.context.custom.artist;
             if (r.context.custom.title) title = r.context.custom.title;
           }
 
+          const stableId = getStableId(r.secure_url);
+          let cover = r.context?.custom?.cover || 'https://images.unsplash.com/photo-1493225457124-a1a2a5d5facf?w=500';
+          let album = r.context?.custom?.album || 'Cloudinary';
+          let actor = null;
+
+          // 4. MERGE with Backend Scraper data! (High-res Covers & Accurate Artists)
+          const matchedStatic = staticSongs.find(s => s.id === stableId);
+          if (matchedStatic) {
+            cover = matchedStatic.cover || cover;
+            if (matchedStatic.artist && matchedStatic.artist !== 'Unknown Artist' && matchedStatic.artist !== 'Cloud Artist') {
+              artist = matchedStatic.artist;
+            }
+            if (matchedStatic.album && matchedStatic.album !== 'Cloudinary Singles') {
+              album = matchedStatic.album;
+            }
+            if (matchedStatic.actor) {
+              actor = matchedStatic.actor;
+            }
+          }
+
           return {
-            id:           getStableId(r.secure_url),
+            id:           stableId,
             title,
             artist,
+            actor,
             src:          r.secure_url,
-            cover:        r.context?.custom?.cover || 'https://images.unsplash.com/photo-1493225457124-a1a2a5d5facf?w=500',
-            fallbackCover: r.context?.custom?.cover || 'https://images.unsplash.com/photo-1493225457124-a1a2a5d5facf?w=500',
-            album:        r.context?.custom?.album || 'Cloudinary',
+            cover:        cover,
+            fallbackCover: cover,
+            album:        album,
             mood:         r.context?.custom?.mood || guessMoodFromTitle(title),
             genre:        'Tamil',
             uploadedAt:   r.created_at,
