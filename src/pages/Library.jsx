@@ -82,6 +82,74 @@ export default function Library() {
 
   const likedSongs = useMemo(() => allSongs.filter(s => favorites.includes(s.id)), [favorites, allSongs]);
 
+  // ── 0. Custom Playlist View ───────────────────────────────────────────────
+  const { playlists = [], deletePlaylist } = usePlayer() || {};
+  const isPlaylistView = activeSection?.startsWith('playlist_');
+  
+  if (isPlaylistView) {
+    const playlistId = activeSection.split('playlist_')[1];
+    const playlist = playlists.find(p => p.id === playlistId);
+    
+    if (!playlist) {
+      return (
+        <div className="p-8 text-center mt-20">
+          <p className="text-white/40">Playlist not found.</p>
+          <button onClick={() => setActiveSection('home')} className="mt-4 text-cyan-400 font-bold">Go Home</button>
+        </div>
+      );
+    }
+
+    const playlistSongs = playlist.songs.map(id => allSongs.find(s => s?.id === id)).filter(Boolean);
+
+    return (
+      <div className="p-4 md:p-8 animate-in fade-in slide-in-from-left-4 duration-300 pb-[140px]">
+        <button
+          onClick={() => setActiveSection('home')}
+          className="flex items-center gap-2 text-white/60 hover:text-white mb-6 transition-colors font-semibold text-sm cursor-pointer"
+        >
+          <ChevronLeft size={16} /> Back to Home
+        </button>
+
+        {/* Header */}
+        <div className="relative rounded-3xl overflow-hidden mb-8 p-6 flex items-center justify-between"
+          style={{ background: 'linear-gradient(135deg, rgba(34,211,238,0.1), rgba(168,85,247,0.1))' }}>
+          <div className="flex items-center gap-5">
+            <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-tr from-cyan-500 to-violet-500 flex items-center justify-center shadow-lg shadow-cyan-500/30 flex-shrink-0">
+              <Music2 size={28} className="text-white" />
+            </div>
+            <div className="relative">
+              <h1 className="text-white text-3xl font-extrabold tracking-tight">{playlist.name}</h1>
+              <p className="text-white/50 text-sm font-semibold mt-0.5">{playlistSongs.length} songs</p>
+            </div>
+          </div>
+          <button 
+            onClick={() => {
+              if (window.confirm('Are you sure you want to delete this playlist?')) {
+                deletePlaylist(playlist.id);
+                setActiveSection('home');
+              }
+            }}
+            className="px-4 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-sm font-bold transition-colors"
+          >
+            Delete
+          </button>
+        </div>
+
+        {playlistSongs.length === 0 ? (
+          <div className="text-center py-20 bg-white/[0.02] border border-white/5 rounded-3xl">
+            <Music2 size={44} className="mx-auto mb-4 text-white/10" />
+            <p className="text-white/40 font-medium">This playlist is empty.</p>
+            <p className="text-white/30 text-sm mt-1">Click the + icon on any song to add it here!</p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-1.5">
+            {playlistSongs.map((song, idx) => <SongRow key={song?.id} song={song} index={idx} />)}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   // ── 1. Liked Songs View ─────────────────────────────────────────────────
   if (showLiked) {
     return (

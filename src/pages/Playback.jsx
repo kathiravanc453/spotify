@@ -1,11 +1,11 @@
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useState, useEffect, useRef } from 'react';
 import { usePlayer } from '../context/PlayerContext';
 import { cleanTitle, moodAccent, splitArtists } from '../utils/cleanTitle';
 import { useSwipe } from '../hooks/useGestures';
 import { toast } from '../components/ui/Toast';
 import {
   Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Heart,
-  ChevronLeft, Volume2, VolumeX, ListMusic, Sparkles, Share2, MonitorSpeaker
+  ChevronLeft, Volume2, VolumeX, ListMusic, Sparkles, Share2, MonitorSpeaker, Mic2, Loader2
 } from 'lucide-react';
 
 function formatTime(secs) {
@@ -25,6 +25,79 @@ export default function Playback() {
 
   const accent = moodAccent(currentSong?.mood);
   const displayTitle = cleanTitle(currentSong?.title || '');
+
+  // ─── Lyrics Engine ────────────────────────────────────────────────────────
+  const [activeTab, setActiveTab] = useState('queue'); // 'queue' | 'lyrics'
+  const [lyricsData, setLyricsData] = useState([]);
+  const [lyricsLoading, setLyricsLoading] = useState(false);
+  const [lyricsError, setLyricsError] = useState(null);
+  const lyricsContainerRef = useRef(null);
+
+  useEffect(() => {
+    if (!currentSong) return;
+    let isMounted = true;
+    
+    const fetchLyrics = async () => {
+      setLyricsLoading(true);
+      setLyricsError(null);
+      setLyricsData([]);
+      try {
+        const title = encodeURIComponent(cleanTitle(currentSong.title));
+        const artist = encodeURIComponent(currentSong.artist?.split(',')[0] || '');
+        const res = await fetch(`https://lrclib.net/api/search?track_name=${title}&artist_name=${artist}`);
+        if (!res.ok) throw new Error('Network response was not ok');
+        const data = await res.json();
+        
+        if (isMounted) {
+          const syncedResult = data.find(item => item.syncedLyrics);
+          if (syncedResult && syncedResult.syncedLyrics) {
+            // Parse LRC
+            const lines = syncedResult.syncedLyrics.split('\n');
+            const parsed = lines.map(line => {
+              const match = line.match(/\[(\d{2}):(\d{2})\.(\d{2,3})\](.*)/);
+              if (match) {
+                const mins = parseInt(match[1]);
+                const secs = parseInt(match[2]);
+                const ms = parseInt(match[3]);
+                const time = mins * 60 + secs + (ms / (match[3].length === 3 ? 1000 : 100));
+                return { time, text: match[4].trim() };
+              }
+              return null;
+            }).filter(item => item && item.text);
+            setLyricsData(parsed);
+          } else {
+            setLyricsError('No synchronized lyrics found.');
+          }
+        }
+      } catch (e) {
+        if (isMounted) setLyricsError('Failed to load lyrics.');
+      } finally {
+        if (isMounted) setLyricsLoading(false);
+      }
+    };
+
+    // Add a slight delay to avoid spamming the API when skipping fast
+    const timeout = setTimeout(fetchLyrics, 500);
+    return () => { isMounted = false; clearTimeout(timeout); };
+  }, [currentSong?.title, currentSong?.artist]);
+
+  // Auto-scroll lyrics based on progress
+  useEffect(() => {
+    if (activeTab === 'lyrics' && lyricsContainerRef.current && lyricsData.length > 0) {
+      // Find the active line index
+      const activeIdx = lyricsData.reduce((acc, curr, idx) => {
+        return progress >= curr.time ? idx : acc;
+      }, -1);
+      
+      if (activeIdx !== -1) {
+        const lineEl = lyricsContainerRef.current.children[activeIdx];
+        if (lineEl) {
+          lineEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    }
+  }, [progress, activeTab, lyricsData]);
+  // ──────────────────────────────────────────────────────────────────────────
 
   // Swipe left → next song, right → prev song, down → go back
   const swipeHandlers = useSwipe({
@@ -303,70 +376,118 @@ export default function Playback() {
           </div>
         </div>
 
-        {/* Right Column: Up Next Queue */}
         <div id="up-next-section" className="flex-1 flex-col justify-start max-w-md w-full mx-auto md:max-w-none border-t border-white/10 pt-8 md:pt-0 md:border-t-0 md:border-l md:border-white/5 md:pl-8 space-y-6 flex">
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <ListMusic size={18} className="text-[#1ed760]" />
-              <h2 className="text-white text-lg font-bold tracking-tight">Up Next</h2>
+          <div className="flex flex-col h-full space-y-4 max-h-[80vh]">
+            
+            {/* Tabs Header */}
+            <div className="flex items-center gap-6 border-b border-white/10 pb-3">
+              <button
+                onClick={() => setActiveTab('queue')}
+                className={`flex items-center gap-2 text-sm font-bold transition-all ${activeTab === 'queue' ? 'text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]' : 'text-white/40 hover:text-white'}`}
+              >
+                <ListMusic size={16} /> Up Next
+              </button>
+              <button
+                onClick={() => setActiveTab('lyrics')}
+                className={`flex items-center gap-2 text-sm font-bold transition-all ${activeTab === 'lyrics' ? 'text-violet-400 drop-shadow-[0_0_8px_rgba(167,139,250,0.5)]' : 'text-white/40 hover:text-white'}`}
+              >
+                <Mic2 size={16} /> Lyrics
+              </button>
             </div>
 
-            <div className="flex flex-col gap-2 overflow-visible pr-1">
-              {queue.length === 0 ? (
-                <p className="text-white/40 text-sm italic">No upcoming songs</p>
-              ) : (
-                queue.map((song) => (
-                  <div 
-                    key={song.id}
-                    onClick={() => playSong(song)}
-                    className="group flex items-center gap-3 p-2 md:p-3 rounded-xl hover:bg-white/5 transition-colors cursor-pointer active:scale-[0.98] border border-transparent hover:border-white/5"
-                  >
-                    <div className="relative w-10 h-10 rounded-xl overflow-hidden shadow flex-shrink-0 bg-white/5">
-                      <img
-                        src={albumCovers[song.id] || song.cover}
-                        alt={song.title}
-                        onError={(e) => {
-                          if (song.fallbackCover && e.target.src !== song.fallbackCover) {
-                            e.target.src = song.fallbackCover;
-                          } else {
-                            e.target.src = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500';
-                          }
-                        }}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <Play size={10} fill="#fff" className="text-white ml-0.5" />
+            {/* Tab Content Area */}
+            <div className="flex-1 overflow-y-auto relative min-h-[300px] scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
+              
+              {/* QUEUE TAB */}
+              {activeTab === 'queue' && (
+                <div className="flex flex-col gap-2 overflow-visible pr-1 pb-20">
+                  {queue.length === 0 ? (
+                    <p className="text-white/40 text-sm italic">No upcoming songs</p>
+                  ) : (
+                    queue.map((song) => (
+                      <div 
+                        key={song.id}
+                        onClick={() => playSong(song)}
+                        className="group flex items-center gap-3 p-2 md:p-3 rounded-xl hover:bg-white/5 transition-colors cursor-pointer active:scale-[0.98] border border-transparent hover:border-white/5"
+                      >
+                        <div className="relative w-10 h-10 rounded-xl overflow-hidden shadow flex-shrink-0 bg-white/5">
+                          <img
+                            src={albumCovers[song.id] || song.cover}
+                            alt={song.title}
+                            onError={(e) => {
+                              if (song.fallbackCover && e.target.src !== song.fallbackCover) {
+                                e.target.src = song.fallbackCover;
+                              } else {
+                                e.target.src = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500';
+                              }
+                            }}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <Play size={10} fill="#fff" className="text-white ml-0.5" />
+                          </div>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="text-white text-xs font-bold truncate group-hover:text-cyan-300 transition-colors">{song.title}</h4>
+                          <div className="text-white/40 text-[10px] mt-0.5 font-medium truncate flex items-center gap-1 w-full text-left">
+                            {splitArtists(song.artist).map((artistName, i, arr) => (
+                              <span key={artistName} className="truncate max-w-full">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (artistName && artistName !== 'Unknown Artist') {
+                                      setActiveArtist(artistName);
+                                      setActiveSection('artist');
+                                    }
+                                  }}
+                                  className="hover:text-white hover:underline transition-colors cursor-pointer"
+                                >
+                                  {artistName}
+                                </button>
+                                {i < arr.length - 1 && <span>, </span>}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        {song.mood && (
+                          <div className="text-[10px] text-white/30 font-semibold px-2 py-0.5 bg-white/[0.03] rounded-md border border-white/5 capitalize">
+                            {song.mood}
+                          </div>
+                        )}
                       </div>
+                    ))
+                  )}
+                </div>
+              )}
+
+              {/* LYRICS TAB */}
+              {activeTab === 'lyrics' && (
+                <div ref={lyricsContainerRef} className="absolute inset-0 overflow-y-auto space-y-5 pb-32 pt-8 mask-image-fade" style={{ scrollbarWidth: 'none' }}>
+                  {lyricsLoading ? (
+                    <div className="flex flex-col items-center justify-center h-full space-y-3 opacity-50 pb-20">
+                      <Loader2 size={24} className="animate-spin text-white" />
+                      <p className="text-sm font-medium text-white">Syncing lyrics to AI Engine...</p>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <h4 className="text-white text-xs font-bold truncate group-hover:text-cyan-300 transition-colors">{song.title}</h4>
-                      <div className="text-white/40 text-[10px] mt-0.5 font-medium truncate flex items-center gap-1 w-full text-left">
-                        {splitArtists(song.artist).map((artistName, i, arr) => (
-                          <span key={artistName} className="truncate max-w-full">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (artistName && artistName !== 'Unknown Artist') {
-                                  setActiveArtist(artistName);
-                                  setActiveSection('artist');
-                                }
-                              }}
-                              className="hover:text-white hover:underline transition-colors cursor-pointer"
-                            >
-                              {artistName}
-                            </button>
-                            {i < arr.length - 1 && <span>, </span>}
-                          </span>
-                        ))}
-                      </div>
+                  ) : lyricsError ? (
+                    <div className="flex flex-col items-center justify-center h-full space-y-3 opacity-50 text-center px-4 pb-20">
+                      <Mic2 size={32} className="text-white/20" />
+                      <p className="text-sm font-medium text-white/50">{lyricsError}</p>
                     </div>
-                    {song.mood && (
-                      <div className="text-[10px] text-white/30 font-semibold px-2 py-0.5 bg-white/[0.03] rounded-md border border-white/5 capitalize">
-                        {song.mood}
-                      </div>
-                    )}
-                  </div>
-                ))
+                  ) : lyricsData.length > 0 ? (
+                    lyricsData.map((line, idx) => {
+                      const isActive = progress >= line.time && (idx === lyricsData.length - 1 || progress < lyricsData[idx + 1].time);
+                      return (
+                        <p 
+                          key={idx} 
+                          className={`text-lg md:text-[22px] leading-tight font-extrabold transition-all duration-500 cursor-pointer hover:text-white ${isActive ? 'text-violet-400 drop-shadow-[0_0_12px_rgba(167,139,250,0.4)] scale-[1.02]' : 'text-white/20 hover:text-white/40'}`}
+                          onClick={() => seek(line.time)}
+                        >
+                          {line.text}
+                        </p>
+                      );
+                    })
+                  ) : null}
+                </div>
               )}
             </div>
           </div>

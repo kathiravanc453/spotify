@@ -99,7 +99,13 @@ body {
   0%, 100% { transform: translateY(0px); }
   50%       { transform: translateY(-6px); }
 }
-.animate-float { animation: float 4s ease-in-out infinite; }
+.animate-float { animation: float 6s ease-in-out infinite; }
+
+/* ── Scrolling Lyrics Fade ─────────────────────────────────────────────── */
+.mask-image-fade {
+  mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+}
 
 /* ── Ripple on tap ──────────────────────────────────────────────────────── */
 .ripple-container { position: relative; overflow: hidden; }

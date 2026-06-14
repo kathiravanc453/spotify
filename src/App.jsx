@@ -4,14 +4,17 @@ import Sidebar from './components/layout/Sidebar';
 import Header from './components/layout/Header';
 import MobileNav from './components/layout/MobileNav';
 import PlayerFooter from './components/player/PlayerFooter';
-import Home from './pages/Home';
-import Library from './pages/Library';
-import Albums from './pages/Albums';
-import Login from './pages/Login';
-import Playback from './pages/Playback';
-import AdminUpload from './pages/AdminUpload';
-import Artist from './pages/Artist';
-import Actor from './pages/Actor';
+import { Suspense, lazy } from 'react';
+
+// Lazy load heavy pages for route-level code splitting
+const Home = lazy(() => import('./pages/Home'));
+const Library = lazy(() => import('./pages/Library'));
+const Albums = lazy(() => import('./pages/Albums'));
+const Login = lazy(() => import('./pages/Login'));
+const Playback = lazy(() => import('./pages/Playback'));
+const AdminUpload = lazy(() => import('./pages/AdminUpload'));
+const Artist = lazy(() => import('./pages/Artist'));
+const Actor = lazy(() => import('./pages/Actor'));
 import ToastProvider from './components/ui/Toast';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import useMediaSession from './hooks/useMediaSession';
@@ -113,6 +116,12 @@ function AppContent({ user, onLogout, onLogin }) {
     pullStartY.current = null;
   };
 
+  const PageLoader = () => (
+    <div className="flex flex-col items-center justify-center min-h-[40vh] gap-4 animate-in fade-in duration-300">
+      <div className="w-8 h-8 rounded-full border-2 border-cyan-500/20 border-t-cyan-400 animate-spin" />
+    </div>
+  );
+
   const renderContent = () => {
     if (activeSection === 'login' && !user) {
       return (
@@ -123,7 +132,7 @@ function AppContent({ user, onLogout, onLogin }) {
     }
     
     if (activeSection === 'admin')       return <AdminUpload />;
-    if (activeSection === 'library' || activeSection === 'favorites') return <Library />;
+    if (activeSection === 'library' || activeSection === 'favorites' || activeSection?.startsWith('playlist_')) return <Library />;
     if (activeSection === 'albums')      return <Albums />;
     if (activeSection === 'now-playing') return <Playback />;
     if (activeSection === 'artist')      return <Artist />;
@@ -195,9 +204,11 @@ function AppContent({ user, onLogout, onLogin }) {
             )}
 
             {/* Error boundary wraps page content so crashes don't blank the whole app */}
-            <ErrorBoundary>
-              {renderContent()}
-            </ErrorBoundary>
+            <Suspense fallback={<PageLoader />}>
+              <ErrorBoundary>
+                {renderContent()}
+              </ErrorBoundary>
+            </Suspense>
 
             {/* Mobile signature branding footer */}
             <div className="md:hidden flex flex-col items-center justify-center pt-8 pb-10 border-t border-white/[0.04] mx-6 opacity-30 mt-8">

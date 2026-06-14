@@ -574,6 +574,65 @@ export function PlayerProvider({ children, user }) {
     setSleepTimer(null);
   }, []);
 
+  // ─── Playlists ────────────────────────────────────────────────────────────
+  const [playlists, setPlaylists] = useState([]);
+
+  const fetchPlaylists = useCallback(async () => {
+    if (!user || !user.email) return;
+    try {
+      const res = await fetch(`/api/playlists?email=${encodeURIComponent(user.email)}`);
+      const data = await res.json();
+      if (Array.isArray(data)) setPlaylists(data);
+    } catch (e) {
+      console.error('Failed to fetch playlists:', e);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchPlaylists();
+  }, [fetchPlaylists]);
+
+  const createPlaylist = useCallback(async (name) => {
+    if (!user) return;
+    try {
+      const res = await fetch('/api/playlists', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user.email, name })
+      });
+      if (res.ok) fetchPlaylists();
+    } catch (e) {}
+  }, [user, fetchPlaylists]);
+
+  const addSongToPlaylist = useCallback(async (playlistId, songId) => {
+    try {
+      const res = await fetch(`/api/playlists/${playlistId}/add`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ songId })
+      });
+      if (res.ok) fetchPlaylists();
+    } catch (e) {}
+  }, [fetchPlaylists]);
+
+  const removeSongFromPlaylist = useCallback(async (playlistId, songId) => {
+    try {
+      const res = await fetch(`/api/playlists/${playlistId}/remove`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ songId })
+      });
+      if (res.ok) fetchPlaylists();
+    } catch (e) {}
+  }, [fetchPlaylists]);
+
+  const deletePlaylist = useCallback(async (playlistId) => {
+    try {
+      const res = await fetch(`/api/playlists/${playlistId}`, { method: 'DELETE' });
+      if (res.ok) fetchPlaylists();
+    } catch (e) {}
+  }, [fetchPlaylists]);
+
   // ─── Seek / Volume / Stop ─────────────────────────────────────────────────
   const seek = useCallback((time) => {
     audioRef.current.currentTime = time;
@@ -612,6 +671,7 @@ export function PlayerProvider({ children, user }) {
       sleepTimer, startSleepTimer, cancelSleepTimer,
       refreshSongs: fetchSongs,
       upNextQueue,
+      playlists, fetchPlaylists, createPlaylist, addSongToPlaylist, removeSongFromPlaylist, deletePlaylist,
     }}>
       {children}
     </PlayerContext.Provider>

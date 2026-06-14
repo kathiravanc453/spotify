@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { Play, Pause } from 'lucide-react';
 import { usePlayer } from '../../context/PlayerContext';
 import { cleanTitle, moodAccent, splitArtists } from '../../utils/cleanTitle';
@@ -30,7 +30,7 @@ function Equalizer() {
   );
 }
 
-export default function SongCard({ song }) {
+export default memo(function SongCard({ song }) {
   const { currentSong, isPlaying, playSong, progress, duration, playCounts = {}, albumCovers = {}, setActiveArtist, setActiveSection } = usePlayer();
   const [showContext, setShowContext] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
@@ -68,6 +68,8 @@ export default function SongCard({ song }) {
           <img
             src={realCover}
             alt={song.title}
+            loading="lazy"
+            decoding="async"
             onLoad={() => setImgLoaded(true)}
             onError={(e) => {
               setImgLoaded(true);
@@ -131,10 +133,12 @@ export default function SongCard({ song }) {
             ))}
           </div>
           <div className="flex items-center justify-between mt-1.5 flex-shrink-0">
-            <p className="text-white/25 text-[10px] sm:text-xs font-semibold tracking-wider flex items-center gap-1 min-w-[36px]">
-              {isCurrentlyPlaying && <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse mr-0.5" />}
-              {formatTime(timeToShow)}
-            </p>
+            {(timeToShow > 0 || isCurrentlyPlaying) ? (
+              <p className="text-white/25 text-[10px] sm:text-xs font-semibold tracking-wider flex items-center gap-1 min-w-[36px]">
+                {isCurrentlyPlaying && <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse mr-0.5" />}
+                {formatTime(timeToShow)}
+              </p>
+            ) : <div />}
             {playCount > 0 && (
               <span className="text-[9px] text-white/20 font-bold">{playCount} plays</span>
             )}
@@ -147,4 +151,4 @@ export default function SongCard({ song }) {
       )}
     </>
   );
-}
+});
