@@ -4,21 +4,26 @@ import { splitArtists } from '../utils/cleanTitle';
 const PlayerContext = createContext(null);
 
 export function PlayerProvider({ children, user }) {
-  const [allSongs, setAllSongs]         = useState([]);
+
   const [currentSong, setCurrentSong]   = useState(null);
   const [isPlaying, setIsPlaying]       = useState(false);
   const [progress, setProgress]         = useState(0);
   const [duration, setDuration]         = useState(0);
   const [volume, setVolume]             = useState(0.8);
-  const [recentlyPlayed, setRecentlyPlayed] = useState([]);
-  const [loading, setLoading]           = useState(true);
+  const [recentlyPlayed, setRecentlyPlayed] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('rhythmix_recently_played')) || []; } catch { return []; }
+  });
+  const [loading, setLoading]           = useState(false);
   const [favorites, setFavorites]       = useState([]);
+  const loadedRef                       = useRef(true);
   const [activeSection, setActiveSection] = useState('home');
   const [activeArtist, setActiveArtist] = useState(null);
   const [activeActor, setActiveActor] = useState(null);
   const [saavnResults, setSaavnResults] = useState([]);
   const [saavnLoading, setSaavnLoading] = useState(false);
-  const [saavnHomeData, setSaavnHomeData] = useState({ trending: [], playlists: [] });
+  const [saavnRadioPool, setSaavnRadioPool] = useState([]);
+
+  const [saavnHomeData, setSaavnHomeData] = useState({ trending: [], playlists: [], albums: [] });
   const [saavnHomeLoading, setSaavnHomeLoading] = useState(true);
   const [sleepTimer, setSleepTimer]     = useState(null); // minutes remaining
   const [playCounts, setPlayCounts]     = useState(() => {
@@ -35,9 +40,48 @@ export function PlayerProvider({ children, user }) {
     try { return JSON.parse(localStorage.getItem('rhythmix_repeat') || '"off"'); } catch { return 'off'; }
   });
 
-  const audioRef     = useRef(new Audio());
-  const sleepTimerRef = useRef(null);
-  const loadedRef    = useRef(false); // fix infinite re-render: track first load with ref not state
+  const audioRef                        = useRef(new Audio());
+
+  // ─── Screen Wake Lock API ─────────────────────────────────────────────────
+  const wakeLockRef = useRef(null);
+  useEffect(() => {
+    const requestWakeLock = async () => {
+      try {
+        if ('wakeLock' in navigator) {
+          wakeLockRef.current = await navigator.wakeLock.request('screen');
+        }
+      } catch (err) {
+        console.error('Wake Lock error:', err);
+      }
+    };
+    const releaseWakeLock = () => {
+      if (wakeLockRef.current) {
+        wakeLockRef.current.release().catch(() => {});
+        wakeLockRef.current = null;
+      }
+    };
+
+    if (isPlaying) {
+      requestWakeLock();
+    } else {
+      releaseWakeLock();
+    }
+
+    // Re-acquire wake lock if page becomes visible while playing
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && isPlaying) {
+        requestWakeLock();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      releaseWakeLock();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isPlaying]);
+
+  const sleepTimerRef                   = useRef(null);
 
   // ─── Persist shuffle / repeat ────────────────────────────────────────────
   useEffect(() => { localStorage.setItem('rhythmix_shuffle', JSON.stringify(isShuffle)); }, [isShuffle]);
@@ -110,177 +154,7 @@ export function PlayerProvider({ children, user }) {
     fetchSaavnHome();
   }, [fetchSaavnHome]);
 
-  // ─── Fetch songs — with direct Cloudinary fallback ───────────────────────
-  const fetchSongs = useCallback(async () => {
-    // 1. Try Vercel serverless API first
-    try {
-      const res         = await fetch(`/api/songs?t=${Date.now()}`);
-      const contentType = res.headers.get('content-type') || '';
-      if (!res.ok || !contentType.includes('application/json')) {
-        throw new Error(`Backend unavailable (${res.status})`);
-      }
-      const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        setAllSongs(data);
-        if (!loadedRef.current) { loadedRef.current = true; setLoading(false); }
-        return;
-      }
-      throw new Error('API returned empty array');
-    } catch (err) {
-      console.warn('[Rhythmix] Vercel API failed:', err.message, '— trying Cloudinary direct...');
-    }
 
-    // 2. Try Cloudinary REST API directly from the browser (Fallback)
-    try {
-      const CLOUD_NAME = 'dm1cwbbfg';
-      const API_KEY    = '969989851682274';
-      const API_SECRET = '6N9cJ9fhanGad1sj--3gssD-vCk';
-      const auth = btoa(`${API_KEY}:${API_SECRET}`);
-
-      let resources = [];
-      let nextCursor = null;
-      do {
-        let url = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/resources/video?resource_type=video&max_results=500&type=upload&context=true`;
-        if (nextCursor) {
-          url += `&next_cursor=${nextCursor}`;
-        }
-        const res = await fetch(url, { headers: { Authorization: `Basic ${auth}` } });
-        const data = await res.json();
-        if (data.resources) {
-          resources = resources.concat(data.resources);
-        }
-        nextCursor = data.next_cursor;
-      } while (nextCursor);
-
-      const getStableId = (str) => {
-        let hash = 0;
-        for (let i = 0; i < str.length; i++) {
-          hash = (hash << 5) - hash + str.charCodeAt(i);
-          hash |= 0;
-        }
-        return Math.abs(hash);
-      };
-
-      let staticSongs = [];
-      try {
-        const mod = await import('../data/songs.json');
-        if (Array.isArray(mod.default)) staticSongs = mod.default;
-      } catch {}
-
-      const guessMoodFromTitle = (title) => {
-        if (!title) return 'Melody';
-        const clean = title.toLowerCase().replace(/[^a-z0-9]/g, ' ');
-        if (/(kuthu|mass|adichu|beat|dance|vathi|theri|local|verithanam|banger)/.test(clean)) return 'Kuthu';
-        if (/(kadhal|love|unnai|ennai|heart|baby|uyir|anbe|romance|romantic)/.test(clean)) return 'Romance';
-        if (/(vali|pain|sad|cry|kaneer|thaniye|broken|alone|grief|tears)/.test(clean)) return 'Sad';
-        if (/(melody|vibe|chill|lofi|acoustic|breeze)/.test(clean)) return 'Melody';
-        return 'Vibes';
-      };
-
-      const songs = resources
-        .filter(r => r.format === 'mp3' || r.format === 'm4a')
-        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-        .map(r => {
-          let title = (r.display_name || r.public_id.split('/').pop() || 'Unknown')
-            .replace(/[-_]/g, ' ')
-            .replace(/\s+/g, ' ')
-            .replace(/\b[a-z0-9]{6}\b$/i, '')
-            .replace(/(high quality|audio|bass boosted|mp3|m4a|128k|320k)/gi, '')
-            .replace(/\s{2,}/g, ' ').trim();
-          
-          let artist = 'Unknown Artist';
-          
-          // 1. Extract Artist from Cloudinary Inner Folder (e.g. Actors/Vijay/song -> Vijay)
-          if (r.public_id && r.public_id.includes('/')) {
-            const parts = r.public_id.split('/');
-            parts.pop(); // Remove the song filename
-            if (parts.length > 0) {
-              artist = parts[parts.length - 1]; // The immediate parent folder
-            }
-          }
-
-          // 2. Override if song title specifically has "Title - Artist" format
-          if (title.includes(' - ')) {
-            const parts = title.split(' - ');
-            artist = parts[0].trim();
-            title  = parts.slice(1).join(' - ').trim();
-          }
-          
-          // 3. Cloudinary Custom Metadata override
-          if (r.context && r.context.custom) {
-            if (r.context.custom.artist) artist = r.context.custom.artist;
-            if (r.context.custom.title) title = r.context.custom.title;
-          }
-
-          const stableId = getStableId(r.secure_url);
-          let cover = r.context?.custom?.cover || 'https://images.unsplash.com/photo-1493225457124-a1a2a5d5facf?w=500';
-          let album = r.context?.custom?.album || 'Cloudinary';
-          let actor = null;
-
-          // 4. MERGE with Backend Scraper data! (High-res Covers & Accurate Artists)
-          const matchedStatic = staticSongs.find(s => s.id === stableId);
-          if (matchedStatic) {
-            cover = matchedStatic.cover || cover;
-            if (matchedStatic.artist && matchedStatic.artist !== 'Unknown Artist' && matchedStatic.artist !== 'Cloud Artist') {
-              artist = matchedStatic.artist;
-            }
-            if (matchedStatic.album && matchedStatic.album !== 'Cloudinary Singles') {
-              album = matchedStatic.album;
-            }
-            if (matchedStatic.actor) {
-              actor = matchedStatic.actor;
-            }
-          }
-
-          return {
-            id:           stableId,
-            title,
-            artist,
-            actor,
-            src:          r.secure_url,
-            cover:        cover,
-            fallbackCover: cover,
-            album:        album,
-            mood:         r.context?.custom?.mood || guessMoodFromTitle(title),
-            genre:        'Tamil',
-            uploadedAt:   r.created_at,
-            duration:     r.duration || 0,
-          };
-        });
-
-      if (songs.length > 0) {
-        console.log(`[Rhythmix] Loaded ${songs.length} songs directly from Cloudinary`);
-        setAllSongs(songs);
-        if (!loadedRef.current) { loadedRef.current = true; setLoading(false); }
-        return;
-      }
-    } catch (err) {
-      console.warn('[Rhythmix] Cloudinary direct fetch failed:', err.message);
-    }
-
-    // 3. Final fallback: static songs.json
-    console.warn('[Rhythmix] Using static fallback songs.json');
-    try {
-      const mod = await import('../data/songs.json');
-      if (Array.isArray(mod.default) && mod.default.length > 0) {
-        setAllSongs(mod.default);
-      }
-    } catch {}
-    if (!loadedRef.current) { loadedRef.current = true; setLoading(false); }
-  }, []); // ← empty deps: stable reference, no re-render loop
-
-  useEffect(() => {
-    // Initial load
-    fetchSongs();
-
-    // 🔄 Auto-refresh every 30 seconds — rely on the backend API instead of hitting Cloudinary directly!
-    // The backend handles metadata extraction and deduplication properly.
-    const poll = setInterval(() => {
-      fetchSongs();
-    }, 30000); // every 30 seconds
-
-    return () => clearInterval(poll);
-  }, [fetchSongs]);
 
   // ─── Play count tracking ──────────────────────────────────────────────────
   const incrementPlayCount = useCallback((songId) => {
@@ -291,127 +165,38 @@ export function PlayerProvider({ children, user }) {
     });
   }, []);
 
-  // ─── Album Art Hydration Engine (via /api/artwork backend) ───────────────
-  useEffect(() => {
-    if (allSongs.length === 0) return;
-
-    let isSubscribed = true;
-
-    // Generic fallbacks we want to REPLACE with a real album art
-    const GENERIC_COVERS = [
-      '/favicon.svg',
-      'https://images.unsplash.com/photo-1493225457124-a1a2a5d5facf?w=500',
-    ];
-
-    const needsArtwork = (song) => {
-      if (!song.cover) return true;
-      return GENERIC_COVERS.some(g => song.cover === g);
-    };
-
-    const hydrateCovers = async () => {
-      // New cache that stores full metadata { cover, artist, album }
-      let cachedMeta = {};
-      try { cachedMeta = JSON.parse(localStorage.getItem('rhythmix_metadata_v1') || '{}') || {}; } catch {}
-
-      const songsToHydrate = [];
-      let hasInstantUpdates = false;
-      const initialUpdates = {};
-
-      for (const song of allSongs) {
-        if (!isSubscribed) break;
-
-        const meta = cachedMeta[song.id];
-        const needsArt = !meta?.cover || GENERIC_COVERS.includes(meta.cover);
-        
-        // If we already have cached metadata for this song, apply it immediately
-        if (meta && (meta.artist || meta.album || !needsArt)) {
-          initialUpdates[song.id] = meta;
-          hasInstantUpdates = true;
+  // ─── Global Song Pool (replaces old local allSongs) ─────────────────────
+  const allSongs = useMemo(() => {
+    const pool = new Map();
+    
+    if (saavnHomeData?.trending) {
+      saavnHomeData.trending.forEach(item => {
+        if (item.type === 'song') {
+          pool.set(item.id, { ...item, cover: item.image || item.cover, artist: item.subtitle || item.artist });
         }
-
-        // Only hit the API if we don't have metadata or the cover is generic
-        if (!meta || needsArt || (song.artist === 'Unknown Artist' && !meta.artist)) {
-          songsToHydrate.push(song);
+      });
+    }
+    
+    if (saavnResults) {
+      saavnResults.forEach(item => {
+        if (item.type === 'song') {
+          pool.set(item.id, { ...item, cover: item.image || item.cover, artist: item.subtitle || item.artist });
         }
-      }
-
-      // Apply cached metadata instantly before doing API calls
-      if (hasInstantUpdates) {
-        setAllSongs(prev => {
-          let changed = false;
-          const next = prev.map(s => {
-            const m = initialUpdates[s.id];
-            if (!m) return s;
-            const newCover = m.cover && !GENERIC_COVERS.includes(m.cover) ? m.cover : s.cover;
-            const newArtist = m.artist && m.artist !== 'Unknown Artist' ? m.artist : s.artist;
-            const newAlbum = m.album && m.album !== 'Cloudinary Singles' ? m.album : s.album;
-            
-            if (s.cover !== newCover || s.artist !== newArtist || s.album !== newAlbum) {
-              changed = true;
-              return { ...s, cover: newCover, artist: newArtist, album: newAlbum };
-            }
-            return s;
-          });
-          return changed ? next : prev;
-        });
-      }
-
-      // Prevent Apple Music / Deezer from rate-limiting us by fetching slower
-      const BATCH_SIZE = 3; 
-      for (let i = 0; i < songsToHydrate.length; i += BATCH_SIZE) {
-        if (!isSubscribed) break;
-        
-        const batch = songsToHydrate.slice(i, i + BATCH_SIZE);
-        
-        await Promise.all(batch.map(async (song) => {
-          try {
-            const params = new URLSearchParams({ title: song.title, artist: song.artist || '' });
-            const res = await fetch(`/api/artwork?${params}`);
-            const data = await res.json();
-            
-            const finalCover = data.coverUrl || song.cover || null;
-            const finalArtist = data.artist && data.artist !== 'Unknown Artist' ? data.artist : null;
-            const finalAlbum = data.album && data.album !== 'Cloudinary Singles' ? data.album : null;
-            
-            // Save to local cache - ONLY save if it actually found the artist/cover to prevent caching failures permanently
-            if (finalArtist || (finalCover && !GENERIC_COVERS.includes(finalCover))) {
-              cachedMeta[song.id] = { cover: finalCover, artist: finalArtist, album: finalAlbum };
-              localStorage.setItem('rhythmix_metadata_v1', JSON.stringify(cachedMeta));
-            }
-            
-            // Update state safely to avoid React infinite loops
-            setAllSongs(prevSongs => {
-              let changed = false;
-              const next = prevSongs.map(s => {
-                if (s.id === song.id) {
-                  const newCover = finalCover && !GENERIC_COVERS.includes(finalCover) ? finalCover : s.cover;
-                  const newArtist = finalArtist || s.artist;
-                  const newAlbum = finalAlbum || s.album;
-                  
-                  if (s.cover !== newCover || s.artist !== newArtist || s.album !== newAlbum) {
-                    changed = true;
-                    return { ...s, cover: newCover, artist: newArtist, album: newAlbum };
-                  }
-                }
-                return s;
-              });
-              return changed ? next : prevSongs;
-            });
-
-          } catch (err) {
-            console.error(`[Artwork] Failed for "${song.title}":`, err);
-          }
-        }));
-
-        // Mandatory delay to prevent API IP blocking
-        await new Promise(r => setTimeout(r, 400));
-      }
-    };
-
-    hydrateCovers();
-
-    return () => { isSubscribed = false; };
-  }, [allSongs]);
+      });
+    }
+    
+    if (saavnRadioPool) {
+      saavnRadioPool.forEach(item => {
+        pool.set(item.id, { ...item, cover: item.image || item.cover, artist: item.subtitle || item.artist });
+      });
+    }
+    
+    recentlyPlayed.forEach(song => {
+      pool.set(song.id, song);
+    });
+    
+    return Array.from(pool.values());
+  }, [saavnHomeData, saavnResults, saavnRadioPool, recentlyPlayed]);
 
   // ─── Play song ────────────────────────────────────────────────────────────
   const playSong = useCallback((song) => {
@@ -437,8 +222,25 @@ export function PlayerProvider({ children, user }) {
 
     setRecentlyPlayed(prev => {
       const filtered = prev.filter(s => s.id !== song.id);
-      return [song, ...filtered].slice(0, 100);
+      const next = [song, ...filtered].slice(0, 100);
+      try { localStorage.setItem('rhythmix_recently_played', JSON.stringify(next)); } catch (e) {}
+      return next;
     });
+
+    // Smart Radio Engine: Fetch 300+ related songs silently in the background
+    const artistQuery = song.artist && song.artist !== 'Unknown Artist' ? song.artist.split(',')[0] : '';
+    const moodQuery = song.mood || 'hits';
+    
+    // Fetch both Artist-specific hits AND Mood-specific hits to guarantee a massive 200+ song queue!
+    Promise.all([
+      artistQuery ? fetch(`/api/saavn/search?q=${encodeURIComponent(artistQuery)}`).then(r => r.json()).catch(() => []) : Promise.resolve([]),
+      fetch(`/api/saavn/search?q=${encodeURIComponent(moodQuery)}`).then(r => r.json()).catch(() => [])
+    ]).then(([artistData, moodData]) => {
+      const combined = [...(Array.isArray(artistData) ? artistData : []), ...(Array.isArray(moodData) ? moodData : [])];
+      // Remove duplicates
+      const unique = Array.from(new Map(combined.map(item => [item.id, item])).values());
+      setSaavnRadioPool(unique);
+    }).catch(err => console.error('Radio Engine Error:', err));
   }, [currentSong, isPlaying, incrementPlayCount, user]);
 
   const togglePlay = useCallback(() => {
@@ -454,7 +256,13 @@ export function PlayerProvider({ children, user }) {
     // Memory engine: exclude all recently played songs to prevent any loops.
     // (recentlyPlayed is capped at 100, providing ~8 hours of unrepeated music)
     const recentIds = new Set(recentlyPlayed.map(s => s.id));
-    const availableSongs = allSongs.filter(s => s.id !== currentSong.id && !recentIds.has(s.id));
+    let availableSongs = allSongs.filter(s => s.id !== currentSong.id && !recentIds.has(s.id));
+
+    // Fallback: If we have exhausted all new songs, allow the queue to reuse recently played songs
+    // so the music never stops and the queue is never completely empty!
+    if (availableSongs.length === 0) {
+      availableSongs = allSongs.filter(s => s.id !== currentSong.id);
+    }
 
     // Shuffle the available songs deterministically based on the current song.
     // This solves the "top 30" repetition issue by fully randomizing the remaining library!
@@ -468,19 +276,26 @@ export function PlayerProvider({ children, user }) {
 
     if (isShuffle) {
       // Pure random shuffle ignoring mood
-      return shuffledAvailable.slice(0, 50);
+      return shuffledAvailable.slice(0, 300);
     }
     
     // Per user request: "Right now upcoming also relate while playing song"
-    // We now create an ultra-smart related queue!
     const currentMood = (currentSong.mood || '').toLowerCase();
     const currentArtist = (currentSong.artist || '').toLowerCase();
     const currentActor = (currentSong.actor || '').toLowerCase();
+
+    // Helper for fuzzy artist matching
+    const matchArtist = (a1, a2) => {
+      if (!a1 || !a2) return false;
+      const primary1 = a1.split(',')[0].trim();
+      const primary2 = a2.split(',')[0].trim();
+      return primary1.includes(primary2) || primary2.includes(primary1);
+    };
     
     // Tier 1: Perfect Match (Same Mood AND Same Artist/Actor)
     const tier1 = shuffledAvailable.filter(s => 
       (s.mood || '').toLowerCase() === currentMood && 
-      ((s.artist || '').toLowerCase() === currentArtist || (s.actor && (s.actor || '').toLowerCase() === currentActor))
+      (matchArtist((s.artist || '').toLowerCase(), currentArtist) || (s.actor && (s.actor || '').toLowerCase() === currentActor))
     );
     const tier1Ids = new Set(tier1.map(s => s.id));
     
@@ -490,7 +305,7 @@ export function PlayerProvider({ children, user }) {
 
     // Tier 3: Artist/Actor Match
     const tier3 = shuffledAvailable.filter(s => 
-      ((s.artist || '').toLowerCase() === currentArtist || (s.actor && (s.actor || '').toLowerCase() === currentActor)) && 
+      (matchArtist((s.artist || '').toLowerCase(), currentArtist) || (s.actor && (s.actor || '').toLowerCase() === currentActor)) && 
       !tier1Ids.has(s.id) && !tier2Ids.has(s.id)
     );
     const tier3Ids = new Set(tier3.map(s => s.id));
@@ -620,61 +435,78 @@ export function PlayerProvider({ children, user }) {
   // ─── Playlists ────────────────────────────────────────────────────────────
   const [playlists, setPlaylists] = useState([]);
 
-  const fetchPlaylists = useCallback(async () => {
-    if (!user || !user.email) return;
+  const getPlaylistsKey = useCallback(() => {
+    const session = localStorage.getItem('rhythmix_session');
+    const userEmail = session ? JSON.parse(session)?.email : 'default';
+    return `rhythmix_playlists_${userEmail}`;
+  }, []);
+
+  const fetchPlaylists = useCallback(() => {
     try {
-      const res = await fetch(`/api/playlists?email=${encodeURIComponent(user.email)}`);
-      const data = await res.json();
-      if (Array.isArray(data)) setPlaylists(data);
+      const saved = localStorage.getItem(getPlaylistsKey());
+      if (saved) {
+        setPlaylists(JSON.parse(saved));
+      } else {
+        setPlaylists([]);
+      }
     } catch (e) {
-      console.error('Failed to fetch playlists:', e);
+      console.error('Failed to fetch playlists from localStorage:', e);
+      setPlaylists([]);
     }
-  }, [user]);
+  }, [getPlaylistsKey]);
 
   useEffect(() => {
     fetchPlaylists();
+    const handleStorage = () => fetchPlaylists();
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
   }, [fetchPlaylists]);
 
-  const createPlaylist = useCallback(async (name) => {
-    if (!user) return;
+  const savePlaylists = useCallback((newPlaylists) => {
     try {
-      const res = await fetch('/api/playlists', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: user.email, name })
-      });
-      if (res.ok) fetchPlaylists();
-    } catch (e) {}
-  }, [user, fetchPlaylists]);
+      localStorage.setItem(getPlaylistsKey(), JSON.stringify(newPlaylists));
+      setPlaylists(newPlaylists);
+    } catch (e) {
+      console.error('Failed to save playlists to localStorage:', e);
+    }
+  }, [getPlaylistsKey]);
 
-  const addSongToPlaylist = useCallback(async (playlistId, songId) => {
-    try {
-      const res = await fetch(`/api/playlists/${playlistId}/add`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ songId })
-      });
-      if (res.ok) fetchPlaylists();
-    } catch (e) {}
-  }, [fetchPlaylists]);
+  const createPlaylist = useCallback((name) => {
+    if (!name || name.trim() === '') return;
+    const newPlaylist = {
+      id: Date.now().toString(),
+      name: name.trim(),
+      songs: []
+    };
+    savePlaylists([...playlists, newPlaylist]);
+  }, [playlists, savePlaylists]);
 
-  const removeSongFromPlaylist = useCallback(async (playlistId, songId) => {
-    try {
-      const res = await fetch(`/api/playlists/${playlistId}/remove`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ songId })
-      });
-      if (res.ok) fetchPlaylists();
-    } catch (e) {}
-  }, [fetchPlaylists]);
+  const addSongToPlaylist = useCallback((playlistId, songId) => {
+    const updated = playlists.map(p => {
+      if (p.id === playlistId) {
+        if (!p.songs.includes(songId)) {
+          return { ...p, songs: [...p.songs, songId] };
+        }
+      }
+      return p;
+    });
+    savePlaylists(updated);
+  }, [playlists, savePlaylists]);
 
-  const deletePlaylist = useCallback(async (playlistId) => {
-    try {
-      const res = await fetch(`/api/playlists/${playlistId}`, { method: 'DELETE' });
-      if (res.ok) fetchPlaylists();
-    } catch (e) {}
-  }, [fetchPlaylists]);
+  const removeSongFromPlaylist = useCallback((playlistId, songId) => {
+    const updated = playlists.map(p => {
+      if (p.id === playlistId) {
+        return { ...p, songs: p.songs.filter(id => id !== songId) };
+      }
+      return p;
+    });
+    savePlaylists(updated);
+  }, [playlists, savePlaylists]);
+
+  const deletePlaylist = useCallback((playlistId) => {
+    const updated = playlists.filter(p => p.id !== playlistId);
+    savePlaylists(updated);
+  }, [playlists, savePlaylists]);
 
   // ─── Seek / Volume / Stop ─────────────────────────────────────────────────
   const seek = useCallback((time) => {
@@ -712,7 +544,7 @@ export function PlayerProvider({ children, user }) {
       isShuffle, setIsShuffle, repeatMode, setRepeatMode,
       stopPlayback,
       sleepTimer, startSleepTimer, cancelSleepTimer,
-      refreshSongs: fetchSongs,
+      refreshSongs: () => {},
       upNextQueue,
       playlists, fetchPlaylists, createPlaylist, addSongToPlaylist, removeSongFromPlaylist, deletePlaylist,
       saavnResults,

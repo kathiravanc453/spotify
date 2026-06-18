@@ -1,17 +1,33 @@
+import { useState, useEffect } from 'react';
 import { usePlayer } from '../context/PlayerContext';
 import SongRow from '../components/shared/SongRow';
 import { ArrowLeft, Play, Shuffle } from 'lucide-react';
 
 export default function Actor() {
-  const { allSongs, activeActor, setActiveSection, playSong, setIsShuffle } = usePlayer();
+  const { activeActor, setActiveSection, playSong, setIsShuffle } = usePlayer();
+  const [actorSongs, setActorSongs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (activeActor) {
+      setLoading(true);
+      // Search JioSaavn specifically for this actor's tamil songs
+      fetch(`/api/saavn/search?q=${encodeURIComponent(activeActor + ' tamil songs')}`)
+        .then(res => res.json())
+        .then(data => {
+           if (Array.isArray(data)) setActorSongs(data);
+        })
+        .catch(err => console.error(err))
+        .finally(() => setLoading(false));
+    }
+  }, [activeActor]);
 
   if (!activeActor) {
     setActiveSection('home');
     return null;
   }
 
-  const actorSongs = allSongs.filter(s => s.actor === activeActor);
-  
+
   const ACTOR_IMAGES = {
     "Vijay": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/C._Joseph_Vijay_%28cropped%29.jpg/500px-C._Joseph_Vijay_%28cropped%29.jpg",
     "Ajith Kumar": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Ajith_Kumar_at_Irungattukottai_Race_Track.jpg/500px-Ajith_Kumar_at_Irungattukottai_Race_Track.jpg",
@@ -106,14 +122,7 @@ export default function Actor() {
               {activeActor}
             </h1>
             <p className="text-white/80 font-medium text-xs md:text-base">
-              {actorSongs.length} {actorSongs.length === 1 ? 'Track' : 'Tracks'} 
-              {(() => {
-                const totalSecs = actorSongs.reduce((acc, song) => acc + (song.duration || 0), 0);
-                if (!totalSecs) return '';
-                const h = Math.floor(totalSecs / 3600);
-                const m = Math.floor((totalSecs % 3600) / 60);
-                return h > 0 ? ` • ${h} hr ${m} min` : ` • ${m} min`;
-              })()}
+              {loading ? 'Fetching global tracks...' : `${actorSongs.length} Tracks`}
             </p>
           </div>
         </div>
@@ -142,7 +151,12 @@ export default function Actor() {
 
         {/* Song List */}
         <div className="flex flex-col gap-2">
-          {actorSongs.length > 0 ? (
+          {loading ? (
+            <div className="py-20 text-center flex flex-col items-center">
+              <div className="w-10 h-10 rounded-full border-2 border-cyan-500/20 border-t-cyan-400 animate-spin mb-4" />
+              <p className="text-white/40">Fetching global tracks for {activeActor}...</p>
+            </div>
+          ) : actorSongs.length > 0 ? (
             actorSongs.map((song, i) => (
               <SongRow key={song.id} song={song} index={i} />
             ))

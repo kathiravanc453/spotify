@@ -6,7 +6,6 @@ import { usePlayer } from '../../context/PlayerContext';
 const navItems = [
   { icon: Home,       label: 'Home',        id: 'home'      },
   { icon: Search,     label: 'Search',      id: 'search'    },
-  { icon: Library,    label: 'Library',     id: 'library'   },
   { icon: Heart,      label: 'Favorites',   id: 'favorites' },
   { icon: Disc,       label: 'Albums',      id: 'albums'    },
   { icon: TrendingUp, label: 'Trending',    id: 'trending'  },

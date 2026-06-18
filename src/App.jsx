@@ -135,10 +135,10 @@ function AppContent({ user, onLogout, onLogin }) {
     
     if (activeSection === 'admin')       return <AdminUpload />;
     if (activeSection === 'library' || activeSection === 'favorites' || activeSection?.startsWith('playlist_')) return <Library />;
-    if (activeSection === 'albums')      return <Albums />;
+    if (activeSection === 'albums')      return <Albums setSearch={handleSearch} />;
     if (activeSection === 'now-playing') return <Playback />;
     if (activeSection === 'artist')      return <Artist />;
-    if (activeSection === 'actor')       return <Actor />;
+    if (activeSection === 'actor')       return <Actor setSearch={handleSearch} />;
     return <Home search={search} setSearch={handleSearch} activeSection={activeSection} />;
   };
 

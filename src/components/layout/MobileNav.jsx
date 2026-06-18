@@ -1,17 +1,20 @@
-import { Home, Library, Disc3, Heart, Music } from 'lucide-react';
+import { Home, Search, Disc3, Heart, Music } from 'lucide-react';
 import { usePlayer } from '../../context/PlayerContext';
 
 const NAV_ITEMS = [
   { id: 'home',      label: 'Home',    icon: Home    },
-  { id: 'library',   label: 'Library', icon: Library },
+  { id: 'search',    label: 'Search',  icon: Search  },
   { id: 'albums',    label: 'Albums',  icon: Disc3   },
-  { id: 'favorites', label: 'Liked',   icon: Heart   },
+  { id: 'favorites', label: 'Favs',    icon: Heart   },
 ];
 
 export default function MobileNav() {
   const { activeSection, setActiveSection, currentSong } = usePlayer();
 
-  // How tall is the player footer on mobile? ~72px. We sit above it, unless we are on the now-playing screen where the footer is hidden.
+  // Hide the navigation bar entirely on the immersive Now Playing screen
+  if (activeSection === 'now-playing') return null;
+
+  // How tall is the player footer on mobile? ~72px. We sit above it.
   const FOOTER_H = (currentSong && activeSection !== 'now-playing') ? 72 : 0;
 
   return (

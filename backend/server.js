@@ -906,8 +906,8 @@ app.get('/api/saavn/search', async (req, res) => {
     const { q } = req.query;
     if (!q) return res.status(400).json({ error: 'Query required' });
 
-    // Directly query the official JioSaavn API with Tamil language priority
-    const url = `https://www.jiosaavn.com/api.php?__call=search.getResults&q=${encodeURIComponent(q)}&p=1&n=20&_format=json&_marker=0&ctx=web6dot0`;
+    // Directly query the official JioSaavn API with Tamil language priority and a larger limit (150)
+    const url = `https://www.jiosaavn.com/api.php?__call=search.getResults&q=${encodeURIComponent(q)}&p=1&n=150&_format=json&_marker=0&ctx=web6dot0`;
     const response = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0', 'Cookie': 'L=tamil;' } });
     const data = await response.json();
 
@@ -946,7 +946,7 @@ app.get('/api/saavn/search', async (req, res) => {
 // ─── NATIVE GLOBAL SAAVN HOME DATA (LAUNCH DATA) ──────────────────────────
 app.get('/api/saavn/home', async (req, res) => {
   try {
-    const url = `https://www.jiosaavn.com/api.php?__call=webapi.getLaunchData&api_version=4&_format=json&_marker=0&ctx=web6dot0`;
+    const url = `https://www.jiosaavn.com/api.php?__call=webapi.getLaunchData&api_version=4&_format=json&_marker=0&ctx=web6dot0&languages=tamil`;
     const response = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0', 'Cookie': 'L=tamil;' } });
     const data = await response.json();
 
@@ -960,7 +960,8 @@ app.get('/api/saavn/home', async (req, res) => {
 
     res.json({
       trending: (data.new_trending || []).map(formatItem),
-      playlists: (data.top_playlists || []).map(formatItem)
+      playlists: (data.top_playlists || []).map(formatItem),
+      albums: (data.new_albums || []).map(formatItem)
     });
   } catch (err) {
     console.error('Saavn Home API Error:', err.message);

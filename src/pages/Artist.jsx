@@ -1,17 +1,38 @@
+import { useState, useEffect } from 'react';
 import { usePlayer } from '../context/PlayerContext';
-import SongRow from '../components/shared/SongRow';
+import SongCard from '../components/shared/SongCard';
 import { ArrowLeft, Play, Shuffle } from 'lucide-react';
 import { splitArtists } from '../utils/cleanTitle';
 
 export default function Artist() {
   const { allSongs, activeArtist, setActiveSection, playSong, setIsShuffle } = usePlayer();
+  const [globalArtistSongs, setGlobalArtistSongs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (activeArtist) {
+      setLoading(true);
+      fetch(`/api/saavn/search?q=${encodeURIComponent(activeArtist)}`)
+        .then(res => res.json())
+        .then(data => {
+           if (Array.isArray(data)) setGlobalArtistSongs(data);
+        })
+        .catch(err => console.error(err))
+        .finally(() => setLoading(false));
+    }
+  }, [activeArtist]);
 
   if (!activeArtist) {
     setActiveSection('home');
     return null;
   }
 
-  const artistSongs = allSongs.filter(s => splitArtists(s.artist).includes(activeArtist));
+  // Combine local and global songs, deduplicate by title/id
+  const localArtistSongs = allSongs.filter(s => splitArtists(s.artist).includes(activeArtist));
+  const artistMap = new Map();
+  [...localArtistSongs, ...globalArtistSongs].forEach(s => artistMap.set(s.title || s.id, s));
+  const artistSongs = Array.from(artistMap.values());
+
   const artistCover = artistSongs[0]?.cover || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500';
 
   const handlePlayAll = () => {
@@ -35,7 +56,6 @@ export default function Artist() {
       hash = name.charCodeAt(i) + ((hash << 5) - hash);
     }
     const h = Math.abs(hash) % 360;
-    // Return a rich, vibrant color typical of Spotify artist pages
     return `hsl(${h}, 60%, 35%)`;
   };
 
@@ -52,10 +72,8 @@ export default function Artist() {
           className="absolute inset-0 bg-cover bg-center opacity-30 mix-blend-overlay"
           style={{ backgroundImage: `url(${artistCover})` }}
         />
-        {/* Spotify-style gradient fade to bottom */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-[#121212]" />
         
-        {/* Back Button */}
         <button 
           onClick={() => setActiveSection('home')}
           className="absolute top-6 left-6 z-10 w-8 h-8 rounded-full bg-black/50 hover:bg-black/80 flex items-center justify-center text-white transition-colors"
@@ -63,7 +81,6 @@ export default function Artist() {
           <ArrowLeft size={20} />
         </button>
 
-        {/* Content Container */}
         <div className="absolute bottom-0 left-0 p-4 md:p-8 w-full flex flex-col md:flex-row items-center md:items-end gap-4 md:gap-6 z-10 text-center md:text-left">
           <div className="w-28 h-28 md:w-48 md:h-48 rounded-full overflow-hidden shadow-[0_8px_40px_rgba(0,0,0,0.5)] flex-shrink-0 border-none">
             <img src={artistCover} alt={activeArtist} className="w-full h-full object-cover" />
@@ -79,25 +96,16 @@ export default function Artist() {
               {activeArtist}
             </h1>
             <p className="text-white/80 font-medium text-xs md:text-base">
-              {artistSongs.length} {artistSongs.length === 1 ? 'Track' : 'Tracks'} 
-              {(() => {
-                const totalSecs = artistSongs.reduce((acc, song) => acc + (song.duration || 0), 0);
-                if (!totalSecs) return '';
-                const h = Math.floor(totalSecs / 3600);
-                const m = Math.floor((totalSecs % 3600) / 60);
-                return h > 0 ? ` • ${h} hr ${m} min` : ` • ${m} min`;
-              })()}
+              {loading ? 'Fetching global tracks...' : `${artistSongs.length} Tracks`}
             </p>
           </div>
         </div>
       </div>
 
-      {/* Main Content Area with extended gradient */}
       <div 
         className="px-6 md:px-8 relative min-h-screen"
         style={{ backgroundImage: `linear-gradient(to bottom, ${dominantColor}40 0%, transparent 400px)` }}
       >
-        {/* Controls */}
         <div className="flex items-center gap-4 mb-8">
           <button 
             onClick={handlePlayAll}
@@ -113,12 +121,17 @@ export default function Artist() {
           </button>
         </div>
 
-        {/* Song List */}
-        <div className="flex flex-col gap-2">
-          {artistSongs.map((song, i) => (
-            <SongRow key={song.id} song={song} index={i} />
-          ))}
-        </div>
+        {loading ? (
+          <div className="flex items-center justify-center py-10">
+            <div className="w-8 h-8 rounded-full border-2 border-cyan-500/20 border-t-cyan-400 animate-spin" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-20">
+            {artistSongs.map(song => (
+              <SongCard key={song?.id} song={song} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -57,6 +57,20 @@ export default function Playback() {
   const [lyricsLoading, setLyricsLoading] = useState(false);
   const [lyricsError, setLyricsError] = useState(null);
   const lyricsContainerRef = useRef(null);
+  const activeLyricRef = useRef(null);
+
+  const activeLyricIndex = useMemo(() => {
+    if (!lyricsData || lyricsData.length === 0) return -1;
+    return lyricsData.findIndex((line, idx) => {
+      return progress >= line.time && (idx === lyricsData.length - 1 || progress < lyricsData[idx + 1].time);
+    });
+  }, [progress, lyricsData]);
+
+  useEffect(() => {
+    if (activeLyricRef.current && activeTab === 'lyrics' && !isIdle) {
+      activeLyricRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [activeLyricIndex, activeTab, isIdle]);
 
   useEffect(() => {
     if (!currentSong) return;
@@ -159,7 +173,7 @@ export default function Playback() {
   }
 
   return (
-    <div className="relative min-h-[calc(100vh-55px)] md:min-h-[calc(100vh-140px)] pb-4 md:pb-8 w-full flex flex-col p-4 md:p-8 overflow-x-hidden">
+    <div className="relative h-[100dvh] md:h-auto md:min-h-[calc(100vh-140px)] w-full flex flex-col p-4 md:p-8 overflow-hidden">
       
       {/* Massive Cinematic Blurry Background based on Album Art */}
       <div className="absolute inset-0 z-0 overflow-hidden bg-black">
@@ -175,10 +189,10 @@ export default function Playback() {
         />
       </div>
 
-      <div className={`relative z-10 w-full max-w-5xl mx-auto md:my-auto md:bg-white/[0.02] md:border md:border-white/5 md:backdrop-blur-2xl md:rounded-3xl p-4 sm:p-6 md:p-10 flex flex-col md:flex-row gap-12 shadow-none md:shadow-2xl h-auto min-h-screen md:min-h-0 transition-opacity duration-700 ${isIdle ? 'opacity-0' : 'opacity-100'}`}>
+      <div className={`relative z-10 w-full h-full max-w-5xl mx-auto md:my-auto md:bg-white/[0.02] md:border md:border-white/5 md:backdrop-blur-2xl md:rounded-3xl md:p-10 flex flex-col md:flex-row gap-6 md:gap-12 shadow-none md:shadow-2xl overflow-hidden`}>
         
         <div 
-          className="flex-1 flex flex-col items-center md:items-start text-center md:text-left justify-between space-y-4 md:space-y-6 w-full max-w-md mx-auto md:max-w-none"
+          className="flex-shrink-0 flex flex-col items-center md:items-start text-center md:text-left justify-between space-y-2 md:space-y-6 w-full max-w-md mx-auto md:max-w-none md:flex-1"
           {...swipeHandlers}
         >
           <div className="w-full flex items-center justify-between">
@@ -197,7 +211,7 @@ export default function Playback() {
             </button>
           </div>
 
-          <div className="relative w-full aspect-square max-w-[320px] md:max-w-md mx-auto rounded-3xl md:rounded-[40px] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] group">
+          <div className="relative w-full aspect-square max-h-[35vh] md:max-h-none max-w-[280px] md:max-w-md mx-auto rounded-3xl md:rounded-[40px] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] group mt-2 mb-2 md:mt-0 md:mb-0">
             <img
               src={albumCovers[currentSong.id] || currentSong.cover}
               alt={currentSong.title}
@@ -207,7 +221,7 @@ export default function Playback() {
             <div className={`absolute inset-0 bg-black/10 transition-opacity duration-300 ${isPlaying && !isIdle ? 'animate-pulse' : ''}`} />
           </div>
 
-          <div className={`w-full transition-all duration-700 ${isIdle ? 'opacity-0 translate-y-4 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
+          <div className="w-full transition-all duration-700">
             <div className="w-full space-y-1.5 md:space-y-2 px-2 md:px-0">
               <div className="flex items-center justify-between gap-4">
                 <div className="min-w-0 flex-1 text-left">
@@ -256,7 +270,7 @@ export default function Playback() {
           </div>
         </div>
 
-        <div id="up-next-section" className="h-full flex flex-col bg-black/20 md:bg-white/[0.02] md:border-l border-white/5 rounded-t-3xl md:rounded-none overflow-hidden relative">
+        <div id="up-next-section" className="flex-1 min-h-0 flex flex-col bg-black/20 md:bg-white/[0.02] md:border-l border-white/5 rounded-3xl md:rounded-none overflow-hidden relative mt-2 md:mt-0 shadow-[0_-10px_40px_rgba(0,0,0,0.3)] md:shadow-none">
           <div className={`absolute inset-0 pointer-events-none flex items-end justify-center gap-1 opacity-20 transition-opacity duration-1000 ${isPlaying && !isIdle ? 'opacity-30' : 'opacity-0'}`}>
             {[...Array(30)].map((_, i) => (
               <div 
@@ -272,7 +286,7 @@ export default function Playback() {
             ))}
           </div>
 
-          <div className={`relative z-10 flex border-b border-white/5 p-2 transition-opacity duration-700 ${isIdle ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+          <div className="relative z-10 flex border-b border-white/5 p-2 transition-opacity duration-700">
             <button
               onClick={() => setActiveTab('queue')}
               className={`flex-1 py-3 text-sm font-bold uppercase tracking-wider transition-colors cursor-pointer rounded-xl ${activeTab === 'queue' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/80'}`}
@@ -287,40 +301,48 @@ export default function Playback() {
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto relative min-h-[300px] scrollbar-hide">
+          <div className="flex-1 overflow-y-auto relative min-h-0 scrollbar-hide">
             {activeTab === 'queue' && (
-              <div className="flex flex-col gap-2 p-4">
-                {queue.map((song) => (
-                  <div key={song.id} onClick={() => playSong(song)} className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 cursor-pointer">
-                    <img src={song.cover} className="w-10 h-10 rounded-lg" />
-                    <div>
-                      <h4 className="text-white text-sm font-bold">{song.title}</h4>
-                      <p className="text-white/40 text-xs">{song.artist}</p>
+              <div className="flex flex-col gap-2 p-4 h-full">
+                {queue.length > 0 ? (
+                  queue.map((song) => (
+                    <div key={song.id} onClick={() => playSong(song)} className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 cursor-pointer">
+                      <img src={song.cover} className="w-10 h-10 rounded-lg object-cover" />
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-white text-sm font-bold truncate">{song.title}</h4>
+                        <p className="text-white/40 text-xs truncate">{song.artist}</p>
+                      </div>
                     </div>
+                  ))
+                ) : (
+                  <div className="h-full flex flex-col items-center justify-center gap-4 py-12">
+                    <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
+                    <p className="text-white/50 text-sm font-medium">Generating Smart Radio Queue...</p>
                   </div>
-                ))}
+                )}
               </div>
             )}
 
             {activeTab === 'lyrics' && (
               <div className="h-full overflow-y-auto p-4 md:p-8 relative scrollbar-none" style={{ scrollBehavior: 'smooth' }} ref={lyricsContainerRef}>
                 {lyricsLoading ? (
-                  <div className={`h-full flex flex-col items-center justify-center gap-4 transition-opacity duration-700 ${isIdle ? 'opacity-0' : 'opacity-100'}`}>
+                  <div className="h-full flex flex-col items-center justify-center gap-4 transition-opacity duration-700">
                     <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
                     <p className="text-white/50 text-sm font-medium">Extracting lyrics algorithmically...</p>
                   </div>
                 ) : lyricsError ? (
-                  <div className={`h-full flex flex-col items-center justify-center gap-2 transition-opacity duration-700 ${isIdle ? 'opacity-0' : 'opacity-100'}`}>
+                  <div className="h-full flex flex-col items-center justify-center gap-2 transition-opacity duration-700">
                     <p className="text-white/40 text-sm font-medium">{lyricsError}</p>
                   </div>
                 ) : lyricsData.length > 0 ? (
-                    <div className={`space-y-6 md:space-y-8 pb-[60vh] transition-all duration-1000 ${isIdle ? 'pt-[20vh] scale-105' : 'pt-[10vh] scale-100'}`}>
+                    <div className="space-y-6 md:space-y-8 pb-[60vh] pt-[10vh] transition-all duration-1000">
                       {lyricsData.map((line, idx) => {
                         const isActive = progress >= line.time && (idx === lyricsData.length - 1 || progress < lyricsData[idx + 1].time);
                         const isPast = progress > line.time;
                         return (
                           <div
                             key={idx}
+                            ref={isActive ? activeLyricRef : null}
                             className={`transition-all duration-500 cursor-pointer ${isActive ? 'text-2xl md:text-4xl font-extrabold text-white transform scale-105' : isPast ? 'text-xl md:text-2xl font-bold text-white/30 blur-[1px]' : 'text-xl md:text-2xl font-bold text-white/50'}`}
                             style={isActive ? { textShadow: `0 0 30px ${accent.hex}80` } : {}}
                             onClick={() => seek(line.time)}
