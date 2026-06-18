@@ -142,8 +142,8 @@ export default function Library() {
             <p className="text-white/30 text-sm mt-1">Click the + icon on any song to add it here!</p>
           </div>
         ) : (
-          <div className="flex flex-col gap-1.5">
-            {playlistSongs.map((song, idx) => <SongRow key={song?.id} song={song} index={idx} />)}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-6">
+            {playlistSongs.map(song => <SongCard key={song?.id} song={song} />)}
           </div>
         )}
       </div>
@@ -180,8 +180,8 @@ export default function Library() {
             <p className="text-white/40 font-medium">No liked songs yet. Tap the ♥ on any song!</p>
           </div>
         ) : (
-          <div className="flex flex-col gap-1.5">
-            {likedSongs.map((song, idx) => <SongRow key={song?.id} song={song} index={idx} />)}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-6">
+            {likedSongs.map(song => <SongCard key={song?.id} song={song} />)}
           </div>
         )}
       </div>

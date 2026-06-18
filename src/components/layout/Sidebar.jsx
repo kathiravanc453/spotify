@@ -104,7 +104,7 @@ export default function Sidebar({ user }) {
   return (
     <>
       {/* ── Desktop Sidebar (md+) ─────────────────────────────────── */}
-      <aside className="hidden md:flex flex-col w-64 min-h-screen bg-[#07070a]/40 border-r border-white/5 flex-shrink-0 z-20">
+      <aside className="hidden md:flex flex-col w-64 min-h-screen bg-black/20 backdrop-blur-3xl border-r border-white/5 flex-shrink-0 z-20">
         <SidebarContent
           activeSection={activeSection}
           setActiveSection={setActiveSection}

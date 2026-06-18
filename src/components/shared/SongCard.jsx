@@ -52,68 +52,48 @@ export default memo(function SongCard({ song }) {
         id={`song-card-${song.id}`}
         onClick={() => playSong(song)}
         {...longPressHandlers}
-        className={`ripple-container stagger-item group relative flex flex-col gap-3 p-3 rounded-2xl cursor-pointer transition-all duration-500 select-none card-hover-lift
-          ${isActive
-            ? `bg-gradient-to-b from-cyan-500/12 to-violet-500/6 border border-cyan-400/30 shadow-lg shadow-cyan-500/10 ${isCurrentlyPlaying ? 'active-glow' : ''}`
-            : 'bg-white/[0.025] hover:bg-white/[0.06] border border-white/[0.06] hover:border-white/15'
-          }`}
+        className={`group relative flex items-center gap-4 p-3 pr-6 rounded-[24px] cursor-pointer transition-all duration-300 select-none ${isActive ? 'bg-white/[0.08] border-cyan-500/30 shadow-[0_0_20px_rgba(34,211,238,0.15)] scale-[1.02]' : 'bg-white/[0.02] hover:bg-white/[0.06] border border-transparent hover:border-white/10 hover:scale-[1.01]'}`}
       >
-        {/* Cover with shimmer skeleton */}
-        <div className="relative aspect-square rounded-xl overflow-hidden shadow-md">
-          {/* Shimmer shown while image is loading */}
-          {!imgLoaded && (
-            <div className="absolute inset-0 shimmer rounded-xl" />
-          )}
-
-          <img
-            src={realCover}
-            alt={song.title}
-            loading="lazy"
-            decoding="async"
-            onLoad={() => setImgLoaded(true)}
-            onError={(e) => {
-              setImgLoaded(true);
-              if (song.fallbackCover && e.target.src !== song.fallbackCover) {
-                e.target.src = song.fallbackCover;
-              } else {
-                e.target.src = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500';
-              }
-            }}
-            className={`w-full h-full object-cover transition-all duration-700 group-hover:scale-105 ${
-              imgLoaded ? 'opacity-100' : 'opacity-0'
-            } ${isCurrentlyPlaying ? 'animate-float' : ''}`}
-          />
-
-          {/* Play/Pause overlay */}
-          <div className={`absolute inset-0 bg-black/45 flex items-center justify-center transition-opacity duration-300
-            ${isCurrentlyPlaying ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-            <div
-              className={`w-11 h-11 rounded-full flex items-center justify-center shadow-lg transition-all duration-300
-                ${isCurrentlyPlaying ? 'scale-100' : 'scale-90 group-hover:scale-100 hover:scale-110'}`}
-              style={{ background: `linear-gradient(135deg, ${accent.hex}, #a78bfa)` }}
-            >
-              {isCurrentlyPlaying
-                ? <Equalizer />
-                : <Play size={16} fill="#fff" color="#fff" className="ml-0.5" />
-              }
+        <div className="relative w-16 h-16 flex-shrink-0">
+          {/* Vinyl Record that slides out on hover */}
+          <div className={`absolute inset-0 bg-black rounded-full shadow-[0_0_10px_rgba(0,0,0,0.5)] flex items-center justify-center transition-all duration-500 ${isCurrentlyPlaying ? 'translate-x-6 rotate-180 animate-[spin_4s_linear_infinite]' : 'group-hover:translate-x-6 group-hover:rotate-180'}`}>
+            <div className={`w-6 h-6 rounded-full border border-[#222] ${isCurrentlyPlaying ? 'bg-gradient-to-tr from-cyan-400 to-violet-500' : 'bg-[#111]'}`} />
+          </div>
+          
+          {/* Album Sleeve */}
+          <div className="absolute inset-0 z-10 rounded-xl overflow-hidden shadow-lg">
+            {!imgLoaded && <div className="absolute inset-0 shimmer rounded-xl" />}
+            <img
+              src={realCover}
+              alt={song.title}
+              loading="lazy"
+              decoding="async"
+              onLoad={() => setImgLoaded(true)}
+              onError={(e) => {
+                setImgLoaded(true);
+                e.target.src = song.fallbackCover || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500';
+              }}
+              className={`w-full h-full object-cover transition-opacity duration-700 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
+            />
+            {/* Play/Pause Overlay */}
+            <div className={`absolute inset-0 bg-black/45 flex items-center justify-center transition-opacity duration-300 ${isCurrentlyPlaying ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+              <div
+                className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 scale-90 group-hover:scale-100`}
+                style={{ background: `linear-gradient(135deg, ${accent.hex}, #a78bfa)` }}
+              >
+                {isCurrentlyPlaying ? <Equalizer /> : <Play size={14} fill="#fff" color="#fff" className="ml-0.5" />}
+              </div>
             </div>
           </div>
-
-          {/* Active glow ring */}
-          {isActive && (
-            <div className={`absolute inset-0 rounded-xl ring-1 ${accent.border} pointer-events-none`} />
-          )}
-
-          {/* Long-press hint dot */}
           <div className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-white/20 md:hidden" />
         </div>
 
         {/* Info */}
-        <div className="min-w-0 px-0.5">
-          <p className={`font-bold text-sm truncate transition-colors duration-300 ${isActive ? accent.text : 'text-white'}`}>
+        <div className="flex-1 min-w-0 z-10 pl-4 py-1">
+          <h3 className={`font-bold truncate text-base ${isActive ? 'text-cyan-400' : 'text-white/90 group-hover:text-white'}`}>
             {displayTitle}
-          </p>
-          <div className="text-white/45 text-xs truncate mt-0.5 font-medium w-full text-left flex items-center gap-1">
+          </h3>
+          <div className="text-white/50 group-hover:text-white/70 text-sm truncate mt-0.5 transition-colors flex items-center gap-1">
             {splitArtists(song.artist).map((artistName, i, arr) => (
               <span key={artistName} className="truncate max-w-full">
                 <button
@@ -132,17 +112,18 @@ export default memo(function SongCard({ song }) {
               </span>
             ))}
           </div>
-          <div className="flex items-center justify-between mt-1.5 flex-shrink-0">
-            {(timeToShow > 0 || isCurrentlyPlaying) ? (
-              <p className="text-white/25 text-[10px] sm:text-xs font-semibold tracking-wider flex items-center gap-1 min-w-[36px]">
-                {isCurrentlyPlaying && <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse mr-0.5" />}
-                {formatTime(timeToShow)}
-              </p>
-            ) : <div />}
-            {playCount > 0 && (
-              <span className="text-[9px] text-white/20 font-bold">{playCount} plays</span>
-            )}
-          </div>
+        </div>
+
+        {/* Right side stats/actions */}
+        <div className="flex items-center gap-4 z-10">
+          {playCount > 0 && (
+            <span className="hidden sm:block text-[10px] font-bold text-white/30 uppercase tracking-widest">
+              {playCount} plays
+            </span>
+          )}
+          <span className="text-white/40 text-xs font-medium font-mono">
+            {formatTime(timeToShow)}
+          </span>
         </div>
       </div>
 

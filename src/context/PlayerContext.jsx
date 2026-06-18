@@ -16,6 +16,10 @@ export function PlayerProvider({ children, user }) {
   const [activeSection, setActiveSection] = useState('home');
   const [activeArtist, setActiveArtist] = useState(null);
   const [activeActor, setActiveActor] = useState(null);
+  const [saavnResults, setSaavnResults] = useState([]);
+  const [saavnLoading, setSaavnLoading] = useState(false);
+  const [saavnHomeData, setSaavnHomeData] = useState({ trending: [], playlists: [] });
+  const [saavnHomeLoading, setSaavnHomeLoading] = useState(true);
   const [sleepTimer, setSleepTimer]     = useState(null); // minutes remaining
   const [playCounts, setPlayCounts]     = useState(() => {
     try { return JSON.parse(localStorage.getItem('rhythmix_playcounts') || '{}') || {}; } catch { return {}; }
@@ -66,6 +70,45 @@ export function PlayerProvider({ children, user }) {
       });
     } catch (e) { console.error(e); }
   }, []);
+
+  // ─── GLOBAL SAAVN SEARCH ──────────────────────────────────────────────────
+  const searchSaavnGlobal = async (query) => {
+    if (!query || query.trim() === '') {
+      setSaavnResults([]);
+      return;
+    }
+    setSaavnLoading(true);
+    try {
+      const res = await fetch(`/api/saavn/search?q=${encodeURIComponent(query.trim())}`);
+      const data = await res.json();
+      setSaavnResults(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error('Saavn Search Error:', e);
+      setSaavnResults([]);
+    } finally {
+      setSaavnLoading(false);
+    }
+  };
+
+  // ─── GLOBAL SAAVN HOME LAUNCH DATA ────────────────────────────────────────
+  const fetchSaavnHome = useCallback(async () => {
+    setSaavnHomeLoading(true);
+    try {
+      const res = await fetch('/api/saavn/home');
+      const data = await res.json();
+      if (data && data.trending) {
+        setSaavnHomeData(data);
+      }
+    } catch (e) {
+      console.error('Saavn Home Error:', e);
+    } finally {
+      setSaavnHomeLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSaavnHome();
+  }, [fetchSaavnHome]);
 
   // ─── Fetch songs — with direct Cloudinary fallback ───────────────────────
   const fetchSongs = useCallback(async () => {
@@ -672,6 +715,12 @@ export function PlayerProvider({ children, user }) {
       refreshSongs: fetchSongs,
       upNextQueue,
       playlists, fetchPlaylists, createPlaylist, addSongToPlaylist, removeSongFromPlaylist, deletePlaylist,
+      saavnResults,
+      saavnLoading,
+      searchSaavnGlobal,
+      saavnHomeData,
+      saavnHomeLoading,
+      fetchSaavnHome
     }}>
       {children}
     </PlayerContext.Provider>

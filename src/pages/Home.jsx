@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { usePlayer } from '../context/PlayerContext';
 import SongCard from '../components/shared/SongCard';
 import SongRow from '../components/shared/SongRow';
@@ -31,8 +31,17 @@ function SectionHeader({ icon: Icon, title, gradient }) {
   );
 }
 
-export default function Home({ search = '', activeSection = 'home' }) {
-  const { recentlyPlayed = [], allSongs = [], loading = false, playSong, currentSong, playCounts = {}, albumCovers = {}, setActiveArtist, setActiveActor, setActiveSection: setGlobalSection } = usePlayer() || {};
+export default function Home({ search = '', setSearch, activeSection = 'home' }) {
+  const { recentlyPlayed = [], allSongs = [], loading = false, playSong, currentSong, playCounts = {}, albumCovers = {}, setActiveArtist, setActiveActor, setActiveSection: setGlobalSection, saavnResults = [], saavnLoading = false, searchSaavnGlobal, saavnHomeData = { trending: [], playlists: [] }, saavnHomeLoading = false } = usePlayer() || {};
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      if (search.trim() !== '') {
+        searchSaavnGlobal(search);
+      }
+    }, 500);
+    return () => clearTimeout(delayDebounceFn);
+  }, [search]);
   const [selectedMood, setSelectedMood] = useState(null);
   const [moodSearch, setMoodSearch] = useState('');
 
@@ -235,21 +244,49 @@ export default function Home({ search = '', activeSection = 'home' }) {
         s.mood?.toLowerCase().includes(search.toLowerCase())
       );
       return (
-        <section className="space-y-6 animate-in fade-in duration-300">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-white text-2xl font-bold tracking-tight">Search Results for "{search}"</h2>
-            <span className="text-white/40 text-sm font-medium">{results.length} found</span>
-          </div>
-          {results.length === 0 ? (
-            <div className="text-center py-20 bg-white/[0.02] border border-white/5 rounded-3xl">
-              <p className="text-white/30 font-medium">No matches found for "{search}".</p>
+        <div className="space-y-12 animate-in fade-in duration-300">
+          
+          {/* LOCAL RESULTS */}
+          <section>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-white text-2xl font-bold tracking-tight">In Your Library</h2>
+              <span className="text-white/40 text-sm font-medium">{results.length} found</span>
             </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-6">
-              {results.map(song => <SongCard key={song.id} song={song} />)}
+            {results.length === 0 ? (
+              <div className="text-center py-10 bg-white/[0.02] border border-white/5 rounded-3xl">
+                <p className="text-white/30 font-medium">No matches in local library.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-6">
+                {results.map(song => <SongCard key={song.id} song={song} />)}
+              </div>
+            )}
+          </section>
+
+          {/* GLOBAL SAAVN RESULTS */}
+          <section>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <h2 className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-violet-500 text-2xl font-bold tracking-tight">Global Search</h2>
+                {saavnLoading && <Loader2 size={16} className="text-cyan-400 animate-spin" />}
+              </div>
+              {!saavnLoading && <span className="text-white/40 text-sm font-medium">{saavnResults.length} found</span>}
             </div>
-          )}
-        </section>
+            {saavnLoading ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-6">
+                {Array.from({ length: 5 }).map((_, i) => <SongCardSkeleton key={i} />)}
+              </div>
+            ) : saavnResults.length === 0 ? (
+              <div className="text-center py-10 bg-white/[0.02] border border-cyan-500/10 rounded-3xl">
+                <p className="text-white/30 font-medium">No global matches found for "{search}".</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-6">
+                {saavnResults.map(song => <SongCard key={song.id} song={song} />)}
+              </div>
+            )}
+          </section>
+        </div>
       );
     }
  
@@ -551,76 +588,111 @@ export default function Home({ search = '', activeSection = 'home' }) {
         </section>
       );
     };
+    const renderBentoSpotlight = (items) => {
+      if (!items || items.length < 3) return null;
+      const [hero, side1, side2] = items;
+
+      const BentoCard = ({ item, isHero }) => (
+        <div 
+          onClick={() => setSearch(item.title)}
+          className={`relative rounded-[32px] overflow-hidden group cursor-pointer shadow-2xl transition-all duration-700 hover:shadow-cyan-500/20 hover:-translate-y-2 
+            ${isHero ? 'md:col-span-2 md:row-span-2 h-[400px] md:h-auto' : 'h-[200px] md:h-auto'}`}
+        >
+          {/* Blurred Background Image */}
+          <div 
+            className="absolute inset-0 bg-cover bg-center transition-transform duration-[10000ms] group-hover:scale-110"
+            style={{ backgroundImage: `url(${item.cover})`, filter: 'brightness(0.6) saturate(1.2)' }}
+          />
+          {/* Glassmorphism Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+          
+          {/* Content */}
+          <div className={`absolute bottom-0 left-0 right-0 p-6 md:p-8 z-10 flex flex-col justify-end ${isHero ? 'h-full' : ''}`}>
+            <div className={`backdrop-blur-md bg-white/5 border border-white/10 rounded-2xl p-4 md:p-6 transition-all duration-500 group-hover:bg-white/10 group-hover:border-white/20
+              ${isHero ? 'translate-y-4 group-hover:translate-y-0' : 'translate-y-2 group-hover:translate-y-0'}`}>
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <span className="text-cyan-400 text-[10px] md:text-xs font-bold uppercase tracking-widest mb-1 block">
+                    {isHero ? '✨ Spotlight' : '🔥 Trending'}
+                  </span>
+                  <h3 className={`text-white font-extrabold leading-tight tracking-tight truncate ${isHero ? 'text-3xl md:text-5xl' : 'text-xl md:text-2xl'}`}>
+                    {item.title}
+                  </h3>
+                  <p className={`text-white/60 font-medium truncate mt-1 ${isHero ? 'text-base md:text-lg' : 'text-sm'}`}>
+                    {item.subtitle}
+                  </p>
+                </div>
+                {/* Glowing Play Button */}
+                <div className={`flex-shrink-0 rounded-full bg-cyan-400 text-black flex items-center justify-center transition-all duration-500 shadow-[0_0_20px_rgba(34,211,238,0.4)] group-hover:shadow-[0_0_30px_rgba(34,211,238,0.8)] group-hover:scale-110
+                  ${isHero ? 'w-14 h-14 md:w-16 md:h-16' : 'w-10 h-10 md:w-12 md:h-12'}`}>
+                  <Play size={isHero ? 28 : 20} fill="#000" className="ml-1" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+
+      return (
+        <section className="animate-in fade-in duration-700">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 auto-rows-[220px] md:auto-rows-[250px]">
+            <BentoCard item={hero} isHero={true} />
+            <BentoCard item={side1} isHero={false} />
+            <BentoCard item={side2} isHero={false} />
+          </div>
+        </section>
+      );
+    };
+
+    const renderGlassCarousel = (title, items) => {
+      if (!items || items.length === 0) return null;
+      return (
+        <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 mt-12">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-white text-2xl font-bold tracking-tight">{title}</h2>
+          </div>
+          <div className="flex gap-4 overflow-x-auto scroll-snap-x scrollbar-none pb-4">
+            {items.map(item => (
+              <div 
+                key={item.id} 
+                className="group cursor-pointer flex-shrink-0 w-36 sm:w-48 scroll-snap-x transition-all duration-300"
+                style={{ scrollSnapAlign: 'start' }}
+                onClick={() => setSearch(item.title)}
+              >
+                <div className={`relative ${item.type === 'artist' ? 'rounded-full' : 'rounded-[24px]'} aspect-square overflow-hidden mb-4 shadow-lg`}>
+                  <img src={item.cover} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
+                  <div className="absolute right-3 bottom-3 translate-y-8 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 z-10">
+                    <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center hover:bg-white hover:border-white group/btn">
+                      <Play size={18} fill="#fff" className="ml-1 text-white group-hover/btn:text-black group-hover/btn:fill-black transition-colors" />
+                    </div>
+                  </div>
+                </div>
+                <h3 className="text-white text-base font-bold truncate px-1">{item.title}</h3>
+                <p className="text-[#a7a7a7] text-sm mt-0.5 truncate px-1">{item.subtitle}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      );
+    };
 
     // Default Home view
     return (
-      <>
-        {topSong && (
-          <div
-            className="relative rounded-3xl overflow-hidden h-48 md:h-64 shadow-2xl border border-white/5 group/banner cursor-pointer"
-            onClick={() => playSong(topSong)}
-          >
-            <div
-              className="absolute inset-0 bg-cover bg-center transition-transform duration-[10000ms] group-hover/banner:scale-105"
-              style={{ backgroundImage: `url(${albumCovers[topSong.id] || topSong.cover}), url(${topSong.fallbackCover})`, filter: 'blur(1px) brightness(0.35)' }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-[#07070a] via-[#07070a]/60 to-transparent" />
-            <div className="relative z-10 flex flex-col justify-end h-full p-6 md:p-10">
-              <span className="text-cyan-400 text-xs font-bold uppercase tracking-widest mb-2 bg-cyan-950/40 border border-cyan-800/30 px-3 py-1 rounded-full w-fit">
-                🔥 Top Play{playCounts[topSong.id] ? ` · ${playCounts[topSong.id]} plays` : ''}
-              </span>
-              <h1 className="text-white text-3xl md:text-5xl font-extrabold leading-tight tracking-tight">{topSong.title}</h1>
-              <p className="text-white/70 text-sm md:text-base mt-2 font-medium">{topSong.artist}</p>
-            </div>
-          </div>
-        )}
- 
-        {recentlyPlayed.length > 0 && (
-          <section>
-            <SectionHeader icon={Clock} title="Recently Played" gradient="from-blue-400 to-indigo-500 shadow-blue-500/20" />
-            <div className="flex flex-col gap-2">
-              {recentlyPlayed.slice(0, 10).map((song, i) => <SongRow key={song?.id || i} song={song} index={i} />)}
-            </div>
-          </section>
-        )}
- 
-        {currentSong && relatedSongs.length > 0 && (
-          <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <SectionHeader icon={Sparkles} title={`More like "${currentSong.title}"`} gradient="from-cyan-400 to-violet-500 shadow-cyan-500/20" />
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-6">
-              {relatedSongs.map(song => <SongCard key={song.id} song={song} />)}
-            </div>
-          </section>
-        )}
-
-
-        {renderArtistCarousel('Male Artists', maleArtistsData)}
-        {renderArtistCarousel('Female Artists', femaleArtistsData)}
-        {renderArtistCarousel('Popular Artists', topArtists)}
-        {renderArtistCarousel('Popular Actors', popularActorsData)}
-
-        <section>
-          <SectionHeader icon={Music} title="Your Library" gradient="from-violet-500 to-fuchsia-500 shadow-violet-500/20" />
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-6">
-            {allSongs.map(song => <SongCard key={song?.id} song={song} />)}
-          </div>
-        </section>
-      </>
-    );
-  };
- 
-  return (
-    <div className="p-4 md:p-8 space-y-12">
-      {/* Mood Selector at the Top - Only shown on Home/Search sections when no active search query is entered */}
-      {(activeSection === 'home' || activeSection === 'search') && !search && (
-        <section>
-          <SectionHeader icon={Music2} title="How are you feeling?" gradient="from-cyan-400 to-violet-500 shadow-cyan-500/20" />
-          <div className="flex overflow-x-auto gap-3 pb-3 snap-x scrollbar-none -mx-4 px-4 md:mx-0 md:px-0 scroll-smooth">
+      <div className="space-y-4 md:space-y-8 pb-10">
+        
+        {/* VIBE CHECK (MOOD RINGS) */}
+        <section className="animate-in fade-in duration-500 pt-2 pb-6">
+          <div className="flex overflow-x-auto gap-3 pb-4 snap-x scrollbar-none -mx-4 px-4 md:mx-0 md:px-0">
             <button
               onClick={() => setSelectedMood(null)}
-              className={`flex-shrink-0 px-6 py-3 rounded-2xl text-sm font-bold transition-all duration-300 snap-start ${!selectedMood ? 'bg-gradient-to-r from-cyan-400 to-blue-500 text-white shadow-lg shadow-cyan-500/20 scale-105' : 'bg-white/5 text-white/70 hover:bg-white/10 hover:text-white'}`}
+              className={`flex-shrink-0 group flex items-center gap-3 px-5 py-3 rounded-[20px] text-sm font-bold transition-all duration-300 snap-start
+                ${!selectedMood ? 'bg-gradient-to-r from-cyan-400 to-blue-500 shadow-[0_0_20px_rgba(34,211,238,0.4)] text-white scale-105 border border-transparent' : 'bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/30 hover:-translate-y-1'}`}
             >
-              All Music
+              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-white/20 shadow-[0_0_15px_rgba(255,255,255,0.1)] group-hover:shadow-[0_0_20px_rgba(255,255,255,0.3)]">
+                <Music2 size={14} color="#fff" />
+              </div>
+              <span className="text-white/90 group-hover:text-white">All Music</span>
             </button>
             {MASTER_MOODS.map(moodKey => {
               const theme = MOOD_THEMES[moodKey];
@@ -630,18 +702,79 @@ export default function Home({ search = '', activeSection = 'home' }) {
                 <button
                   key={moodKey}
                   onClick={() => setSelectedMood(moodKey)}
-                  className={`flex-shrink-0 flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-bold transition-all duration-300 snap-start
-                    ${isSelected ? `bg-gradient-to-r ${theme.color} scale-105 shadow-lg` : 'bg-white/5 text-white/70 hover:bg-white/10 hover:text-white'}`}
+                  className={`flex-shrink-0 group flex items-center gap-3 px-5 py-3 rounded-[20px] text-sm font-bold transition-all duration-300 snap-start
+                    ${isSelected ? 'bg-white/10 border border-white/30 shadow-[0_0_20px_rgba(255,255,255,0.1)] scale-105' : 'bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/30 hover:-translate-y-1'}`}
                 >
-                  <Icon size={16} />
-                  {theme.label}
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center bg-gradient-to-tr ${theme.color} shadow-[0_0_15px_rgba(255,255,255,0.1)] group-hover:shadow-[0_0_20px_rgba(255,255,255,0.3)]`}>
+                    <Icon size={14} color="#fff" />
+                  </div>
+                  <span className="text-white/90 group-hover:text-white">{theme.label}</span>
                 </button>
               );
             })}
           </div>
         </section>
-      )}
+
+        {/* JIOSAAVN GLOBAL DATA */}
+        {saavnHomeLoading ? (
+          <div className="flex items-center justify-center py-32"><div className="w-10 h-10 rounded-full border-2 border-cyan-500/20 border-t-cyan-400 animate-spin" /></div>
+        ) : (
+          <>
+            {renderBentoSpotlight(saavnHomeData.trending)}
+            {renderGlassCarousel('Curated For You', saavnHomeData.playlists)}
+          </>
+        )}
+
+        {/* LOCAL DATA - VINYL STACK STYLE */}
+        {recentlyPlayed.length > 0 && (
+          <section className="mt-16 animate-in fade-in slide-in-from-bottom-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center border border-blue-500/30">
+                <Clock size={20} className="text-blue-400" />
+              </div>
+              <h2 className="text-white text-2xl font-bold tracking-tight">On Heavy Rotation</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {recentlyPlayed.slice(0, 6).map((song, i) => (
+                <div 
+                  key={song.id} 
+                  onClick={() => playSong(song)}
+                  className="group relative flex items-center gap-4 p-3 pr-6 bg-white/[0.03] hover:bg-white/[0.08] border border-white/5 hover:border-white/20 rounded-[24px] cursor-pointer transition-all duration-300 hover:scale-[1.02]"
+                >
+                  <div className="relative w-16 h-16 flex-shrink-0">
+                    {/* Vinyl Record that slides out on hover */}
+                    <div className="absolute inset-0 bg-black rounded-full shadow-[0_0_10px_rgba(0,0,0,0.5)] flex items-center justify-center transition-all duration-500 group-hover:translate-x-6 group-hover:rotate-180">
+                      <div className="w-6 h-6 rounded-full border border-[#222] bg-gradient-to-tr from-cyan-600 to-violet-600" />
+                    </div>
+                    {/* Album Sleeve */}
+                    <img 
+                      src={albumCovers[song.id] || song.cover} 
+                      alt={song.title} 
+                      className="absolute inset-0 w-full h-full object-cover rounded-[16px] shadow-lg z-10" 
+                      onError={e => { e.target.src = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500'; }}
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1 z-10">
+                    <h3 className="text-white font-bold truncate text-base">{cleanTitle(song.title)}</h3>
+                    <p className="text-white/50 text-xs truncate mt-0.5 font-medium">{song.artist}</p>
+                  </div>
+                  <div className="w-8 h-8 rounded-full bg-white/10 flex flex-shrink-0 items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                    <Play size={14} fill="#fff" className="ml-0.5 text-white" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+
+      </div>
+    );
+  };
  
+  return (
+    <div className="p-4 md:p-8 space-y-12">
+
       {selectedMood ? (
         <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">

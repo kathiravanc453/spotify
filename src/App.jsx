@@ -19,9 +19,10 @@ import ToastProvider from './components/ui/Toast';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import useMediaSession from './hooks/useMediaSession';
 import UpdateNotification from './components/UpdateNotification';
+import { moodAccent } from './utils/cleanTitle';
 
 function AppContent({ user, onLogout, onLogin }) {
-  const { activeSection, setActiveSection, refreshSongs } = usePlayer();
+  const { activeSection, setActiveSection, refreshSongs, currentSong, albumCovers = {} } = usePlayer();
   const [search, setSearch] = useState('');
   const [isPulling, setIsPulling] = useState(false);
   const [pullY, setPullY] = useState(0);
@@ -137,15 +138,37 @@ function AppContent({ user, onLogout, onLogin }) {
     if (activeSection === 'now-playing') return <Playback />;
     if (activeSection === 'artist')      return <Artist />;
     if (activeSection === 'actor')       return <Actor />;
-    return <Home search={search} activeSection={activeSection} />;
+    return <Home search={search} setSearch={handleSearch} activeSection={activeSection} />;
   };
+
+  const accent = moodAccent(currentSong?.mood);
 
   return (
     <div className="relative flex h-screen w-screen bg-[#07070a] overflow-hidden">
-      {/* Background Ambient Blur Blobs */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-gradient-to-br from-cyan-500/10 to-violet-500/0 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-gradient-to-tl from-violet-600/10 to-pink-500/0 blur-[150px] pointer-events-none" />
-      <div className="absolute top-[30%] right-[20%] w-[35%] h-[35%] rounded-full bg-gradient-to-tr from-fuchsia-500/8 to-cyan-500/0 blur-[100px] pointer-events-none" />
+      {/* Global Algorithmic Ambient Background */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none transition-opacity duration-1000 opacity-60">
+        {currentSong ? (
+          <>
+            {/* Cinematic Album Blur */}
+            <div
+              className="absolute inset-[-50%] bg-cover bg-center transition-all duration-[3000ms] opacity-30 animate-pulse"
+              style={{ backgroundImage: `url(${albumCovers[currentSong.id] || currentSong.cover})`, filter: 'blur(100px) saturate(1.5)' }}
+            />
+            {/* Dynamic Mood Aura */}
+            <div 
+              className="absolute inset-0 opacity-20 mix-blend-overlay transition-colors duration-[2000ms]"
+              style={{ background: `radial-gradient(circle at 30% 20%, ${accent.hex}, transparent 60%), radial-gradient(circle at 70% 80%, ${accent.hex}, transparent 60%)` }}
+            />
+          </>
+        ) : (
+          /* Default Ambient State */
+          <>
+            <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-gradient-to-br from-cyan-500/10 to-violet-500/0 blur-[120px] pointer-events-none" />
+            <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-gradient-to-tl from-violet-600/10 to-pink-500/0 blur-[150px] pointer-events-none" />
+            <div className="absolute top-[30%] right-[20%] w-[35%] h-[35%] rounded-full bg-gradient-to-tr from-fuchsia-500/8 to-cyan-500/0 blur-[100px] pointer-events-none" />
+          </>
+        )}
+      </div>
 
       {/* Content wrapper above blobs */}
       <div className="relative z-10 flex flex-1 overflow-hidden">
