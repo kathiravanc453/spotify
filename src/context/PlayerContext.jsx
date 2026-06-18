@@ -228,8 +228,9 @@ export function PlayerProvider({ children, user }) {
     });
 
     // Smart Radio Engine: Fetch 300+ related songs silently in the background
-    const artistQuery = song.artist && song.artist !== 'Unknown Artist' ? song.artist.split(',')[0] : '';
-    const moodQuery = song.mood || 'hits';
+    const rawArtist = song.artist && song.artist !== 'Unknown Artist' ? song.artist.split(',')[0] : '';
+    const artistQuery = rawArtist ? `${rawArtist} Tamil` : '';
+    const moodQuery = `${song.mood || 'hits'} Tamil`;
     
     // Fetch both Artist-specific hits AND Mood-specific hits to guarantee a massive 200+ song queue!
     Promise.all([
