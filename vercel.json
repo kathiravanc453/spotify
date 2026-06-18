@@ -2,7 +2,9 @@
   "version": 2,
   "functions": {
     "api/songs.js": { "maxDuration": 30 },
-    "api/artwork.js": { "maxDuration": 15 }
+    "api/artwork.js": { "maxDuration": 15 },
+    "api/saavn/home.js": { "maxDuration": 30 },
+    "api/saavn/search.js": { "maxDuration": 30 }
   },
   "rewrites": [
     { "source": "/((?!api/).*)", "destination": "/index.html" }
