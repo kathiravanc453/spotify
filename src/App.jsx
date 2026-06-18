@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { PlayerProvider, usePlayer } from './context/PlayerContext';
 import Sidebar from './components/layout/Sidebar';
+import TrendingSidebar from './components/layout/TrendingSidebar';
 import Header from './components/layout/Header';
 import MobileNav from './components/layout/MobileNav';
 import PlayerFooter from './components/player/PlayerFooter';
@@ -240,6 +241,9 @@ function AppContent({ user, onLogout, onLogin }) {
             </div>
           </main>
         </div>
+
+        {/* Global Trending Sidebar — desktop right side only */}
+        <TrendingSidebar />
 
         {/* Fixed bottom music player — always on top */}
         <PlayerFooter />
