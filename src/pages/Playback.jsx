@@ -179,6 +179,13 @@ export default function Playback() {
       </div>
     );
   }
+  const visualizerBars = useMemo(() => {
+    return [...Array(30)].map((_, i) => ({
+      id: i,
+      height: `${Math.random() * 40 + 10}%`,
+      animationDuration: `${Math.random() * 0.8 + 0.4}s`
+    }));
+  }, []);
 
   return (
     <div className="relative h-full min-h-full md:h-auto md:min-h-[calc(100vh-140px)] w-full flex flex-col p-4 md:p-8 overflow-hidden">
