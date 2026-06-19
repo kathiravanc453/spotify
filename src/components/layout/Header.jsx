@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Search, X, ChevronDown, LogOut } from 'lucide-react';
+import { Search, X, ChevronDown, LogOut, User } from 'lucide-react';
+import { usePlayer } from '../../context/PlayerContext';
 
 function getDynamicGreeting() {
   const hour = new Date().getHours();
@@ -13,6 +14,7 @@ export default function Header({ search, setSearch, user, onLogout }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [greeting, setGreeting] = useState(getDynamicGreeting);
   const dropdownRef = useRef(null);
+  const { setActiveSection } = usePlayer();
 
   // Update greeting every minute so it stays accurate if app is left open
   useEffect(() => {
@@ -105,6 +107,17 @@ export default function Header({ search, setSearch, user, onLogout }) {
             </div>
           )}
         </div>
+      )}
+
+      {/* Login Button for unauthenticated users */}
+      {!user && (
+        <button
+          onClick={() => setActiveSection('login')}
+          className="relative flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-400 hover:bg-cyan-300 text-black font-bold text-xs shadow-lg shadow-cyan-500/20 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
+        >
+          <User size={14} />
+          <span className="hidden sm:block">Sign In</span>
+        </button>
       )}
     </header>
   );
