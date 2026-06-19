@@ -124,7 +124,7 @@ export default function Playback() {
 
     const timeout = setTimeout(fetchLyrics, 50);
     return () => { isMounted = false; clearTimeout(timeout); };
-  }, [currentSong?.title, currentSong?.artist]);
+  }, [currentSong]);
 
   useEffect(() => {
     if (activeTab === 'lyrics' && lyricsContainerRef.current && lyricsData.length > 0) {
@@ -280,14 +280,14 @@ export default function Playback() {
 
         <div id="up-next-section" className="flex-1 min-h-0 grid grid-rows-[auto_1fr_auto] bg-black/20 md:bg-white/[0.02] md:border-l border-white/5 rounded-3xl md:rounded-none overflow-hidden relative mt-2 md:mt-0 shadow-[0_-10px_40px_rgba(0,0,0,0.3)] md:shadow-none">
           <div className={`absolute inset-0 pointer-events-none flex items-end justify-center gap-1 opacity-20 transition-opacity duration-1000 ${isPlaying && !isIdle ? 'opacity-30' : 'opacity-0'}`}>
-            {[...Array(30)].map((_, i) => (
+            {visualizerBars.map((bar) => (
               <div 
-                key={i} 
+                key={bar.id} 
                 className="w-2 rounded-t-full"
                 style={{
                   backgroundColor: accent.hex,
-                  height: `${Math.random() * 40 + 10}%`,
-                  animation: `equalize ${Math.random() * 0.8 + 0.4}s ease-in-out infinite alternate`,
+                  height: bar.height,
+                  animation: `equalize ${bar.animationDuration} ease-in-out infinite alternate`,
                   animationPlayState: isPlaying ? 'running' : 'paused'
                 }}
               />
