@@ -13,6 +13,7 @@
     "@capacitor/android": "^8.3.4",
     "@capacitor/cli": "^8.3.4",
     "@capacitor/core": "^8.3.4",
+    "@emailjs/browser": "^4.4.1",
     "cloudinary": "^2.10.0",
     "firebase": "^12.14.0",
     "lucide-react": "0.468.0",
