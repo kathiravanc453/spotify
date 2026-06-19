@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Home, Search, Library, TrendingUp, Star, X, Music2, Disc, Heart, ChevronRight, Menu, Shield } from 'lucide-react';
+import { Home, Search, Library, TrendingUp, Star, X, Music2, Disc, Heart, ChevronRight, ChevronLeft, Menu, Shield } from 'lucide-react';
 import { usePlayer } from '../../context/PlayerContext';
 
 const navItems = [
@@ -113,15 +113,25 @@ export default function Sidebar({ user }) {
         />
       </aside>
 
-      {/* ── Mobile: Hamburger button inside header area ───────────── */}
-      <button
-        id="mobile-sidebar-toggle"
-        className={`md:hidden fixed top-3.5 left-4 z-[50] w-9 h-9 rounded-xl flex items-center justify-center text-white/60 hover:text-white hover:bg-white/[0.06] transition-all duration-200 border border-white/5 ${(mobileOpen || activeSection === 'now-playing') ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}
-        onClick={() => setMobileOpen(true)}
-        aria-label="Open menu"
-      >
-        <Menu size={18} />
-      </button>
+      {/* ── Mobile: Header Top Left Icon ───────────── */}
+      {activeSection === 'home' ? (
+        <button
+          id="mobile-sidebar-toggle"
+          className={`md:hidden fixed top-3.5 left-4 z-[50] w-9 h-9 rounded-xl flex items-center justify-center text-white/60 hover:text-white hover:bg-white/[0.06] transition-all duration-200 border border-white/5 ${(mobileOpen || activeSection === 'now-playing') ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}
+          onClick={() => setMobileOpen(true)}
+          aria-label="Open menu"
+        >
+          <Menu size={18} />
+        </button>
+      ) : (
+        <button
+          className={`md:hidden fixed top-3.5 left-4 z-[50] w-9 h-9 rounded-xl flex items-center justify-center text-white/60 hover:text-white hover:bg-white/[0.06] transition-all duration-200 border border-white/5 ${(mobileOpen || activeSection === 'now-playing') ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}
+          onClick={() => setActiveSection('home')}
+          aria-label="Go back"
+        >
+          <ChevronLeft size={20} />
+        </button>
+      )}
 
       {/* ── Mobile Sidebar Overlay ────────────────────────────────── */}
       {/* Render mobile sidebar in a portal so it sits above z-10 parent context */}
