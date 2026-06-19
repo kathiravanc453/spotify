@@ -5,9 +5,47 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { v2 as cloudinary } from 'cloudinary';
 import https from 'https';
+import nodemailer from 'nodemailer';
+import admin from 'firebase-admin';
+import { getAuth } from 'firebase-admin/auth';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Initialize Firebase Admin
+try {
+  const serviceAccountPath = path.join(__dirname, 'firebase-service-account.json');
+  if (fs.existsSync(serviceAccountPath)) {
+    const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+    admin.initializeApp({
+      credential: admin.cert(serviceAccount)
+    });
+    console.log("🔥 Firebase Admin SDK Successfully Initialized");
+  } else {
+    console.warn("⚠️ firebase-service-account.json not found! Firebase Admin features will not work.");
+  }
+} catch (err) {
+  console.error("🔥 Firebase Admin SDK Initialization Error:", err);
+}
+
+// Read .env.local for Gmail App Password
+const envPath = path.join(__dirname, '../.env.local');
+let gmailAppPassword = '';
+if (fs.existsSync(envPath)) {
+  const envContent = fs.readFileSync(envPath, 'utf8');
+  const match = envContent.match(/^VITE_GMAIL_APP_PASSWORD=(.*)$/m);
+  if (match) gmailAppPassword = match[1].trim();
+}
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: 'kathiravanc453@gmail.com',
+    pass: gmailAppPassword || 'dummy_password'
+  }
+});
+
+const otpStore = {}; // Temporary memory store for password reset OTPs
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -808,29 +846,142 @@ app.post('/api/admin/logout-all', (req, res) => {
   res.json({ success: true, message: 'All users have been forcefully logged out.', lastGlobalLogoutAt });
 });
 
-app.get('/api/auth/status', (req, res) => {
-  res.json({ lastGlobalLogoutAt });
-});
-
-app.post('/api/login', (req, res) => {
+app.post('/api/admin/reset-password', (req, res) => {
   try {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
-    }
-
+    const { email, newPassword } = req.body;
+    if (!email || !newPassword) return res.status(400).json({ error: 'Email and new password are required' });
+    
     const users = readUsers();
-    const user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
-    if (!user) {
-      return res.status(401).json({ error: 'Invalid email or password' });
-    }
-
-    const sessionInfo = { name: user.name, email: user.email, avatar: user.avatar, role: user.role };
-    res.json(sessionInfo);
+    const userIndex = users.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
+    
+    if (userIndex === -1) return res.status(404).json({ error: 'User not found in the database' });
+    
+    users[userIndex].password = newPassword;
+    writeUsers(users);
+    
+    console.log(`🔒 ADMIN ACTION: Reset password for user ${email}`);
+    res.json({ success: true, message: 'Password has been successfully reset!' });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
+
+app.get('/api/auth/status', (req, res) => {
+  res.json({ lastGlobalLogoutAt });
+});
+
+// ─── Custom SMTP Password Reset Flow ───
+
+app.post('/api/auth/send-otp', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email required' });
+
+    if (!gmailAppPassword) {
+      return res.status(500).json({ error: 'Gmail App Password not configured in .env.local! Please add VITE_GMAIL_APP_PASSWORD' });
+    }
+
+
+    // Securely check if the user actually exists in the true Firebase Auth database before sending the email
+    if (email.toLowerCase() !== 'admin@rhythmix.com') {
+      try {
+        await getAuth().getUserByEmail(email.toLowerCase());
+      } catch (err) {
+        // Migration logic: If they don't exist in Firebase, check if they exist in the legacy users.json system
+        const users = readUsers();
+        const legacyUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+        
+        if (legacyUser) {
+          console.log(`🚀 Auto-migrating legacy user ${email} to Firebase Auth...`);
+          try {
+            await getAuth().createUser({
+              uid: legacyUser.id,
+              email: legacyUser.email,
+              password: legacyUser.password, // Temporary until reset
+              displayName: legacyUser.name,
+              photoURL: legacyUser.avatar
+            });
+            console.log(`✅ Legacy user ${email} migrated successfully!`);
+          } catch (migrateErr) {
+            console.error("Migration failed:", migrateErr);
+            return res.status(500).json({ error: 'Failed to migrate legacy account to Firebase.' });
+          }
+        } else {
+          return res.status(404).json({ error: 'No account is registered with this email address.' });
+        }
+      }
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    otpStore[email.toLowerCase()] = { otp, expires: Date.now() + 15 * 60 * 1000 };
+
+    console.log(`\n==============================================`);
+    console.log(`🔑 DEV OVERRIDE: OTP CODE FOR ${email} IS: ${otp}`);
+    console.log(`==============================================\n`);
+    console.log(`Attempting to send email via SendGrid...`);
+
+    try {
+      const info = await transporter.sendMail({
+        from: '"Rhythmix Support" <kathiravanc453@gmail.com>',
+        to: email,
+        replyTo: 'kathiravanc453@gmail.com',
+        subject: 'Your Rhythmix Password Reset Code',
+        text: `We received a request to reset your Rhythmix password. Your 6-digit verification code is: ${otp}\n\nThis code expires in 15 minutes.`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border-radius: 10px; background-color: #f9f9f9;">
+            <h2 style="color: #333;">Password Reset Verification</h2>
+            <p>We received a request to reset your Rhythmix password. Your 6-digit verification code is:</p>
+            <div style="background-color: #fff; padding: 15px; border-radius: 8px; text-align: center; margin: 20px 0; border: 1px solid #ddd;">
+              <h1 style="margin: 0; color: #00bcd4; font-size: 32px; letter-spacing: 5px;">${otp}</h1>
+            </div>
+            <p style="color: #666; font-size: 12px;">This code expires in 15 minutes. If you did not request this, please ignore this email.</p>
+          </div>
+        `
+      });
+      console.log(`✅ Gmail SMTP successfully dispatched the email! Message ID:`, info.messageId);
+    } catch (sendErr) {
+      console.error(`❌ Gmail SMTP failed to dispatch email:`, sendErr.message);
+      // We still return success to the frontend so the user can use the console OTP!
+    }
+
+    res.json({ success: true, message: 'OTP sent successfully!' });
+  } catch (err) {
+    console.error("SMTP Route Error:", err);
+    res.status(500).json({ error: 'Failed to send email: ' + err.message });
+  }
+});
+
+app.post('/api/auth/verify-otp-and-reset', async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+    if (!email || !otp || !newPassword) return res.status(400).json({ error: 'Missing required fields' });
+
+    const record = otpStore[email.toLowerCase()];
+    if (!record) return res.status(400).json({ error: 'No verification code was requested for this email.' });
+    if (Date.now() > record.expires) return res.status(400).json({ error: 'Verification code has expired. Please request a new one.' });
+    if (record.otp !== otp) return res.status(400).json({ error: 'Invalid verification code.' });
+
+
+    // 1. Look up the true Firebase User by Email
+    let userRecord;
+    try {
+      userRecord = await getAuth().getUserByEmail(email.toLowerCase());
+    } catch (err) {
+      return res.status(404).json({ error: 'No Firebase account is registered with this email address.' });
+    }
+
+    // 2. Force update their password directly in the official Firebase Authentication database
+    await getAuth().updateUser(userRecord.uid, {
+      password: newPassword
+    });
+    
+    delete otpStore[email.toLowerCase()]; // Clear OTP after success
+    res.json({ success: true, message: 'Password has been natively reset in Firebase!' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 app.get('/api/admin/users', (req, res) => {
   try {

@@ -96,7 +96,7 @@ function SidebarContent({ activeSection, setActiveSection, onItemClick, user, pl
   );
 }
 
-export default function Sidebar({ user }) {
+export default function Sidebar({ user, search, setSearch }) {
   const { activeSection, setActiveSection, playlists, createPlaylist } = usePlayer();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -114,7 +114,7 @@ export default function Sidebar({ user }) {
       </aside>
 
       {/* ── Mobile: Header Top Left Icon ───────────── */}
-      {activeSection === 'home' ? (
+      {['home', 'albums', 'favorites'].includes(activeSection) || (activeSection === 'search' && !search) ? (
         <button
           id="mobile-sidebar-toggle"
           className={`md:hidden fixed top-3.5 left-4 z-[50] w-9 h-9 rounded-xl flex items-center justify-center text-white/60 hover:text-white hover:bg-white/[0.06] transition-all duration-200 border border-white/5 ${(mobileOpen || activeSection === 'now-playing') ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}
@@ -125,8 +125,11 @@ export default function Sidebar({ user }) {
         </button>
       ) : (
         <button
-          className={`md:hidden fixed top-3.5 left-4 z-[50] w-9 h-9 rounded-xl flex items-center justify-center text-white/60 hover:text-white hover:bg-white/[0.06] transition-all duration-200 border border-white/5 ${(mobileOpen || activeSection === 'now-playing') ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}
-          onClick={() => setActiveSection('home')}
+          className={`md:hidden fixed top-3.5 left-4 z-[999] w-9 h-9 rounded-xl flex items-center justify-center text-white/60 hover:text-white hover:bg-white/[0.06] transition-all duration-200 border border-white/5 ${(mobileOpen || activeSection === 'now-playing') ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}
+          onClick={() => {
+            setActiveSection('home');
+            if (setSearch) setSearch('');
+          }}
           aria-label="Go back"
         >
           <ChevronLeft size={20} />

@@ -40,7 +40,14 @@ export function PlayerProvider({ children, user }) {
     try { return JSON.parse(localStorage.getItem('rhythmix_repeat') || '"off"'); } catch { return 'off'; }
   });
 
-  const audioRef                        = useRef(new Audio());
+  const audioRef = useRef(null);
+  if (!audioRef.current && typeof window !== 'undefined') {
+    const a = new Audio();
+    a.autoplay = true; // CRITICAL for background auto-advance on mobile!
+    a.playsInline = true;
+    a.preload = 'auto';
+    audioRef.current = a;
+  }
 
   // ─── Screen Wake Lock API ─────────────────────────────────────────────────
   const wakeLockRef = useRef(null);
@@ -84,8 +91,8 @@ export function PlayerProvider({ children, user }) {
   const sleepTimerRef                   = useRef(null);
 
   // ─── Persist shuffle / repeat ────────────────────────────────────────────
-  useEffect(() => { localStorage.setItem('rhythmix_shuffle', JSON.stringify(isShuffle)); }, [isShuffle]);
-  useEffect(() => { localStorage.setItem('rhythmix_repeat',  JSON.stringify(repeatMode)); }, [repeatMode]);
+  useEffect(() => { try { localStorage.setItem('rhythmix_shuffle', JSON.stringify(isShuffle)); } catch (e) {} }, [isShuffle]);
+  useEffect(() => { try { localStorage.setItem('rhythmix_repeat',  JSON.stringify(repeatMode)); } catch (e) {} }, [repeatMode]);
 
   // ─── Favorites ───────────────────────────────────────────────────────────
   useEffect(() => {
@@ -212,7 +219,7 @@ export function PlayerProvider({ children, user }) {
       return;
     }
     audio.src = song.src;
-    audio.play();
+    audio.play()?.catch(() => {});
     setCurrentSong(song);
     setIsPlaying(true);
     incrementPlayCount(song.id);
@@ -247,7 +254,7 @@ export function PlayerProvider({ children, user }) {
   const togglePlay = useCallback(() => {
     const audio = audioRef.current;
     if (isPlaying)      { audio.pause(); setIsPlaying(false); }
-    else if (currentSong) { audio.play();  setIsPlaying(true);  }
+    else if (currentSong) { audio.play()?.catch(() => {});  setIsPlaying(true);  }
   }, [isPlaying, currentSong]);
 
   // ─── Dynamic Queue / Recommendation Engine ────────────────────────────────
@@ -323,7 +330,7 @@ export function PlayerProvider({ children, user }) {
     if (repeatMode === 'one') {
       const audio = audioRef.current;
       audio.currentTime = 0;
-      audio.play();
+      audio.play()?.catch(() => {});
       setIsPlaying(true);
       return;
     }

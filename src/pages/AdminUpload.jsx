@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { usePlayer } from '../context/PlayerContext';
-import { Upload, Music, Image, CheckCircle, AlertCircle, X, Plus, Loader2, TrendingUp, Star, Download, LogOut, ShieldAlert } from 'lucide-react';
+import { Upload, Music, Image, CheckCircle, AlertCircle, X, Plus, Loader2, TrendingUp, Star, Download, LogOut, ShieldAlert, Key } from 'lucide-react';
 
 const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dm1cwbbfg/auto/upload';
 const CLOUDINARY_PRESET = 'j4mjnnll';
@@ -100,6 +100,35 @@ export default function AdminUpload() {
   });
   const [status, setStatus] = useState('idle'); // idle, uploading, syncing, success, error
   const [errorMsg, setErrorMsg] = useState('');
+
+  // ── Password Reset State ──
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetPassword, setResetPassword] = useState('');
+  const [resetStatus, setResetStatus] = useState('idle');
+  const [resetMsg, setResetMsg] = useState('');
+
+  const handlePasswordReset = async (e) => {
+    e.preventDefault();
+    if (!resetEmail || !resetPassword) return;
+    setResetStatus('loading');
+    try {
+      const res = await fetch('/api/admin/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: resetEmail, newPassword: resetPassword })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to reset password');
+      setResetStatus('success');
+      setResetMsg(data.message);
+      setResetEmail('');
+      setResetPassword('');
+      setTimeout(() => setResetStatus('idle'), 5000);
+    } catch (err) {
+      setResetStatus('error');
+      setResetMsg(err.message);
+    }
+  };
 
   const handleAudioSelect = (file) => {
     setAudioFile(file);
@@ -322,6 +351,58 @@ export default function AdminUpload() {
           </button>
         </form>
       </div>
+
+      {/* ── USER PASSWORD RESET MODULE ── */}
+      <div className="bg-white/5 rounded-3xl border border-white/10 p-6 md:p-8 space-y-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center">
+            <Key size={20} className="text-orange-400" />
+          </div>
+          <div>
+            <h2 className="text-white text-xl font-bold">Force Reset User Password</h2>
+            <p className="text-white/40 text-xs">Reset a user's password if they forgot it and cannot log in.</p>
+          </div>
+        </div>
+
+        <form onSubmit={handlePasswordReset} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <input
+            type="email"
+            required
+            placeholder="User's Email Address"
+            className="w-full bg-white/[0.03] border border-white/10 text-white placeholder-white/30 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-orange-500/50"
+            value={resetEmail}
+            onChange={e => setResetEmail(e.target.value)}
+          />
+          <input
+            type="text"
+            required
+            placeholder="New Temporary Password"
+            className="w-full bg-white/[0.03] border border-white/10 text-white placeholder-white/30 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-orange-500/50"
+            value={resetPassword}
+            onChange={e => setResetPassword(e.target.value)}
+          />
+          <button
+            type="submit"
+            disabled={resetStatus === 'loading'}
+            className="w-full bg-orange-500 hover:bg-orange-400 text-black font-bold text-sm rounded-xl px-4 py-3 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {resetStatus === 'loading' ? <Loader2 size={16} className="animate-spin" /> : <Key size={16} />}
+            Reset Password
+          </button>
+        </form>
+
+        {resetStatus === 'success' && (
+          <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-xl flex items-center gap-2 text-green-400 text-sm font-semibold">
+            <CheckCircle size={16} /> {resetMsg}
+          </div>
+        )}
+        {resetStatus === 'error' && (
+          <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-2 text-red-400 text-sm font-semibold">
+            <AlertCircle size={16} /> {resetMsg}
+          </div>
+        )}
+      </div>
+
     </div>
   );
 }

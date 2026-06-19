@@ -67,9 +67,17 @@ export default function Playback() {
   }, [progress, lyricsData]);
 
   useEffect(() => {
-    if (activeLyricRef.current && activeTab === 'lyrics' && !isIdle) {
-      activeLyricRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
+    const doScroll = () => {
+      if (activeLyricRef.current && activeTab === 'lyrics' && !isIdle) {
+        setTimeout(() => {
+          activeLyricRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      }
+    };
+    
+    doScroll();
+    window.addEventListener('resize', doScroll);
+    return () => window.removeEventListener('resize', doScroll);
   }, [activeLyricIndex, activeTab, isIdle]);
 
   useEffect(() => {
@@ -114,7 +122,7 @@ export default function Playback() {
       }
     };
 
-    const timeout = setTimeout(fetchLyrics, 500);
+    const timeout = setTimeout(fetchLyrics, 50);
     return () => { isMounted = false; clearTimeout(timeout); };
   }, [currentSong?.title, currentSong?.artist]);
 
@@ -173,7 +181,7 @@ export default function Playback() {
   }
 
   return (
-    <div className="relative h-[100dvh] md:h-auto md:min-h-[calc(100vh-140px)] w-full flex flex-col p-4 md:p-8 overflow-hidden">
+    <div className="relative h-full min-h-full md:h-auto md:min-h-[calc(100vh-140px)] w-full flex flex-col p-4 md:p-8 overflow-hidden">
       
       {/* Massive Cinematic Blurry Background based on Album Art */}
       <div className="absolute inset-0 z-0 overflow-hidden bg-black">
@@ -270,7 +278,7 @@ export default function Playback() {
           </div>
         </div>
 
-        <div id="up-next-section" className="flex-1 min-h-0 flex flex-col bg-black/20 md:bg-white/[0.02] md:border-l border-white/5 rounded-3xl md:rounded-none overflow-hidden relative mt-2 md:mt-0 shadow-[0_-10px_40px_rgba(0,0,0,0.3)] md:shadow-none">
+        <div id="up-next-section" className="flex-1 min-h-0 grid grid-rows-[auto_1fr_auto] bg-black/20 md:bg-white/[0.02] md:border-l border-white/5 rounded-3xl md:rounded-none overflow-hidden relative mt-2 md:mt-0 shadow-[0_-10px_40px_rgba(0,0,0,0.3)] md:shadow-none">
           <div className={`absolute inset-0 pointer-events-none flex items-end justify-center gap-1 opacity-20 transition-opacity duration-1000 ${isPlaying && !isIdle ? 'opacity-30' : 'opacity-0'}`}>
             {[...Array(30)].map((_, i) => (
               <div 
@@ -301,7 +309,7 @@ export default function Playback() {
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto relative min-h-0 scrollbar-hide">
+          <div className="overflow-y-auto relative z-0 min-h-0 scrollbar-hide transform-gpu ![clip-path:inset(0)]">
             {activeTab === 'queue' && (
               <div className="flex flex-col gap-2 p-4 h-full">
                 {queue.length > 0 ? (
@@ -324,7 +332,7 @@ export default function Playback() {
             )}
 
             {activeTab === 'lyrics' && (
-              <div className="h-full overflow-y-auto p-4 md:p-8 relative scrollbar-none" style={{ scrollBehavior: 'smooth' }} ref={lyricsContainerRef}>
+              <div className="w-full p-4 md:p-8 relative">
                 {lyricsLoading ? (
                   <div className="h-full flex flex-col items-center justify-center gap-4 transition-opacity duration-700">
                     <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
@@ -335,7 +343,7 @@ export default function Playback() {
                     <p className="text-white/40 text-sm font-medium">{lyricsError}</p>
                   </div>
                 ) : lyricsData.length > 0 ? (
-                    <div className="space-y-6 md:space-y-8 pb-[60vh] pt-[10vh] transition-all duration-1000">
+                    <div ref={lyricsContainerRef} className="space-y-6 md:space-y-8 pb-[60vh] pt-[10vh] transition-all duration-1000">
                       {lyricsData.map((line, idx) => {
                         const isActive = progress >= line.time && (idx === lyricsData.length - 1 || progress < lyricsData[idx + 1].time);
                         const isPast = progress > line.time;
@@ -358,7 +366,7 @@ export default function Playback() {
             </div>
 
           {/* Related Selection Widget */}
-          <div className="bg-gradient-to-tr from-cyan-950/20 to-violet-950/15 border border-cyan-500/10 rounded-3xl p-5 flex items-center gap-4 relative overflow-hidden group">
+          <div className="shrink-0 mt-auto bg-gradient-to-tr from-cyan-950/20 to-violet-950/15 border border-cyan-500/10 rounded-3xl p-5 flex items-center gap-4 relative overflow-hidden group">
             <div className="relative w-14 h-14 rounded-2xl overflow-hidden shadow-lg flex-shrink-0 bg-white/5">
               <img
                 src={albumCovers[currentSong.id] || currentSong.cover}

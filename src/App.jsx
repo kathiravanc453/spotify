@@ -80,6 +80,13 @@ function AppContent({ user, onLogout, onLogin }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Listen for custom event to clear search from Sidebar back button
+  useEffect(() => {
+    const handleClearSearch = () => setSearch('');
+    window.addEventListener('clear-search', handleClearSearch);
+    return () => window.removeEventListener('clear-search', handleClearSearch);
+  }, []);
+
   // Scroll to top when section changes (using scrollTop for better mobile browser compatibility)
   useEffect(() => {
     if (mainRef.current) {
@@ -174,7 +181,7 @@ function AppContent({ user, onLogout, onLogin }) {
       {/* Content wrapper above blobs */}
       <div className="relative z-10 flex flex-1 overflow-hidden">
         {/* Sidebar — desktop only */}
-        <Sidebar user={user} />
+        <Sidebar user={user} search={search} setSearch={handleSearch} />
 
         {/* Main content area */}
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
