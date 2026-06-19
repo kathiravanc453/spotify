@@ -356,7 +356,14 @@ export function PlayerProvider({ children, user }) {
   useEffect(() => {
     const audio = audioRef.current;
     audio.volume = volume;
-    const onTimeUpdate      = () => setProgress(audio.currentTime);
+    let lastTime = 0;
+    const onTimeUpdate = () => {
+      const now = Date.now();
+      if (now - lastTime > 1000) {
+        setProgress(audio.currentTime);
+        lastTime = now;
+      }
+    };
     const onDurationChange  = () => setDuration(audio.duration);
     const onEnded           = () => playNextRef.current?.();
     const onVolumeChange    = () => setVolume(audio.volume);

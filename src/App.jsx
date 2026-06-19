@@ -150,23 +150,23 @@ function AppContent({ user, onLogout, onLogin }) {
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none transition-opacity duration-1000 opacity-60">
         {currentSong ? (
           <>
-            {/* Cinematic Album Blur */}
+            {/* Cinematic Album Blur (Optimized for Mobile) */}
             <div
-              className="absolute inset-[-50%] bg-cover bg-center transition-all duration-[3000ms] opacity-30 animate-pulse"
-              style={{ backgroundImage: `url(${albumCovers[currentSong.id] || currentSong.cover})`, filter: 'blur(100px) saturate(1.5)' }}
+              className="absolute inset-[-50%] bg-cover bg-center transition-all duration-[3000ms] opacity-30 transform-gpu will-change-transform"
+              style={{ backgroundImage: `url(${albumCovers[currentSong.id] || currentSong.cover})`, filter: 'blur(60px) saturate(1.5)' }}
             />
             {/* Dynamic Mood Aura */}
             <div 
-              className="absolute inset-0 opacity-20 mix-blend-overlay transition-colors duration-[2000ms]"
+              className="absolute inset-0 opacity-15 transition-colors duration-[2000ms] transform-gpu"
               style={{ background: `radial-gradient(circle at 30% 20%, ${accent.hex}, transparent 60%), radial-gradient(circle at 70% 80%, ${accent.hex}, transparent 60%)` }}
             />
           </>
         ) : (
           /* Default Ambient State */
           <>
-            <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-gradient-to-br from-cyan-500/10 to-violet-500/0 blur-[120px] pointer-events-none" />
-            <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-gradient-to-tl from-violet-600/10 to-pink-500/0 blur-[150px] pointer-events-none" />
-            <div className="absolute top-[30%] right-[20%] w-[35%] h-[35%] rounded-full bg-gradient-to-tr from-fuchsia-500/8 to-cyan-500/0 blur-[100px] pointer-events-none" />
+            <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-gradient-to-br from-cyan-500/10 to-violet-500/0 blur-3xl pointer-events-none transform-gpu" />
+            <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-gradient-to-tl from-violet-600/10 to-pink-500/0 blur-3xl pointer-events-none transform-gpu" />
+            <div className="absolute top-[30%] right-[20%] w-[35%] h-[35%] rounded-full bg-gradient-to-tr from-fuchsia-500/8 to-cyan-500/0 blur-[60px] pointer-events-none transform-gpu" />
           </>
         )}
       </div>

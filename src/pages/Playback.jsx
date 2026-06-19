@@ -178,13 +178,13 @@ export default function Playback() {
       {/* Massive Cinematic Blurry Background based on Album Art */}
       <div className="absolute inset-0 z-0 overflow-hidden bg-black">
         <div
-          className="absolute inset-[-20%] bg-cover bg-center transition-all duration-[2000ms] opacity-50"
-          style={{ backgroundImage: `url(${albumCovers[currentSong.id] || currentSong.cover})`, filter: 'blur(80px) saturate(2)' }}
+          className="absolute inset-[-20%] bg-cover bg-center transition-all duration-[2000ms] opacity-50 transform-gpu will-change-transform"
+          style={{ backgroundImage: `url(${albumCovers[currentSong.id] || currentSong.cover})`, filter: 'blur(60px) saturate(2)' }}
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/40 to-[#07070a]" />
         
         <div 
-          className="absolute inset-0 opacity-20 mix-blend-overlay transition-colors duration-1000"
+          className="absolute inset-0 opacity-15 transition-colors duration-1000 transform-gpu"
           style={{ background: `radial-gradient(circle at 50% 50%, ${accent.hex}, transparent 70%)` }}
         />
       </div>
