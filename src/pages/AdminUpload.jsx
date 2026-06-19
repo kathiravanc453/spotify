@@ -55,6 +55,21 @@ function DropZone({ label, accept, icon: Icon, file, onFile, color, type }) {
 export default function AdminUpload() {
   const { allSongs, refreshSongs } = usePlayer();
 
+  const [audioFile, setAudioFile] = useState(null);
+  const [coverFile, setCoverFile] = useState(null);
+  const [form, setForm] = useState({
+    title: '', artist: '', album: '', genre: 'Tamil',
+    trending: false, recommended: false, coverUrl: ''
+  });
+  const [status, setStatus] = useState('idle'); // idle, uploading, syncing, success, error
+  const [errorMsg, setErrorMsg] = useState('');
+
+  // ── Password Reset State ──
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetPassword, setResetPassword] = useState('');
+  const [resetStatus, setResetStatus] = useState('idle');
+  const [resetMsg, setResetMsg] = useState('');
+
   // ── Email Auth gate — reads from main rhythmix_session ──────────────────
   const adminSession = (() => {
     try { return JSON.parse(localStorage.getItem('rhythmix_session') || 'null'); } catch { return null; }
@@ -92,20 +107,6 @@ export default function AdminUpload() {
   }
   // ──────────────────────────────────────────────────────────────────────────
 
-  const [audioFile, setAudioFile] = useState(null);
-  const [coverFile, setCoverFile] = useState(null);
-  const [form, setForm] = useState({
-    title: '', artist: '', album: '', genre: 'Tamil',
-    trending: false, recommended: false, coverUrl: ''
-  });
-  const [status, setStatus] = useState('idle'); // idle, uploading, syncing, success, error
-  const [errorMsg, setErrorMsg] = useState('');
-
-  // ── Password Reset State ──
-  const [resetEmail, setResetEmail] = useState('');
-  const [resetPassword, setResetPassword] = useState('');
-  const [resetStatus, setResetStatus] = useState('idle');
-  const [resetMsg, setResetMsg] = useState('');
 
   const handlePasswordReset = async (e) => {
     e.preventDefault();

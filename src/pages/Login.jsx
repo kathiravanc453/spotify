@@ -23,71 +23,26 @@ export default function Login({ onLogin }) {
       return;
     }
 
+    if (!auth) {
+      setError('Firebase Auth is not initialized properly.');
+      return;
+    }
+
     setError('');
     setInfo('');
     setLoading(true);
     try {
-      const sendOtpRes = await fetch('/api/auth/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
-      const sendOtpData = await sendOtpRes.json();
-      if (!sendOtpRes.ok) throw new Error(sendOtpData.error);
-      
-      setInfo('A 6-digit code has been sent to your email!');
-      setResetStep(1); // Move to OTP entry step
+      await sendPasswordResetEmail(auth, email);
+      setInfo('A password reset link has been securely sent to your email! Please check your inbox (and spam folder) to reset it.');
     } catch (err) {
-      console.error('Send OTP Error:', err);
-      setError(`Error: ${err.message}`);
+      console.error('Password Reset Error:', err);
+      const cleanMessage = err.code ? err.code.replace('auth/', '').replace(/-/g, ' ') : err.message;
+      setError(`Error: ${cleanMessage}`);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleVerifyAndReset = async (e) => {
-    e.preventDefault();
-    if (resetStep === 1) {
-      if (!otpCode || otpCode.length < 6) {
-        setError('Please enter the 6-digit verification code.');
-        return;
-      }
-      setError('');
-      setInfo('Code accepted! Please enter your new password.');
-      setResetStep(2); // Move to new password step
-      return;
-    }
-
-    if (resetStep === 2) {
-      if (!newPassword || newPassword.length < 6) {
-        setError('Password must be at least 6 characters long.');
-        return;
-      }
-      
-      setError('');
-      setLoading(true);
-      try {
-        const resetRes = await fetch('/api/auth/verify-otp-and-reset', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, otp: otpCode, newPassword })
-        });
-        const resetData = await resetRes.json();
-        if (!resetRes.ok) throw new Error(resetData.error);
-        
-        setInfo('Success! Password instantly reset. You can now log in.');
-        setResetStep(0); // Back to login
-        setPassword('');
-        setOtpCode('');
-        setNewPassword('');
-      } catch (err) {
-        console.error('Password Reset Error:', err);
-        setError(`Error: ${err.message}`);
-      } finally {
-        setLoading(false);
-      }
-    }
-  };
 
   const finalizeLogin = (user) => {
     // Check if the logged-in email matches the admin email
@@ -194,15 +149,13 @@ export default function Login({ onLogin }) {
         {/* Brand */}
         <div className="flex flex-col items-center text-center gap-2">
           <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-cyan-400 to-violet-500 flex items-center justify-center shadow-lg shadow-cyan-500/25">
-            {resetStep > 0 ? <ShieldCheck size={26} color="#fff" /> : <Music2 size={26} color="#fff" />}
+            <Music2 size={26} color="#fff" />
           </div>
           <h1 className="text-white font-extrabold text-2xl tracking-tight mt-1">
-            {resetStep > 0 ? 'Password Reset' : 'Rhythmix'}
+            Rhythmix
           </h1>
           <p className="text-white/40 text-xs font-medium">
-            {resetStep === 1 && 'Enter the code sent to your email'}
-            {resetStep === 2 && 'Choose a strong new password'}
-            {resetStep === 0 && (isSignUp ? 'Create a new account' : 'Log in to your account')}
+            {isSignUp ? 'Create a new account' : 'Log in to your account'}
           </p>
         </div>
 
@@ -223,139 +176,87 @@ export default function Login({ onLogin }) {
         )}
         {/* Form Area */}
         <div className="flex flex-col gap-4">
-          {resetStep === 0 ? (
-            <form onSubmit={handleAuth} className="flex flex-col gap-4">
-              
-              {/* Email Input */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-white/50 text-[10px] font-extrabold uppercase tracking-widest pl-1">
-                  Email Address
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" size={16} />
-                  <input
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    required
-                    className="w-full bg-white/[0.04] hover:bg-white/[0.06] focus:bg-white/[0.07] border border-white/8 focus:border-cyan-500/50 text-white placeholder-white/20 text-base md:text-sm rounded-2xl pl-11 pr-4 py-3.5 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all duration-300 font-semibold"
-                  />
-                </div>
+          <form onSubmit={handleAuth} className="flex flex-col gap-4">
+            
+            {/* Email Input */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-white/50 text-[10px] font-extrabold uppercase tracking-widest pl-1">
+                Email Address
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" size={16} />
+                <input
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  required
+                  className="w-full bg-white/[0.04] hover:bg-white/[0.06] focus:bg-white/[0.07] border border-white/8 focus:border-cyan-500/50 text-white placeholder-white/20 text-base md:text-sm rounded-2xl pl-11 pr-4 py-3.5 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all duration-300 font-semibold"
+                />
               </div>
+            </div>
 
-              {/* Password Input */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-white/50 text-[10px] font-extrabold uppercase tracking-widest pl-1">
-                  Password
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" size={16} />
-                  <input
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    required
-                    className="w-full bg-white/[0.04] hover:bg-white/[0.06] focus:bg-white/[0.07] border border-white/8 focus:border-cyan-500/50 text-white placeholder-white/20 text-base md:text-sm rounded-2xl pl-11 pr-4 py-3.5 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all duration-300 font-semibold"
-                  />
-                </div>
-                {!isSignUp && (
-                  <div className="flex items-center justify-between mt-1">
-                    <span className="text-[9px] text-cyan-400/50 font-medium">Type "DEV_OVERRIDE" to force login</span>
-                    <button
-                      type="button"
-                      onClick={handleSendOtp}
-                      className="text-[10px] text-white/40 hover:text-cyan-400 font-bold transition-colors"
-                    >
-                      Forgot Password?
-                    </button>
-                  </div>
-                )}
+            {/* Password Input */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-white/50 text-[10px] font-extrabold uppercase tracking-widest pl-1">
+                Password
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" size={16} />
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required
+                  className="w-full bg-white/[0.04] hover:bg-white/[0.06] focus:bg-white/[0.07] border border-white/8 focus:border-cyan-500/50 text-white placeholder-white/20 text-base md:text-sm rounded-2xl pl-11 pr-4 py-3.5 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all duration-300 font-semibold"
+                />
               </div>
+            </div>
 
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={loading || !email || !password}
-                className="w-full bg-gradient-to-tr from-cyan-400 to-violet-500 hover:from-cyan-300 hover:to-violet-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3.5 px-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/15 hover:scale-[1.02] active:scale-95 transition-all duration-300 cursor-pointer mt-2"
+            {/* Extras */}
+            <div className="flex items-center justify-between px-1">
+              <button 
+                type="button" 
+                onClick={() => {
+                  setPassword('DEV_OVERRIDE');
+                }} 
+                className="text-[10px] text-cyan-400 hover:text-cyan-300 font-bold transition-colors opacity-0 hover:opacity-100"
               >
-                {loading
-                  ? <Loader2 size={18} className="animate-spin" />
-                  : isSignUp 
-                    ? <><UserPlus size={15} /><span>Sign Up</span></>
-                    : <><ArrowRight size={15} /><span>Log In</span></>
-                }
+                Type "DEV_OVERRIDE" to force login
               </button>
-            </form>
-          ) : (
-            <form onSubmit={handleVerifyAndReset} className="flex flex-col gap-4">
-              {resetStep === 1 && (
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-white/50 text-[10px] font-extrabold uppercase tracking-widest pl-1">
-                    6-Digit Verification Code
-                  </label>
-                  <div className="relative">
-                    <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" size={16} />
-                    <input
-                      type="text"
-                      placeholder="123456"
-                      value={otpCode}
-                      onChange={e => setOtpCode(e.target.value)}
-                      required
-                      className="w-full bg-white/[0.04] hover:bg-white/[0.06] focus:bg-white/[0.07] border border-white/8 focus:border-cyan-500/50 text-white placeholder-white/20 text-base md:text-sm rounded-2xl pl-11 pr-4 py-3.5 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all duration-300 font-semibold text-center tracking-widest"
-                    />
-                  </div>
-                </div>
-              )}
               
-              {resetStep === 2 && (
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-white/50 text-[10px] font-extrabold uppercase tracking-widest pl-1">
-                    New Password
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" size={16} />
-                    <input
-                      type="password"
-                      placeholder="••••••••"
-                      value={newPassword}
-                      onChange={e => setNewPassword(e.target.value)}
-                      required
-                      className="w-full bg-white/[0.04] hover:bg-white/[0.06] focus:bg-white/[0.07] border border-white/8 focus:border-cyan-500/50 text-white placeholder-white/20 text-base md:text-sm rounded-2xl pl-11 pr-4 py-3.5 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all duration-300 font-semibold"
-                    />
-                  </div>
-                </div>
+              {!isSignUp && (
+                <button
+                  type="button"
+                  onClick={handleSendOtp}
+                  disabled={loading}
+                  className="text-white/50 hover:text-white transition-colors text-xs font-semibold"
+                >
+                  Forgot Password?
+                </button>
               )}
+            </div>
 
-              <button
-                type="submit"
-                disabled={loading || (resetStep === 1 && otpCode.length < 6) || (resetStep === 2 && newPassword.length < 6)}
-                className="mt-2 w-full bg-gradient-to-tr from-emerald-400 to-teal-500 hover:from-emerald-300 hover:to-teal-400 text-white font-bold py-3.5 px-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 hover:scale-[1.02] active:scale-95 transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full relative group overflow-hidden rounded-2xl mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-violet-600 transition-transform duration-500 group-hover:scale-[1.05]" />
+              <div className="relative flex items-center justify-center gap-2 py-4 px-6 text-white font-bold text-sm tracking-wide">
                 {loading ? (
-                  <Loader2 size={18} className="animate-spin" />
+                  <Loader2 className="animate-spin" size={18} />
                 ) : (
                   <>
-                    {resetStep === 1 ? <span>Verify Code</span> : <span>Set Password</span>}
-                    <ArrowRight size={15} />
+                    {isSignUp ? <UserPlus size={18} /> : <ArrowRight size={18} />}
+                    {isSignUp ? 'Create Account' : 'Log In'}
                   </>
                 )}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setResetStep(0);
-                  setError('');
-                  setInfo('');
-                }}
-                className="text-white/30 hover:text-white/70 text-[10px] font-bold transition-colors w-full text-center uppercase tracking-widest"
-              >
-                Cancel
-              </button>
-            </form>
-          )}
+              </div>
+            </button>
+          </form>
         </div>
         {/* Toggle Sign Up / Log In */}
         <div className="text-center mt-2">
