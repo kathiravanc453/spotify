@@ -55,7 +55,7 @@ export default function Header({ search, setSearch, user, onLogout }) {
             placeholder="Search songs, moods..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 focus:border-cyan-500/50 focus:bg-white/[0.08] text-white placeholder-white/40 text-sm font-medium rounded-2xl pl-11 pr-10 py-3 shadow-lg focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-all duration-500 backdrop-blur-xl"
+            className="w-full bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 focus:border-cyan-500/50 focus:bg-white/[0.08] text-white placeholder-white/40 text-base md:text-sm font-medium rounded-2xl pl-11 pr-10 py-3 shadow-lg focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-all duration-500 backdrop-blur-xl"
           />
           {search ? (
             <button
