@@ -299,10 +299,7 @@ export default function Playback() {
                 
                 {queue.length > 0 ? (
                   queue.slice(0, 50).map((song, index) => (
-                    <div key={song.id + '-' + index} onClick={() => playSong(song)} className="flex items-center gap-3 p-2.5 rounded-2xl hover:bg-white/5 cursor-pointer group transition-all duration-300">
-                      <div className="text-white/20 text-xs font-bold w-4 text-center group-hover:text-cyan-400 transition-colors">
-                        {index + 1}
-                      </div>
+                    <div key={song.id + '-' + index} onClick={() => playSong(song)} className="flex items-center gap-3 p-3 rounded-2xl hover:bg-white/5 cursor-pointer group transition-all duration-300">
                       <img src={song.cover} className="w-10 h-10 rounded-lg object-cover shadow-md group-hover:scale-105 transition-transform" />
                       <div className="min-w-0 flex-1">
                         <h4 className="text-white/90 text-sm font-bold truncate group-hover:text-white transition-colors">{song.title}</h4>
