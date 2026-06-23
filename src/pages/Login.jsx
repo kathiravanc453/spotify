@@ -356,6 +356,7 @@ export default function Login({ onLogin }) {
         </div>
 
         {/* Toggle Sign Up / Log In */}
+        <div className="text-center mt-2">
           <button
             type="button"
             onClick={() => {

@@ -23,6 +23,11 @@ export function PlayerProvider({ children, user }) {
   const [saavnLoading, setSaavnLoading] = useState(false);
   const [saavnRadioPool, setSaavnRadioPool] = useState([]);
 
+  // Lyrics State
+  const [lyricsData, setLyricsData] = useState([]);
+  const [lyricsLoading, setLyricsLoading] = useState(false);
+  const [lyricsError, setLyricsError] = useState(null);
+
   const [saavnHomeData, setSaavnHomeData] = useState({ trending: [], playlists: [], albums: [] });
   const [saavnHomeLoading, setSaavnHomeLoading] = useState(true);
   const [sleepTimer, setSleepTimer]     = useState(null); // minutes remaining
@@ -205,6 +210,58 @@ export function PlayerProvider({ children, user }) {
     return Array.from(pool.values());
   }, [saavnHomeData, saavnResults, saavnRadioPool, recentlyPlayed]);
 
+  // ─── Fetch Lyrics ────────────────────────────────────────────────────────
+  const cleanTitle = (title) => {
+    if (!title) return '';
+    return title.replace(/\[.*?\]|\(.*?\)|\|.*/g, '').replace(/video|audio|lyric|remix|edit/gi, '').trim();
+  };
+
+  useEffect(() => {
+    if (!currentSong) return;
+    let isMounted = true;
+    
+    const fetchLyrics = async () => {
+      setLyricsLoading(true);
+      setLyricsError(null);
+      setLyricsData([]);
+      try {
+        const title = encodeURIComponent(cleanTitle(currentSong.title));
+        const artist = encodeURIComponent(currentSong.artist?.split(',')[0] || '');
+        const res = await fetch(`https://lrclib.net/api/search?track_name=${title}&artist_name=${artist}`);
+        if (!res.ok) throw new Error('Network response was not ok');
+        const data = await res.json();
+        
+        if (isMounted) {
+          const syncedResult = data.find(item => item.syncedLyrics);
+          if (syncedResult && syncedResult.syncedLyrics) {
+            const lines = syncedResult.syncedLyrics.split('\n');
+            const parsed = lines.map(line => {
+              const match = line.match(/\[(\d{2}):(\d{2})\.(\d{2,3})\](.*)/);
+              if (match) {
+                const mins = parseInt(match[1]);
+                const secs = parseInt(match[2]);
+                const ms = parseInt(match[3]);
+                const time = mins * 60 + secs + (ms / (match[3].length === 3 ? 1000 : 100));
+                return { time, text: match[4].trim() };
+              }
+              return null;
+            }).filter(item => item && item.text);
+            setLyricsData(parsed);
+          } else {
+            setLyricsError('No synchronized lyrics found.');
+          }
+        }
+      } catch (e) {
+        if (isMounted) setLyricsError('Failed to load lyrics.');
+      } finally {
+        if (isMounted) setLyricsLoading(false);
+      }
+    };
+
+    const timeout = setTimeout(fetchLyrics, 50);
+    return () => { isMounted = false; clearTimeout(timeout); };
+  }, [currentSong]);
+
   // ─── Play song ────────────────────────────────────────────────────────────
   const playSong = useCallback((song) => {
     if (!user) {
@@ -270,6 +327,12 @@ export function PlayerProvider({ children, user }) {
     // so the music never stops and the queue is never completely empty!
     if (availableSongs.length === 0) {
       availableSongs = allSongs.filter(s => s.id !== currentSong.id);
+    }
+    
+    // Absolute Last Resort Fallback: If there is literally only 1 song in the entire app state
+    // (e.g. they searched for exactly 1 song and the radio API failed), then just loop it.
+    if (availableSongs.length === 0) {
+      availableSongs = [...allSongs];
     }
 
     // Shuffle the available songs deterministically based on the current song.
@@ -560,14 +623,18 @@ export function PlayerProvider({ children, user }) {
       stopPlayback,
       sleepTimer, startSleepTimer, cancelSleepTimer,
       refreshSongs: () => {},
-      upNextQueue,
+      upNextQueue: upNextQueue.length > 0 ? upNextQueue : (currentSong ? [currentSong] : []),
       playlists, fetchPlaylists, createPlaylist, addSongToPlaylist, removeSongFromPlaylist, deletePlaylist,
       saavnResults,
       saavnLoading,
       searchSaavnGlobal,
       saavnHomeData,
       saavnHomeLoading,
-      fetchSaavnHome
+      fetchSaavnHome,
+      setSleepTimer,
+      lyricsData,
+      lyricsLoading,
+      lyricsError
     }}>
       {children}
     </PlayerContext.Provider>

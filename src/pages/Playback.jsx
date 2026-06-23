@@ -26,7 +26,8 @@ export default function Playback() {
     currentSong, isPlaying, progress, duration, volume,
     allSongs = [], favorites = [], isShuffle, setIsShuffle,
     repeatMode, setRepeatMode, playSong, togglePlay, playNext,
-    playPrev, seek, changeVolume, toggleLike, setActiveSection, albumCovers = {}, setActiveArtist
+    playPrev, seek, changeVolume, toggleLike, setActiveSection, albumCovers = {}, setActiveArtist,
+    upNextQueue, lyricsData, lyricsLoading, lyricsError
   } = usePlayer() || {};
 
   const accent = moodAccent(currentSong?.mood);
@@ -59,9 +60,6 @@ export default function Playback() {
 
   // ─── Lyrics Engine ────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState('queue'); // 'queue' | 'lyrics'
-  const [lyricsData, setLyricsData] = useState([]);
-  const [lyricsLoading, setLyricsLoading] = useState(false);
-  const [lyricsError, setLyricsError] = useState(null);
   const lyricsContainerRef = useRef(null);
   const activeLyricRef = useRef(null);
 
@@ -85,52 +83,6 @@ export default function Playback() {
     window.addEventListener('resize', doScroll);
     return () => window.removeEventListener('resize', doScroll);
   }, [activeLyricIndex, activeTab, isIdle]);
-
-  useEffect(() => {
-    if (!currentSong) return;
-    let isMounted = true;
-    
-    const fetchLyrics = async () => {
-      setLyricsLoading(true);
-      setLyricsError(null);
-      setLyricsData([]);
-      try {
-        const title = encodeURIComponent(cleanTitle(currentSong.title));
-        const artist = encodeURIComponent(currentSong.artist?.split(',')[0] || '');
-        const res = await fetch(`https://lrclib.net/api/search?track_name=${title}&artist_name=${artist}`);
-        if (!res.ok) throw new Error('Network response was not ok');
-        const data = await res.json();
-        
-        if (isMounted) {
-          const syncedResult = data.find(item => item.syncedLyrics);
-          if (syncedResult && syncedResult.syncedLyrics) {
-            const lines = syncedResult.syncedLyrics.split('\n');
-            const parsed = lines.map(line => {
-              const match = line.match(/\[(\d{2}):(\d{2})\.(\d{2,3})\](.*)/);
-              if (match) {
-                const mins = parseInt(match[1]);
-                const secs = parseInt(match[2]);
-                const ms = parseInt(match[3]);
-                const time = mins * 60 + secs + (ms / (match[3].length === 3 ? 1000 : 100));
-                return { time, text: match[4].trim() };
-              }
-              return null;
-            }).filter(item => item && item.text);
-            setLyricsData(parsed);
-          } else {
-            setLyricsError('No synchronized lyrics found.');
-          }
-        }
-      } catch (e) {
-        if (isMounted) setLyricsError('Failed to load lyrics.');
-      } finally {
-        if (isMounted) setLyricsLoading(false);
-      }
-    };
-
-    const timeout = setTimeout(fetchLyrics, 50);
-    return () => { isMounted = false; clearTimeout(timeout); };
-  }, [currentSong]);
 
   useEffect(() => {
     if (activeTab === 'lyrics' && lyricsContainerRef.current && lyricsData.length > 0) {
@@ -169,7 +121,7 @@ export default function Playback() {
     }
   }, [displayTitle, currentSong]);
 
-  const queue = usePlayer()?.upNextQueue || [];
+  const queue = upNextQueue || [];
 
   if (!currentSong) {
     return (
