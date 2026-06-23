@@ -4,6 +4,13 @@ import { auth, db } from '../firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, sendPasswordResetEmail } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 
+// Safe JSON parser — prevents "Unexpected end of JSON input" if server returns empty body
+const safeJson = async (res) => {
+  const text = await res.text();
+  if (!text || !text.trim()) return {};
+  try { return JSON.parse(text); } catch { return {}; }
+};
+
 const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'admin@rhythmix.com';
 
 export default function Login({ onLogin }) {
@@ -22,69 +29,34 @@ export default function Login({ onLogin }) {
       setError('Please enter your email address first to reset your password.');
       return;
     }
-
-    // Use environment variable for API URL in production, or fallback to relative for local dev proxy
-    const API_URL = import.meta.env.VITE_API_URL || '';
+    if (!auth) {
+      setError('Firebase is not configured. Password reset is unavailable.');
+      return;
+    }
 
     setError('');
     setInfo('');
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/auth/send-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to send OTP');
-
-      setInfo('A 6-digit verification code has been securely sent to your email! Please check your inbox (and spam folder).');
-      setResetStep(1); // Move to OTP entry step
+      // Use Firebase's built-in password reset email — works on mobile without a backend server
+      await sendPasswordResetEmail(auth, email);
+      setInfo('✅ Password reset email sent! Check your inbox (and spam folder) for a link to reset your password.');
     } catch (err) {
-      console.error('Send OTP Error:', err);
-      setError(`Error: ${err.message}`);
+      console.error('Password Reset Error:', err);
+      const msg = err.code
+        ? err.code.replace('auth/', '').replace(/-/g, ' ')
+        : err.message;
+      setError(`Error: ${msg}`);
     } finally {
       setLoading(false);
     }
   };
 
+  // handleVerifyAndReset is kept for legacy purposes but is not shown in the UI
+  // since the Forgot Password flow now uses Firebase sendPasswordResetEmail directly.
   const handleVerifyAndReset = async (e) => {
     e.preventDefault();
-    if (resetStep === 1) {
-      if (!otpCode || otpCode.length < 6) return setError('Please enter a valid 6-digit code.');
-      setResetStep(2); // Move to new password step
-      setInfo('Code accepted! Please enter your new password.');
-      return;
-    }
-
-    if (resetStep === 2) {
-      if (!newPassword || newPassword.length < 6) return setError('Password must be at least 6 characters.');
-      
-      const API_URL = import.meta.env.VITE_API_URL || '';
-      
-      setLoading(true);
-      setError('');
-      try {
-        const res = await fetch(`${API_URL}/api/auth/verify-reset`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, otp: otpCode, newPassword })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to reset password');
-
-        setInfo('Success! Your password has been updated. You can now log in.');
-        setResetStep(0);
-        setOtpCode('');
-        setNewPassword('');
-        setPassword('');
-      } catch (err) {
-        console.error('Reset Password Error:', err);
-        setError(`Error: ${err.message}`);
-      } finally {
-        setLoading(false);
-      }
-    }
+    setError('Password reset is now handled via email. Please check your inbox.');
   };
 
 
