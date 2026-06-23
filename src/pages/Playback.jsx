@@ -334,14 +334,14 @@ export default function Playback() {
             )}
 
             {activeTab === 'lyrics' && (
-              <div className="w-full p-4 md:p-8 relative">
+              <div className="w-full p-4 md:p-8 relative min-h-full">
                 {lyricsLoading ? (
-                  <div className="h-full flex flex-col items-center justify-center gap-4 transition-opacity duration-700">
+                  <div className="min-h-[50vh] flex flex-col items-center justify-center gap-4 transition-opacity duration-700">
                     <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
                     <p className="text-white/50 text-sm font-medium">Extracting lyrics algorithmically...</p>
                   </div>
                 ) : lyricsError ? (
-                  <div className="h-full flex flex-col items-center justify-center gap-2 transition-opacity duration-700">
+                  <div className="min-h-[50vh] flex flex-col items-center justify-center gap-2 transition-opacity duration-700">
                     <p className="text-white/40 text-sm font-medium">{lyricsError}</p>
                   </div>
                 ) : lyricsData.length > 0 ? (
@@ -353,7 +353,7 @@ export default function Playback() {
                           <div
                             key={idx}
                             ref={isActive ? activeLyricRef : null}
-                            className={`transition-all duration-500 cursor-pointer ${isActive ? 'text-2xl md:text-4xl font-extrabold text-white transform scale-105' : isPast ? 'text-xl md:text-2xl font-bold text-white/30 blur-[1px]' : 'text-xl md:text-2xl font-bold text-white/50'}`}
+                            className={`transition-all duration-500 cursor-pointer ${isActive ? 'text-[22px] leading-tight md:text-4xl font-extrabold text-white transform md:scale-105' : isPast ? 'text-lg md:text-2xl font-bold text-white/30 blur-[1px]' : 'text-lg md:text-2xl font-bold text-white/50'}`}
                             style={isActive ? { textShadow: `0 0 30px ${accent.hex}80` } : {}}
                             onClick={() => seek(line.time)}
                           >
