@@ -270,7 +270,7 @@ export default function Playback() {
 
           <div className="md:overflow-y-auto relative z-0 md:min-h-0 scrollbar-hide transform-gpu md:![clip-path:inset(0)]">
             {activeTab === 'queue' && (
-              <div className="flex flex-col gap-2 p-4 min-h-full">
+              <div className="flex flex-col gap-2 p-4 pb-32 md:pb-8 min-h-full">
                 {/* Now Playing Header */}
                 <div className="text-[10px] font-black text-cyan-400 uppercase tracking-widest pl-2 mb-1">Now Playing</div>
                 <div className="flex items-center gap-3 p-3 rounded-2xl bg-white/10 border border-white/10 shadow-lg relative overflow-hidden">
@@ -323,7 +323,7 @@ export default function Playback() {
                 )}
                 
                 {queue.length >= 50 && (
-                  <div className="text-center pt-6 pb-20">
+                  <div className="text-center pt-6">
                     <p className="text-white/30 text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-2">
                       <ListMusic size={14} />
                       Infinite Radio Engine Active
