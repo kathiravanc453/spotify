@@ -34,11 +34,10 @@ export default function Artist() {
   const artistSongs = Array.from(artistMap.values());
 
   const artistCover = artistSongs[0]?.cover || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500';
-
   const handlePlayAll = () => {
     if (artistSongs.length > 0) {
       setIsShuffle(false);
-      playSong(artistSongs[0]);
+      playSong(artistSongs[0], { initialQueue: artistSongs });
     }
   };
 
@@ -46,7 +45,7 @@ export default function Artist() {
     if (artistSongs.length > 0) {
       setIsShuffle(true);
       const randomSong = artistSongs[Math.floor(Math.random() * artistSongs.length)];
-      playSong(randomSong);
+      playSong(randomSong, { initialQueue: artistSongs });
     }
   };
 

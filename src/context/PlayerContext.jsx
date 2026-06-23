@@ -295,45 +295,101 @@ export function PlayerProvider({ children, user }) {
   }, [currentSong]);
 
   // ─── Play song ────────────────────────────────────────────────────────────
-  const playSong = useCallback((song, keepQueue = false) => {
+  const playSong = useCallback(async (song, options = false) => {
     if (!user) {
       setActiveSection('login');
       return;
     }
 
-    const audio = audioRef.current;
-    if (currentSong?.id === song.id) {
-      if (isPlaying) { audio.pause(); setIsPlaying(false); }
-      else           { audio.play();  setIsPlaying(true);  }
+    let keepQueue = false;
+    let initialQueue = null;
+
+    if (typeof options === 'boolean') {
+      keepQueue = options;
+    } else if (options && typeof options === 'object') {
+      keepQueue = !!options.keepQueue;
+      initialQueue = options.initialQueue;
+    }
+
+    setLoading(true);
+    let resolvedSong = { ...song };
+
+    // Resolve media stream URL (src) if missing (e.g. from trending list or sidebar)
+    if (!resolvedSong.src) {
+      try {
+        const cleanId = resolvedSong.id.replace('saavn_', '');
+        const res = await fetch(`/api/saavn/song/${cleanId}`);
+        if (res.ok) {
+          const detail = await res.json();
+          resolvedSong = { ...resolvedSong, ...detail };
+        }
+      } catch (err) {
+        console.error('Failed to resolve song src on the fly:', err);
+      }
+    }
+
+    if (!resolvedSong.src) {
+      console.error('No playable stream found for song:', resolvedSong);
+      setLoading(false);
       return;
     }
-    audio.src = song.src;
-    audio.play()?.catch(() => {});
-    setCurrentSong(song);
+
+    const audio = audioRef.current;
+    if (currentSong?.id === resolvedSong.id) {
+      if (isPlaying) { audio.pause(); setIsPlaying(false); }
+      else           { audio.play()?.catch(() => {});  setIsPlaying(true);  }
+      setLoading(false);
+      return;
+    }
+
+    audio.src = resolvedSong.src;
+    audio.play()?.catch((err) => {
+      console.error('Audio playback failed:', err);
+    });
+
+    setCurrentSong(resolvedSong);
     setIsPlaying(true);
-    incrementPlayCount(song.id);
+    setLoading(false);
+    incrementPlayCount(resolvedSong.id);
     
     // Auto-navigate to Now Playing screen as requested by user
     setActiveSection('now-playing');
 
-    // Remove from custom queue if playing it manually
-    setCustomQueue(prev => {
-      const next = prev.filter(s => s.id !== song.id);
-      try { localStorage.setItem('rhythmix_custom_queue', JSON.stringify(next)); } catch (e) {}
-      return next;
-    });
+    // Handle Custom Queue based on initialQueue or keepQueue
+    if (initialQueue && Array.isArray(initialQueue)) {
+      const idx = initialQueue.findIndex(s => s.id === resolvedSong.id || s.id === song.id);
+      if (idx !== -1) {
+        const nextQueue = initialQueue.slice(idx + 1);
+        setCustomQueue(nextQueue);
+        try { localStorage.setItem('rhythmix_custom_queue', JSON.stringify(nextQueue)); } catch (e) {}
+      } else {
+        setCustomQueue([]);
+        try { localStorage.setItem('rhythmix_custom_queue', JSON.stringify([])); } catch (e) {}
+      }
+    } else if (!keepQueue) {
+      // Clear custom queue if playing a single track from outside
+      setCustomQueue([]);
+      try { localStorage.setItem('rhythmix_custom_queue', JSON.stringify([])); } catch (e) {}
+    } else {
+      // Keep queue, just remove the playing song from custom queue if it exists there
+      setCustomQueue(prev => {
+        const next = prev.filter(s => s.id !== resolvedSong.id && s.id !== song.id);
+        try { localStorage.setItem('rhythmix_custom_queue', JSON.stringify(next)); } catch (e) {}
+        return next;
+      });
+    }
 
     setRecentlyPlayed(prev => {
-      const filtered = prev.filter(s => s.id !== song.id);
-      const next = [song, ...filtered].slice(0, 100);
+      const filtered = prev.filter(s => s.id !== resolvedSong.id && s.id !== song.id);
+      const next = [resolvedSong, ...filtered].slice(0, 100);
       try { localStorage.setItem('rhythmix_recently_played', JSON.stringify(next)); } catch (e) {}
       return next;
     });
 
     // Smart Radio Engine: Fetch 300+ related songs silently in the background
-    const rawArtist = song.artist && song.artist !== 'Unknown Artist' ? song.artist.split(',')[0] : '';
+    const rawArtist = resolvedSong.artist && resolvedSong.artist !== 'Unknown Artist' ? resolvedSong.artist.split(',')[0] : '';
     const artistQuery = rawArtist ? `${rawArtist} Tamil` : '';
-    const moodQuery = `${song.mood || 'hits'} Tamil`;
+    const moodQuery = `${resolvedSong.mood || 'hits'} Tamil`;
     
     // Fetch both Artist-specific hits AND Mood-specific hits to guarantee a massive 200+ song queue!
     Promise.all([

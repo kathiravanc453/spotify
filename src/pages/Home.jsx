@@ -3,10 +3,66 @@ import { usePlayer } from '../context/PlayerContext';
 import SongCard from '../components/shared/SongCard';
 import SongRow from '../components/shared/SongRow';
 import { SongCardSkeleton, SongRowSkeleton } from '../components/ui/Skeleton';
-import { TrendingUp, Star, Clock, Music, Loader2, Music2, Heart, Zap, Coffee, Sparkles, Search, X, Play } from 'lucide-react';
+import { 
+  TrendingUp, Star, Clock, Music, Loader2, Music2, Heart, Zap, Coffee, Sparkles, Search, X, Play,
+  Flame, Disc3, Waves, Compass, FolderHeart
+} from 'lucide-react';
 import { cleanTitle, splitArtists } from '../utils/cleanTitle';
 import artistImages from '../data/artistImages.json';
 import { CloudRain } from 'lucide-react'; // Added for Sad mood
+
+// Handpicked dynamic music folders
+const DISCOVER_FOLDERS = [
+  {
+    id: "folder_kuthu",
+    title: "Kuthu & Dance",
+    subtitle: "High-energy beats & dance hits",
+    query: "Tamil Kuthu Dance Songs",
+    color: "from-orange-500 to-rose-600",
+    icon: Flame
+  },
+  {
+    id: "folder_90s",
+    title: "90s Gold Melodies",
+    subtitle: "Golden era classics & nostalgic hits",
+    query: "90s Tamil Hits",
+    color: "from-amber-400 to-orange-600",
+    icon: Sparkles
+  },
+  {
+    id: "folder_arr",
+    title: "A.R.R. Magic",
+    subtitle: "Masterpieces from the Mozart of Madras",
+    query: "A R Rahman Tamil Hits",
+    color: "from-blue-600 to-cyan-500",
+    icon: Disc3
+  },
+  {
+    id: "folder_anirudh",
+    title: "Anirudh Sensations",
+    subtitle: "Trending charts & viral rock hits",
+    query: "Anirudh Tamil Hits",
+    color: "from-rose-500 to-indigo-600",
+    icon: Music
+  },
+  {
+    id: "folder_lofi",
+    title: "Lofi Chillout",
+    subtitle: "Relaxing beats & chill Tamil vocals",
+    query: "Tamil Lofi Chill",
+    color: "from-indigo-500 to-purple-600",
+    icon: Waves
+  },
+  {
+    id: "folder_devotional",
+    title: "Spiritual & Peace",
+    subtitle: "Divine chants, prayers & peaceful songs",
+    query: "Tamil Devotional Songs",
+    color: "from-teal-500 to-emerald-600",
+    icon: Compass
+  }
+];
+
 // YOUR 5 MASTER CATEGORIES
 const MASTER_MOODS = ['kuthu', 'romance', 'melody', 'sad', 'vibes'];
 
@@ -48,14 +104,18 @@ export default function Home({ search = '', setSearch, activeSection = 'home' })
   const renderBentoSpotlight = (items) => {
     if (!items || items.length < 3) return null;
     const [hero, side1, side2] = items;
-
     const BentoCard = ({ item, isHero }) => (
       <div 
-        onClick={() => setSearch(item.title)}
+        onClick={() => {
+          if (item.type === 'song') {
+            playSong(item, { initialQueue: items.filter(i => i.type === 'song') });
+          } else {
+            setSearch(item.title);
+          }
+        }}
         className={`relative rounded-[32px] overflow-hidden group cursor-pointer shadow-2xl transition-all duration-700 hover:shadow-cyan-500/20 hover:-translate-y-2 
           ${isHero ? 'md:col-span-2 md:row-span-2 h-[400px] md:h-auto' : 'h-[200px] md:h-auto'}`}
-      >
-        <div 
+      >        <div 
           className="absolute inset-0 bg-cover bg-center transition-transform duration-[10000ms] group-hover:scale-110"
           style={{ backgroundImage: `url(${item.cover})`, filter: 'brightness(0.6) saturate(1.2)' }}
         />
@@ -92,6 +152,51 @@ export default function Home({ search = '', setSearch, activeSection = 'home' })
           <BentoCard item={hero} isHero={true} />
           <BentoCard item={side1} isHero={false} />
           <BentoCard item={side2} isHero={false} />
+        </div>
+      </section>
+    );
+  };
+
+  const renderDiscoverFolders = () => {
+    return (
+      <section className="mb-12 animate-in fade-in slide-in-from-bottom-8 duration-500">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center border border-cyan-500/30">
+            <FolderHeart size={20} className="text-cyan-400" />
+          </div>
+          <div>
+            <h2 className="text-white text-2xl font-bold tracking-tight">Discover Music Folders</h2>
+            <p className="text-white/40 text-sm font-medium">Explore handpicked dynamic Tamil music categories</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          {DISCOVER_FOLDERS.map((folder) => {
+            const FolderIcon = folder.icon;
+            return (
+              <div
+                key={folder.id}
+                onClick={() => {
+                  setSearch(folder.query);
+                  setGlobalSection('search');
+                }}
+                className="group relative overflow-hidden rounded-3xl p-5 bg-white/[0.02] border border-white/5 hover:border-white/20 cursor-pointer transition-all duration-500 hover:-translate-y-1.5 shadow-lg flex flex-col justify-between aspect-square select-none"
+              >
+                {/* Decorative background glow */}
+                <div className={`absolute -right-8 -bottom-8 w-24 h-24 rounded-full bg-gradient-to-tr ${folder.color} opacity-10 group-hover:opacity-30 blur-2xl transition-opacity duration-500`} />
+                
+                {/* Icon with colored container */}
+                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-tr ${folder.color} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-500`}>
+                  <FolderIcon size={22} className="text-white" />
+                </div>
+                
+                {/* Text details */}
+                <div className="mt-4">
+                  <h3 className="text-white font-extrabold text-sm sm:text-base group-hover:text-cyan-300 transition-colors">{folder.title}</h3>
+                  <p className="text-white/40 text-[10px] sm:text-xs font-semibold leading-snug mt-1">{folder.subtitle}</p>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </section>
     );
@@ -531,6 +636,8 @@ export default function Home({ search = '', setSearch, activeSection = 'home' })
                 </div>
               </section>
             )}
+
+            {renderDiscoverFolders()}
 
             <div className="mb-12">
               <div className="flex items-center justify-between mb-6">

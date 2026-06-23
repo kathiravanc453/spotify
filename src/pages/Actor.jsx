@@ -61,7 +61,7 @@ export default function Actor() {
   const handlePlayAll = () => {
     if (actorSongs.length > 0) {
       setIsShuffle(false);
-      playSong(actorSongs[0]);
+      playSong(actorSongs[0], { initialQueue: actorSongs });
     }
   };
 
@@ -69,7 +69,7 @@ export default function Actor() {
     if (actorSongs.length > 0) {
       setIsShuffle(true);
       const randomSong = actorSongs[Math.floor(Math.random() * actorSongs.length)];
-      playSong(randomSong);
+      playSong(randomSong, { initialQueue: actorSongs });
     }
   };
 

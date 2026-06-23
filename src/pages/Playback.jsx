@@ -64,6 +64,7 @@ export default function Playback() {
   useEffect(() => {
     setIsAutoScrollPaused(false);
   }, [currentSong?.id]);
+
   
   useEffect(() => {
     let idleTimer;
@@ -112,6 +113,23 @@ export default function Playback() {
     window.addEventListener('resize', doScroll);
     return () => window.removeEventListener('resize', doScroll);
   }, [activeLyricIndex, activeTab, isIdle, isAutoScrollPaused]);
+
+  // Window-level scroll listener to reliably pause auto-scroll lyrics on touch devices/scrolls
+  useEffect(() => {
+    if (activeTab !== 'lyrics') return;
+
+    const handleGlobalScroll = () => {
+      handleUserScroll();
+    };
+
+    window.addEventListener('wheel', handleGlobalScroll, { passive: true });
+    window.addEventListener('touchmove', handleGlobalScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener('wheel', handleGlobalScroll);
+      window.removeEventListener('touchmove', handleGlobalScroll);
+    };
+  }, [activeTab, handleUserScroll]);
   // ──────────────────────────────────────────────────────────────────────────
 
   const swipeHandlers = useSwipe({
@@ -154,7 +172,13 @@ export default function Playback() {
 
 
   return (
-    <div className="relative min-h-[100dvh] md:min-h-[calc(100vh-140px)] w-full flex flex-col px-0 pt-6 pb-0 md:p-8 overflow-visible md:overflow-hidden">
+    <div 
+      className="relative min-h-[100dvh] md:min-h-[calc(100vh-140px)] w-full flex flex-col px-0 overflow-visible md:overflow-hidden"
+      style={{
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 24px)',
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
+      }}
+    >
       
       {/* Massive Cinematic Blurry Background based on Album Art */}
       <div className="absolute inset-0 z-0 overflow-hidden bg-black">
@@ -284,7 +308,7 @@ export default function Playback() {
 
           <div className="w-full min-w-0 md:overflow-y-auto relative z-0 md:min-h-0 scrollbar-hide transform-gpu md:![clip-path:inset(0)]">
             {activeTab === 'queue' && (
-              <div className="w-full min-w-0 flex flex-col gap-2 p-4 pb-32 md:pb-8 min-h-full">
+              <div className="w-full min-w-0 flex flex-col gap-2 p-4 pb-12 md:pb-8 min-h-full">
                 {/* Now Playing Header */}
                 <div className="text-[10px] font-black text-cyan-400 uppercase tracking-widest pl-2 mb-1">Now Playing</div>
                 <div className="w-full min-w-0 flex items-center gap-3 p-3 rounded-2xl bg-white/10 border border-white/10 shadow-lg relative overflow-hidden">

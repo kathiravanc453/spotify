@@ -1057,49 +1057,92 @@ app.get('/api/saavn/search', async (req, res) => {
     const { q } = req.query;
     if (!q) return res.status(400).json({ error: 'Query required' });
 
-    // Directly query the official JioSaavn API with Tamil language priority and a larger limit (150)
-    const url = `https://www.jiosaavn.com/api.php?__call=search.getResults&q=${encodeURIComponent(q)}&p=1&n=150&_format=json&_marker=0&ctx=web6dot0`;
-    const response = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0', 'Cookie': 'L=tamil;' } });
-    const data = await response.json();
+    // Fetch 6 pages in parallel to guarantee a massive pool of 200+ unique Tamil songs
+    const pages = [1, 2, 3, 4, 5, 6];
+    const fetchPage = async (p) => {
+      const url = `https://www.jiosaavn.com/api.php?__call=search.getResults&q=${encodeURIComponent(q)}&p=${p}&n=40&_format=json&_marker=0&ctx=web6dot0`;
+      try {
+        const response = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0', 'Cookie': 'L=tamil;' } });
+        const data = await response.json();
+        return data.results || [];
+      } catch (err) {
+        console.error(`Error fetching page ${p} for query "${q}":`, err.message);
+        return [];
+      }
+    };
 
-    if (!data || !data.results) return res.json([]);
+    const pagesResults = await Promise.all(pages.map(fetchPage));
+    const combinedResults = pagesResults.flat();
 
-    const formattedResults = data.results.map(track => {
-      // Clean up the image url to 500x500
+    // Deduplicate by track ID
+    const uniqueTracks = Array.from(new Map(combinedResults.map(track => [track.id, track])).values());
+
+    const formattedResults = uniqueTracks.map(track => {
       let coverUrl = track.image ? track.image.replace('150x150', '500x500') : 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500';
-      
-      // Decrypt the direct MP4 stream using native cryptography
       const streamUrl = track.encrypted_media_url ? decryptSaavnUrl(track.encrypted_media_url) : null;
-
-      // Decode HTML entities in title (like &quot;)
-      const cleanTitle = (track.song || 'Unknown Title').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+      const cleanTitleText = (track.song || 'Unknown Title').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
 
       return {
         id: `saavn_${track.id}`,
-        title: cleanTitle,
+        title: cleanTitleText,
         artist: track.primary_artists || 'Unknown Artist',
         album: track.album || 'Singles',
         cover: coverUrl,
         src: streamUrl,
         duration: parseInt(track.duration, 10) || 0,
         isSaavn: true,
-        mood: 'Global'
+        mood: 'Global',
+        type: 'song'
       };
-    }).filter(s => s.src); // Ensure only playable tracks are returned
+    }).filter(s => s.src);
 
     res.json(formattedResults);
   } catch (err) {
-    console.error('Saavn API Error:', err.message);
+    console.error('Saavn API Search Error:', err.message);
     res.status(500).json({ error: 'Failed to search global music' });
+  }
+});
+
+// ─── DYNAMIC SONG DETAILS ENDPOINT ───────────────────────────────────────
+app.get('/api/saavn/song/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const cleanId = id.replace('saavn_', ''); // in case saavn_ prefix is sent
+    const url = `https://www.jiosaavn.com/api.php?__call=song.getDetails&pids=${cleanId}&_format=json&_marker=0&ctx=web6dot0`;
+    const response = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+    const data = await response.json();
+    if (!data || !data.songs || data.songs.length === 0) {
+      return res.status(404).json({ error: 'Song not found' });
+    }
+    const track = data.songs[0];
+    const streamUrl = track.encrypted_media_url ? decryptSaavnUrl(track.encrypted_media_url) : null;
+    const coverUrl = track.image ? track.image.replace('150x150', '500x500') : 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500';
+    const cleanTitleText = (track.song || 'Unknown Title').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+
+    res.json({
+      id: `saavn_${track.id}`,
+      title: cleanTitleText,
+      artist: track.primary_artists || 'Unknown Artist',
+      album: track.album || 'Singles',
+      cover: coverUrl,
+      src: streamUrl,
+      duration: parseInt(track.duration, 10) || 0,
+      isSaavn: true,
+      mood: 'Global',
+      type: 'song'
+    });
+  } catch (err) {
+    console.error('Saavn Song Detail Error:', err.message);
+    res.status(500).json({ error: 'Failed to fetch song details' });
   }
 });
 
 // ─── NATIVE GLOBAL SAAVN HOME DATA (LAUNCH DATA) ──────────────────────────
 app.get('/api/saavn/home', async (req, res) => {
   try {
-    const url = `https://www.jiosaavn.com/api.php?__call=webapi.getLaunchData&api_version=4&_format=json&_marker=0&ctx=web6dot0&languages=tamil`;
-    const response = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0', 'Cookie': 'L=tamil;' } });
-    const data = await response.json();
+    const launchUrl = `https://www.jiosaavn.com/api.php?__call=webapi.getLaunchData&api_version=4&_format=json&_marker=0&ctx=web6dot0&languages=tamil`;
+    const launchResponse = await fetch(launchUrl, { headers: { 'User-Agent': 'Mozilla/5.0', 'Cookie': 'L=tamil;' } });
+    const launchData = await launchResponse.json();
 
     const formatItem = (item) => ({
       id: item.id,
@@ -1109,16 +1152,55 @@ app.get('/api/saavn/home', async (req, res) => {
       cover: item.image ? item.image.replace('150x150', '500x500') : 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500',
     });
 
+    const playlists = (launchData.top_playlists || []).map(formatItem);
+    const albums = (launchData.new_albums || []).map(formatItem);
+
+    // Dynamic Tamil trending search seeds to keep the homepage fresh
+    const seedQueries = [
+      "Latest Tamil Songs",
+      "Trending Tamil Hits",
+      "Top Tamil Songs 2026",
+      "New Tamil Songs",
+      "Tamil Chartbusters"
+    ];
+    const randomQuery = seedQueries[Math.floor(Math.random() * seedQueries.length)];
+    
+    const searchUrl = `https://www.jiosaavn.com/api.php?__call=search.getResults&q=${encodeURIComponent(randomQuery)}&p=1&n=50&_format=json&_marker=0&ctx=web6dot0`;
+    const searchResponse = await fetch(searchUrl, { headers: { 'User-Agent': 'Mozilla/5.0', 'Cookie': 'L=tamil;' } });
+    const searchData = await searchResponse.json();
+
+    let trendingSongs = [];
+    if (searchData && searchData.results) {
+      trendingSongs = searchData.results.map(track => {
+        let coverUrl = track.image ? track.image.replace('150x150', '500x500') : 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500';
+        const streamUrl = track.encrypted_media_url ? decryptSaavnUrl(track.encrypted_media_url) : null;
+        const cleanTitleText = (track.song || 'Unknown Title').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+        return {
+          id: `saavn_${track.id}`,
+          title: cleanTitleText,
+          artist: track.primary_artists || 'Unknown Artist',
+          album: track.album || 'Singles',
+          cover: coverUrl,
+          src: streamUrl,
+          duration: parseInt(track.duration, 10) || 0,
+          isSaavn: true,
+          mood: 'Global',
+          type: 'song'
+        };
+      }).filter(s => s.src);
+    }
+
     res.json({
-      trending: (data.new_trending || []).map(formatItem),
-      playlists: (data.top_playlists || []).map(formatItem),
-      albums: (data.new_albums || []).map(formatItem)
+      trending: trendingSongs,
+      playlists: playlists,
+      albums: albums
     });
   } catch (err) {
     console.error('Saavn Home API Error:', err.message);
     res.status(500).json({ error: 'Failed to fetch global home data' });
   }
 });
+
 
 // Serve static files from the React frontend build
 app.use(express.static(path.join(__dirname, '../dist')));
