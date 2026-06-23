@@ -140,7 +140,7 @@ export default function Playback() {
 
 
   return (
-    <div className="relative min-h-[100dvh] md:min-h-[calc(100vh-140px)] w-full flex flex-col p-4 md:p-8 overflow-visible md:overflow-hidden">
+    <div className="relative min-h-[100dvh] md:min-h-[calc(100vh-140px)] w-full flex flex-col px-0 pt-6 pb-0 md:p-8 overflow-visible md:overflow-hidden">
       
       {/* Massive Cinematic Blurry Background based on Album Art */}
       <div className="absolute inset-0 z-0 overflow-hidden bg-black">
@@ -159,7 +159,7 @@ export default function Playback() {
       <div className={`relative z-10 w-full min-h-[calc(100dvh-2rem)] md:h-full max-w-5xl mx-auto md:my-auto md:bg-white/[0.02] md:border md:border-white/5 md:backdrop-blur-2xl md:rounded-3xl md:p-10 flex flex-col md:flex-row gap-6 md:gap-12 shadow-none md:shadow-2xl overflow-visible md:overflow-hidden`}>
         
         <div 
-          className="flex-shrink-0 flex flex-col items-center md:items-start text-center md:text-left justify-between space-y-2 md:space-y-6 w-full max-w-md mx-auto md:max-w-none md:flex-1"
+          className="flex-shrink-0 flex flex-col items-center md:items-start text-center md:text-left justify-between space-y-2 md:space-y-6 w-full max-w-md mx-auto md:max-w-none md:flex-1 px-6 md:px-0"
           {...swipeHandlers}
         >
           <div className="w-full flex items-center justify-between">
@@ -237,7 +237,7 @@ export default function Playback() {
           </div>
         </div>
 
-        <div id="up-next-section" className="flex-1 grid grid-rows-[auto_1fr_auto] bg-black/20 md:bg-white/[0.02] md:border-l border-white/5 rounded-3xl md:rounded-none relative mt-2 md:mt-0 shadow-[0_-10px_40px_rgba(0,0,0,0.3)] md:shadow-none md:min-h-0 md:overflow-hidden">
+        <div id="up-next-section" className="flex-1 grid grid-rows-[auto_1fr_auto] bg-black/20 md:bg-white/[0.02] md:border-l border-t border-white/10 md:border-t-0 md:border-white/5 rounded-t-[40px] md:rounded-none relative mt-6 md:mt-0 shadow-[0_-10px_40px_rgba(0,0,0,0.3)] md:shadow-none md:min-h-0 md:overflow-hidden">
           <div className={`absolute inset-0 pointer-events-none flex items-end justify-center gap-1 opacity-20 transition-opacity duration-1000 ${isPlaying && !isIdle ? 'opacity-30' : 'opacity-0'}`}>
             {visualizerBars.map((bar) => (
               <div 
