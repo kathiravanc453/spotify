@@ -271,20 +271,63 @@ export default function Playback() {
           <div className="overflow-y-auto relative z-0 min-h-0 scrollbar-hide transform-gpu ![clip-path:inset(0)]">
             {activeTab === 'queue' && (
               <div className="flex flex-col gap-2 p-4 h-full">
-                {queue.length > 0 ? (
-                  queue.map((song) => (
-                    <div key={song.id} onClick={() => playSong(song)} className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 cursor-pointer">
-                      <img src={song.cover} className="w-10 h-10 rounded-lg object-cover" />
-                      <div className="min-w-0 flex-1">
-                        <h4 className="text-white text-sm font-bold truncate">{song.title}</h4>
-                        <p className="text-white/40 text-xs truncate">{song.artist}</p>
+                {/* Now Playing Header */}
+                <div className="text-[10px] font-black text-cyan-400 uppercase tracking-widest pl-2 mb-1">Now Playing</div>
+                <div className="flex items-center gap-3 p-3 rounded-2xl bg-white/10 border border-white/10 shadow-lg relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-violet-500/20 pointer-events-none" />
+                  <div className="relative w-12 h-12 rounded-xl overflow-hidden shadow-md flex-shrink-0">
+                    <img src={currentSong.cover} className="w-full h-full object-cover" />
+                    {isPlaying && (
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center gap-0.5">
+                        <div className="w-1 h-3 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <div className="w-1 h-4 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                        <div className="w-1 h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                       </div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1 z-10">
+                    <h4 className="text-white text-sm font-extrabold truncate">{currentSong.title}</h4>
+                    <p className="text-white/60 text-xs font-semibold truncate">{currentSong.artist}</p>
+                  </div>
+                  <div className="z-10 text-cyan-400 pr-2">
+                    <Sparkles size={18} />
+                  </div>
+                </div>
+
+                {/* Up Next Header */}
+                <div className="text-[10px] font-black text-white/40 uppercase tracking-widest pl-2 mt-4 mb-1">Up Next</div>
+                
+                {queue.length > 0 ? (
+                  queue.slice(0, 50).map((song, index) => (
+                    <div key={song.id + '-' + index} onClick={() => playSong(song)} className="flex items-center gap-3 p-2.5 rounded-2xl hover:bg-white/5 cursor-pointer group transition-all duration-300">
+                      <div className="text-white/20 text-xs font-bold w-4 text-center group-hover:text-cyan-400 transition-colors">
+                        {index + 1}
+                      </div>
+                      <img src={song.cover} className="w-10 h-10 rounded-lg object-cover shadow-md group-hover:scale-105 transition-transform" />
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-white/90 text-sm font-bold truncate group-hover:text-white transition-colors">{song.title}</h4>
+                        <p className="text-white/40 text-[11px] font-semibold truncate">{song.artist}</p>
+                      </div>
+                      {song.duration && (
+                        <div className="text-white/30 text-[10px] font-bold pr-2">
+                          {formatTime(song.duration)}
+                        </div>
+                      )}
                     </div>
                   ))
                 ) : (
-                  <div className="h-full flex flex-col items-center justify-center gap-4 py-12">
+                  <div className="flex flex-col items-center justify-center gap-4 py-12">
                     <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
                     <p className="text-white/50 text-sm font-medium">Generating Smart Radio Queue...</p>
+                  </div>
+                )}
+                
+                {queue.length >= 50 && (
+                  <div className="text-center pt-6 pb-20">
+                    <p className="text-white/30 text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-2">
+                      <ListMusic size={14} />
+                      Infinite Radio Engine Active
+                    </p>
                   </div>
                 )}
               </div>
