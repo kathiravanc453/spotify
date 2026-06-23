@@ -35,6 +35,35 @@ export default function Playback() {
 
   // ─── Algorithmic Zen Mode (Context-Aware) ─────────────────────────────────
   const [isIdle, setIsIdle] = useState(false);
+
+  // ─── Lyrics Scrolling Pause Logic ─────────────────────────────────────────
+  const [isAutoScrollPaused, setIsAutoScrollPaused] = useState(false);
+  const autoScrollTimeoutRef = useRef(null);
+
+  const handleUserScroll = useCallback(() => {
+    setIsAutoScrollPaused(true);
+    if (autoScrollTimeoutRef.current) {
+      clearTimeout(autoScrollTimeoutRef.current);
+    }
+    // Auto-resume after 8 seconds of no manual scrolling
+    autoScrollTimeoutRef.current = setTimeout(() => {
+      setIsAutoScrollPaused(false);
+    }, 8000);
+  }, []);
+
+  // Clear timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (autoScrollTimeoutRef.current) {
+        clearTimeout(autoScrollTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Reset pause state when song changes
+  useEffect(() => {
+    setIsAutoScrollPaused(false);
+  }, [currentSong?.id]);
   
   useEffect(() => {
     let idleTimer;
@@ -72,7 +101,7 @@ export default function Playback() {
 
   useEffect(() => {
     const doScroll = () => {
-      if (activeLyricRef.current && activeTab === 'lyrics' && !isIdle) {
+      if (activeLyricRef.current && activeTab === 'lyrics' && !isIdle && !isAutoScrollPaused) {
         setTimeout(() => {
           activeLyricRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 100);
@@ -82,22 +111,7 @@ export default function Playback() {
     doScroll();
     window.addEventListener('resize', doScroll);
     return () => window.removeEventListener('resize', doScroll);
-  }, [activeLyricIndex, activeTab, isIdle]);
-
-  useEffect(() => {
-    if (activeTab === 'lyrics' && lyricsContainerRef.current && lyricsData.length > 0) {
-      const activeIdx = lyricsData.reduce((acc, curr, idx) => {
-        return progress >= curr.time ? idx : acc;
-      }, -1);
-      
-      if (activeIdx !== -1) {
-        const lineEl = lyricsContainerRef.current.children[activeIdx];
-        if (lineEl) {
-          lineEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }
-    }
-  }, [progress, activeTab, lyricsData]);
+  }, [activeLyricIndex, activeTab, isIdle, isAutoScrollPaused]);
   // ──────────────────────────────────────────────────────────────────────────
 
   const swipeHandlers = useSwipe({
@@ -331,7 +345,11 @@ export default function Playback() {
             )}
 
             {activeTab === 'lyrics' && (
-              <div className="w-full p-4 md:p-8 relative min-h-full">
+              <div 
+                className="w-full p-4 md:p-8 relative min-h-full"
+                onWheel={handleUserScroll}
+                onTouchMove={handleUserScroll}
+              >
                 {lyricsLoading ? (
                   <div className="min-h-[50vh] flex flex-col items-center justify-center gap-4 transition-opacity duration-700">
                     <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
@@ -352,7 +370,10 @@ export default function Playback() {
                             ref={isActive ? activeLyricRef : null}
                             className={`transition-all duration-500 cursor-pointer ${isActive ? 'text-[22px] leading-tight md:text-4xl font-extrabold text-white transform md:scale-105' : isPast ? 'text-lg md:text-2xl font-bold text-white/30 blur-[1px]' : 'text-lg md:text-2xl font-bold text-white/50'}`}
                             style={isActive ? { textShadow: `0 0 30px ${accent.hex}80` } : {}}
-                            onClick={() => seek(line.time)}
+                            onClick={() => {
+                              seek(line.time);
+                              setIsAutoScrollPaused(false);
+                            }}
                           >
                             {line.text}
                           </div>
@@ -360,8 +381,18 @@ export default function Playback() {
                       })}
                     </div>
                   ) : null}
-                </div>
-              )}
+
+                {isAutoScrollPaused && (
+                  <button
+                    onClick={() => setIsAutoScrollPaused(false)}
+                    className="fixed bottom-10 left-1/2 transform -translate-x-1/2 z-50 px-5 py-2.5 rounded-full bg-cyan-400 text-black text-xs font-black shadow-xl flex items-center gap-2 hover:scale-105 active:scale-95 transition-all animate-bounce"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="animate-pulse"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    Sync to Lyrics
+                  </button>
+                )}
+              </div>
+            )}
             </div>
 
           {/* Related Selection Widget */}
