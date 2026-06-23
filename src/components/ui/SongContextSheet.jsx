@@ -15,7 +15,7 @@ import {
 export default function SongContextSheet({ song, onClose }) {
   const {
     playSong, currentSong, favorites = [],
-    toggleLike, playNext: skipNext, allSongs = [],
+    toggleLike, playNextSong, addToQueue, allSongs = [],
   } = usePlayer() || {};
 
   const sheetRef = useRef(null);
@@ -43,7 +43,19 @@ export default function SongContextSheet({ song, onClose }) {
 
   // Add song to "Play Next" queue — insert it right after the current song
   const handlePlayNext = () => {
-    toast.info(`"${displayTitle}" will play next`);
+    if (playNextSong) {
+      playNextSong(song);
+      toast.success(`"${displayTitle}" will play next`);
+    }
+    close();
+  };
+
+  // Add song to bottom of the queue
+  const handleAddToQueue = () => {
+    if (addToQueue) {
+      addToQueue(song);
+      toast.success(`Added "${displayTitle}" to queue`);
+    }
     close();
   };
 
@@ -85,6 +97,12 @@ export default function SongContextSheet({ song, onClose }) {
       label: 'Play Next',
       color: 'text-white/70',
       action: handlePlayNext,
+    },
+    {
+      icon: ListPlus,
+      label: 'Add to Queue',
+      color: 'text-white/70',
+      action: handleAddToQueue,
     },
     {
       icon: Share2,

@@ -23,6 +23,34 @@ export function PlayerProvider({ children, user }) {
   const [saavnLoading, setSaavnLoading] = useState(false);
   const [saavnRadioPool, setSaavnRadioPool] = useState([]);
 
+  // ─── Custom User Queue ──────────────────────────────────────────────────
+  const [customQueue, setCustomQueue] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('rhythmix_custom_queue')) || []; } catch { return []; }
+  });
+
+  const playNextSong = useCallback((song) => {
+    setCustomQueue(prev => {
+      const filtered = prev.filter(s => s.id !== song.id);
+      const next = [song, ...filtered];
+      try { localStorage.setItem('rhythmix_custom_queue', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+  }, []);
+
+  const addToQueue = useCallback((song) => {
+    setCustomQueue(prev => {
+      const filtered = prev.filter(s => s.id !== song.id);
+      const next = [...filtered, song];
+      try { localStorage.setItem('rhythmix_custom_queue', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+  }, []);
+
+  const clearQueue = useCallback(() => {
+    setCustomQueue([]);
+    try { localStorage.setItem('rhythmix_custom_queue', JSON.stringify([])); } catch (e) {}
+  }, []);
+
   // Lyrics State
   const [lyricsData, setLyricsData] = useState([]);
   const [lyricsLoading, setLyricsLoading] = useState(false);
@@ -206,9 +234,13 @@ export function PlayerProvider({ children, user }) {
     recentlyPlayed.forEach(song => {
       pool.set(song.id, song);
     });
+
+    customQueue.forEach(song => {
+      pool.set(song.id, song);
+    });
     
     return Array.from(pool.values());
-  }, [saavnHomeData, saavnResults, saavnRadioPool, recentlyPlayed]);
+  }, [saavnHomeData, saavnResults, saavnRadioPool, recentlyPlayed, customQueue]);
 
   // ─── Fetch Lyrics ────────────────────────────────────────────────────────
   const cleanTitle = (title) => {
@@ -284,6 +316,13 @@ export function PlayerProvider({ children, user }) {
     // Auto-navigate to Now Playing screen as requested by user
     setActiveSection('now-playing');
 
+    // Remove from custom queue if playing it manually
+    setCustomQueue(prev => {
+      const next = prev.filter(s => s.id !== song.id);
+      try { localStorage.setItem('rhythmix_custom_queue', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+
     setRecentlyPlayed(prev => {
       const filtered = prev.filter(s => s.id !== song.id);
       const next = [song, ...filtered].slice(0, 100);
@@ -319,24 +358,22 @@ export function PlayerProvider({ children, user }) {
     if (!currentSong || allSongs.length === 0) return [];
     
     // Memory engine: exclude all recently played songs to prevent any loops.
-    // (recentlyPlayed is capped at 100, providing ~8 hours of unrepeated music)
     const recentIds = new Set(recentlyPlayed.map(s => s.id));
-    let availableSongs = allSongs.filter(s => s.id !== currentSong.id && !recentIds.has(s.id));
+    const customIds = new Set(customQueue.map(s => s.id));
+    
+    let availableSongs = allSongs.filter(s => s.id !== currentSong.id && !recentIds.has(s.id) && !customIds.has(s.id));
 
     // Fallback: If we have exhausted all new songs, allow the queue to reuse recently played songs
-    // so the music never stops and the queue is never completely empty!
     if (availableSongs.length === 0) {
-      availableSongs = allSongs.filter(s => s.id !== currentSong.id);
+      availableSongs = allSongs.filter(s => s.id !== currentSong.id && !customIds.has(s.id));
     }
     
     // Absolute Last Resort Fallback: If there is literally only 1 song in the entire app state
-    // (e.g. they searched for exactly 1 song and the radio API failed), then just loop it.
     if (availableSongs.length === 0) {
       availableSongs = [...allSongs];
     }
 
     // Shuffle the available songs deterministically based on the current song.
-    // This solves the "top 30" repetition issue by fully randomizing the remaining library!
     const shuffledAvailable = [...availableSongs].sort((a, b) => {
       const hashA = String(a.id) + String(currentSong.id);
       const hashB = String(b.id) + String(currentSong.id);
@@ -345,47 +382,50 @@ export function PlayerProvider({ children, user }) {
       return valA - valB;
     });
 
+    let recommended = [];
     if (isShuffle) {
       // Pure random shuffle ignoring mood
-      return shuffledAvailable.slice(0, 300);
+      recommended = shuffledAvailable.slice(0, 300);
+    } else {
+      // Per user request: "Right now upcoming also relate while playing song"
+      const currentMood = (currentSong.mood || '').toLowerCase();
+      const currentArtist = (currentSong.artist || '').toLowerCase();
+      const currentActor = (currentSong.actor || '').toLowerCase();
+
+      // Helper for fuzzy artist matching
+      const matchArtist = (a1, a2) => {
+        if (!a1 || !a2) return false;
+        const primary1 = a1.split(',')[0].trim();
+        const primary2 = a2.split(',')[0].trim();
+        return primary1.includes(primary2) || primary2.includes(primary1);
+      };
+      
+      // Tier 1: Perfect Match (Same Mood AND Same Artist/Actor)
+      const tier1 = shuffledAvailable.filter(s => 
+        (s.mood || '').toLowerCase() === currentMood && 
+        (matchArtist((s.artist || '').toLowerCase(), currentArtist) || (s.actor && (s.actor || '').toLowerCase() === currentActor))
+      );
+      const tier1Ids = new Set(tier1.map(s => s.id));
+      
+      // Tier 2: Mood Match
+      const tier2 = shuffledAvailable.filter(s => (s.mood || '').toLowerCase() === currentMood && !tier1Ids.has(s.id));
+      const tier2Ids = new Set(tier2.map(s => s.id));
+
+      // Tier 3: Artist/Actor Match
+      const tier3 = shuffledAvailable.filter(s => 
+        (matchArtist((s.artist || '').toLowerCase(), currentArtist) || (s.actor && (s.actor || '').toLowerCase() === currentActor)) && 
+        !tier1Ids.has(s.id) && !tier2Ids.has(s.id)
+      );
+      const tier3Ids = new Set(tier3.map(s => s.id));
+      
+      // Tier 4: Everything else (when related songs run out)
+      const others = shuffledAvailable.filter(s => !tier1Ids.has(s.id) && !tier2Ids.has(s.id) && !tier3Ids.has(s.id));
+      
+      recommended = [...tier1, ...tier2, ...tier3, ...others];
     }
-    
-    // Per user request: "Right now upcoming also relate while playing song"
-    const currentMood = (currentSong.mood || '').toLowerCase();
-    const currentArtist = (currentSong.artist || '').toLowerCase();
-    const currentActor = (currentSong.actor || '').toLowerCase();
 
-    // Helper for fuzzy artist matching
-    const matchArtist = (a1, a2) => {
-      if (!a1 || !a2) return false;
-      const primary1 = a1.split(',')[0].trim();
-      const primary2 = a2.split(',')[0].trim();
-      return primary1.includes(primary2) || primary2.includes(primary1);
-    };
-    
-    // Tier 1: Perfect Match (Same Mood AND Same Artist/Actor)
-    const tier1 = shuffledAvailable.filter(s => 
-      (s.mood || '').toLowerCase() === currentMood && 
-      (matchArtist((s.artist || '').toLowerCase(), currentArtist) || (s.actor && (s.actor || '').toLowerCase() === currentActor))
-    );
-    const tier1Ids = new Set(tier1.map(s => s.id));
-    
-    // Tier 2: Mood Match
-    const tier2 = shuffledAvailable.filter(s => (s.mood || '').toLowerCase() === currentMood && !tier1Ids.has(s.id));
-    const tier2Ids = new Set(tier2.map(s => s.id));
-
-    // Tier 3: Artist/Actor Match
-    const tier3 = shuffledAvailable.filter(s => 
-      (matchArtist((s.artist || '').toLowerCase(), currentArtist) || (s.actor && (s.actor || '').toLowerCase() === currentActor)) && 
-      !tier1Ids.has(s.id) && !tier2Ids.has(s.id)
-    );
-    const tier3Ids = new Set(tier3.map(s => s.id));
-    
-    // Tier 4: Everything else (when related songs run out)
-    const others = shuffledAvailable.filter(s => !tier1Ids.has(s.id) && !tier2Ids.has(s.id) && !tier3Ids.has(s.id));
-    
-    return [...tier1, ...tier2, ...tier3, ...others];
-  }, [currentSong, allSongs, isShuffle, recentlyPlayed]);
+    return [...customQueue, ...recommended];
+  }, [currentSong, allSongs, isShuffle, recentlyPlayed, customQueue]);
 
   // ─── Next / Prev ──────────────────────────────────────────────────────────
   const playNext = useCallback(() => {
@@ -398,11 +438,19 @@ export function PlayerProvider({ children, user }) {
       return;
     }
     if (upNextQueue.length > 0) {
-      playSong(upNextQueue[0]);
+      const nextSong = upNextQueue[0];
+      if (customQueue.length > 0 && nextSong.id === customQueue[0].id) {
+        setCustomQueue(prev => {
+          const next = prev.slice(1);
+          try { localStorage.setItem('rhythmix_custom_queue', JSON.stringify(next)); } catch (e) {}
+          return next;
+        });
+      }
+      playSong(nextSong);
     } else {
       playSong(allSongs[0]);
     }
-  }, [currentSong, allSongs, playSong, repeatMode, upNextQueue]);
+  }, [currentSong, allSongs, playSong, repeatMode, upNextQueue, customQueue]);
 
   const playNextRef = useRef(playNext);
   useEffect(() => { playNextRef.current = playNext; }, [playNext]);
@@ -624,6 +672,7 @@ export function PlayerProvider({ children, user }) {
       sleepTimer, startSleepTimer, cancelSleepTimer,
       refreshSongs: () => {},
       upNextQueue: upNextQueue.length > 0 ? upNextQueue : (currentSong ? [currentSong] : []),
+      customQueue, playNextSong, addToQueue, clearQueue,
       playlists, fetchPlaylists, createPlaylist, addSongToPlaylist, removeSongFromPlaylist, deletePlaylist,
       saavnResults,
       saavnLoading,
