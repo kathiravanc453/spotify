@@ -295,7 +295,7 @@ export function PlayerProvider({ children, user }) {
   }, [currentSong]);
 
   // ─── Play song ────────────────────────────────────────────────────────────
-  const playSong = useCallback((song) => {
+  const playSong = useCallback((song, keepQueue = false) => {
     if (!user) {
       setActiveSection('login');
       return;
@@ -343,7 +343,15 @@ export function PlayerProvider({ children, user }) {
       const combined = [...(Array.isArray(artistData) ? artistData : []), ...(Array.isArray(moodData) ? moodData : [])];
       // Remove duplicates
       const unique = Array.from(new Map(combined.map(item => [item.id, item])).values());
-      setSaavnRadioPool(unique);
+      
+      setSaavnRadioPool(prev => {
+        if (keepQueue) {
+          const merged = [...prev, ...unique];
+          return Array.from(new Map(merged.map(item => [item.id, item])).values());
+        } else {
+          return unique;
+        }
+      });
     }).catch(err => console.error('Radio Engine Error:', err));
   }, [currentSong, isPlaying, incrementPlayCount, user]);
 
@@ -446,9 +454,9 @@ export function PlayerProvider({ children, user }) {
           return next;
         });
       }
-      playSong(nextSong);
+      playSong(nextSong, true);
     } else {
-      playSong(allSongs[0]);
+      playSong(allSongs[0], true);
     }
   }, [currentSong, allSongs, playSong, repeatMode, upNextQueue, customQueue]);
 
@@ -463,10 +471,10 @@ export function PlayerProvider({ children, user }) {
       return;
     }
     if (recentlyPlayed.length > 1) {
-      playSong(recentlyPlayed[1]);
+      playSong(recentlyPlayed[1], true);
     } else {
       const idx = allSongs.findIndex(s => s.id === currentSong.id);
-      playSong(allSongs[(idx - 1 + allSongs.length) % allSongs.length]);
+      playSong(allSongs[(idx - 1 + allSongs.length) % allSongs.length], true);
     }
   }, [currentSong, allSongs, playSong, recentlyPlayed]);
 
