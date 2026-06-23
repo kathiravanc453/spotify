@@ -140,7 +140,7 @@ export default function Playback() {
 
 
   return (
-    <div className="relative min-h-[100dvh] md:min-h-[calc(100vh-140px)] w-full flex flex-col p-4 md:p-8 overflow-y-auto md:overflow-hidden">
+    <div className="relative min-h-[100dvh] md:min-h-[calc(100vh-140px)] w-full flex flex-col p-4 md:p-8 overflow-visible md:overflow-hidden">
       
       {/* Massive Cinematic Blurry Background based on Album Art */}
       <div className="absolute inset-0 z-0 overflow-hidden bg-black">
