@@ -236,7 +236,7 @@ export default function Home({ search = '', setSearch, activeSection = 'home' })
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {saavnResults.map(song => <SongCard key={song.id} song={song} />)}
+                {saavnResults.map(song => <SongCard key={song.id} song={song} songsList={saavnResults} />)}
               </div>
             )}
           </section>
@@ -321,7 +321,8 @@ export default function Home({ search = '', setSearch, activeSection = 'home' })
               <h3 className="text-white text-xl font-bold tracking-tight mb-4 px-2">Top 100 Global Tracks</h3>
               {trendingSongs.map((song, i) => {
                 const formattedSong = { ...song, cover: song.image || song.cover, artist: song.subtitle || song.artist };
-                return <SongRow key={song.id} song={formattedSong} index={i} />;
+                const formattedList = trendingSongs.map(s => ({ ...s, cover: s.image || s.cover, artist: s.subtitle || s.artist }));
+                return <SongRow key={song.id} song={formattedSong} index={i} songsList={formattedList} />;
               })}
             </div>
           )}

@@ -45,7 +45,7 @@ export default function TrendingSidebar() {
           return (
             <button
               key={song.id}
-              onClick={() => playSong(song)}
+              onClick={() => playSong(song, { initialQueue: trendingSongs.slice(0, 10) })}
               className={`group flex items-center gap-3 p-2 rounded-2xl transition-all duration-300 text-left ${
                 isActive 
                   ? 'bg-white/[0.08] border border-cyan-500/20 shadow-lg' 

@@ -10,7 +10,7 @@ function formatTime(secs) {
   return `${m}:${s}`;
 }
 
-export default memo(function SongRow({ song, index }) {
+export default memo(function SongRow({ song, index, songsList = [] }) {
   const { currentSong, isPlaying, playSong, favorites = [], toggleLike, progress, duration, albumCovers = {}, setActiveArtist, setActiveSection, playlists = [], addSongToPlaylist } = usePlayer();
   const [showDropdown, setShowDropdown] = useState(false);
   const isActive = currentSong?.id === song.id;
@@ -22,7 +22,7 @@ export default memo(function SongRow({ song, index }) {
 
   return (
     <div
-      onClick={() => playSong(song)}
+      onClick={() => playSong(song, { initialQueue: songsList })}
       className={`group flex items-center gap-4 px-4 py-3 rounded-xl cursor-pointer transition-all duration-300 border
         ${isActive
           ? 'bg-gradient-to-r from-cyan-500/10 to-violet-500/5 border-cyan-500/20'

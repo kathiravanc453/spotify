@@ -158,7 +158,7 @@ export default function Actor() {
             </div>
           ) : actorSongs.length > 0 ? (
             actorSongs.map((song, i) => (
-              <SongRow key={song.id} song={song} index={i} />
+              <SongRow key={song.id} song={song} index={i} songsList={actorSongs} />
             ))
           ) : (
             <p className="text-white/40 text-center py-10">No songs found for this actor.</p>

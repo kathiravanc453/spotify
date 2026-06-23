@@ -30,7 +30,7 @@ function Equalizer() {
   );
 }
 
-export default memo(function SongCard({ song }) {
+export default memo(function SongCard({ song, songsList = [] }) {
   const { currentSong, isPlaying, playSong, progress, duration, playCounts = {}, albumCovers = {}, setActiveArtist, setActiveSection } = usePlayer();
   const [showContext, setShowContext] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
@@ -50,7 +50,7 @@ export default memo(function SongCard({ song }) {
     <>
       <div
         id={`song-card-${song.id}`}
-        onClick={() => playSong(song)}
+        onClick={() => playSong(song, { initialQueue: songsList })}
         {...longPressHandlers}
         className={`group relative flex items-center gap-4 p-3 pr-6 rounded-[24px] cursor-pointer transition-all duration-300 select-none ${isActive ? 'bg-white/[0.08] border-cyan-500/30 shadow-[0_0_20px_rgba(34,211,238,0.15)] scale-[1.02]' : 'bg-white/[0.02] hover:bg-white/[0.06] border border-transparent hover:border-white/10 hover:scale-[1.01]'}`}
       >

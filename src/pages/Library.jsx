@@ -161,7 +161,7 @@ export default function Library() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-6">
-            {playlistSongs.map(song => <SongCard key={song?.id} song={song} />)}
+            {playlistSongs.map(song => <SongCard key={song?.id} song={song} songsList={playlistSongs} />)}
           </div>
         )}
       </div>
@@ -199,7 +199,7 @@ export default function Library() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-6">
-            {likedSongs.map(song => <SongCard key={song?.id} song={song} />)}
+            {likedSongs.map(song => <SongCard key={song?.id} song={song} songsList={likedSongs} />)}
           </div>
         )}
       </div>
@@ -259,7 +259,7 @@ export default function Library() {
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-5">
-            {moodFilteredAndSearchedSongs.map(song => <SongCard key={song?.id} song={song} />)}
+            {moodFilteredAndSearchedSongs.map(song => <SongCard key={song?.id} song={song} songsList={moodFilteredAndSearchedSongs} />)}
           </div>
         )}
       </div>
