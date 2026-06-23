@@ -237,7 +237,7 @@ export default function Playback() {
           </div>
         </div>
 
-        <div id="up-next-section" className="flex-1 grid grid-rows-[auto_1fr_auto] bg-black/20 md:bg-white/[0.02] md:border-l border-t border-white/10 md:border-t-0 md:border-white/5 rounded-t-[40px] md:rounded-none relative mt-6 md:mt-0 shadow-[0_-10px_40px_rgba(0,0,0,0.3)] md:shadow-none md:min-h-0 md:overflow-hidden">
+        <div id="up-next-section" className="flex-1 w-full min-w-0 grid grid-rows-[auto_1fr_auto] bg-black/20 md:bg-white/[0.02] md:border-l border-t border-white/10 md:border-t-0 md:border-white/5 rounded-t-[40px] md:rounded-none relative mt-6 md:mt-0 shadow-[0_-10px_40px_rgba(0,0,0,0.3)] md:shadow-none md:min-h-0 md:overflow-hidden">
           <div className={`absolute inset-0 pointer-events-none flex items-end justify-center gap-1 opacity-20 transition-opacity duration-1000 ${isPlaying && !isIdle ? 'opacity-30' : 'opacity-0'}`}>
             {visualizerBars.map((bar) => (
               <div 
@@ -268,12 +268,12 @@ export default function Playback() {
             </button>
           </div>
 
-          <div className="md:overflow-y-auto relative z-0 md:min-h-0 scrollbar-hide transform-gpu md:![clip-path:inset(0)]">
+          <div className="w-full min-w-0 md:overflow-y-auto relative z-0 md:min-h-0 scrollbar-hide transform-gpu md:![clip-path:inset(0)]">
             {activeTab === 'queue' && (
-              <div className="flex flex-col gap-2 p-4 pb-32 md:pb-8 min-h-full">
+              <div className="w-full min-w-0 flex flex-col gap-2 p-4 pb-32 md:pb-8 min-h-full">
                 {/* Now Playing Header */}
                 <div className="text-[10px] font-black text-cyan-400 uppercase tracking-widest pl-2 mb-1">Now Playing</div>
-                <div className="flex items-center gap-3 p-3 rounded-2xl bg-white/10 border border-white/10 shadow-lg relative overflow-hidden">
+                <div className="w-full min-w-0 flex items-center gap-3 p-3 rounded-2xl bg-white/10 border border-white/10 shadow-lg relative overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-violet-500/20 pointer-events-none" />
                   <div className="relative w-12 h-12 rounded-xl overflow-hidden shadow-md flex-shrink-0">
                     <img src={currentSong.cover} className="w-full h-full object-cover" />
@@ -299,7 +299,7 @@ export default function Playback() {
                 
                 {queue.length > 0 ? (
                   queue.slice(0, 50).map((song, index) => (
-                    <div key={song.id + '-' + index} onClick={() => playSong(song)} className="flex items-center gap-3 p-3 rounded-2xl hover:bg-white/5 cursor-pointer group transition-all duration-300">
+                    <div key={song.id + '-' + index} onClick={() => playSong(song)} className="w-full min-w-0 flex items-center gap-3 p-3 rounded-2xl hover:bg-white/5 cursor-pointer group transition-all duration-300">
                       <img src={song.cover} className="w-10 h-10 rounded-lg object-cover shadow-md group-hover:scale-105 transition-transform" />
                       <div className="min-w-0 flex-1">
                         <h4 className="text-white/90 text-sm font-bold truncate group-hover:text-white transition-colors">{song.title}</h4>
