@@ -128,7 +128,7 @@ function SidebarContent({ activeSection, setActiveSection, onItemClick, user, pl
   );
 }
 
-function AccountMenuContent({ user, onItemClick, onLogout, setActiveSection }) {
+function AccountMenuContent({ user, onItemClick, onLogout, activeSection, setActiveSection }) {
   return (
     <div className="flex flex-col h-full py-4 px-6">
       {/* Profile Header */}
@@ -179,10 +179,10 @@ function AccountMenuContent({ user, onItemClick, onLogout, setActiveSection }) {
           <span className="font-semibold text-base">Recents</span>
         </button>
         <button 
-          onClick={() => { alert('Your updates feature is coming soon!'); onItemClick?.(); }}
-          className="flex items-center gap-4 px-2 py-3.5 text-white hover:bg-white/[0.04] rounded-xl transition-all text-left"
+          onClick={() => { setActiveSection('updates'); onItemClick?.(); }}
+          className={`flex items-center gap-4 px-2 py-3.5 hover:bg-white/[0.04] rounded-xl transition-all text-left ${activeSection === 'updates' ? 'text-cyan-400 bg-white/[0.04]' : 'text-white'}`}
         >
-          <Bell size={22} className="text-white/70" />
+          <Bell size={22} className={activeSection === 'updates' ? 'text-cyan-400' : 'text-white/70'} />
           <span className="font-semibold text-base">Your updates</span>
         </button>
         <button 
@@ -263,6 +263,7 @@ export default function Sidebar({ user, search, setSearch, onLogout }) {
                 user={user}
                 onItemClick={() => setMobileOpen(false)}
                 onLogout={onLogout}
+                activeSection={activeSection}
                 setActiveSection={setActiveSection}
               />
             </div>
