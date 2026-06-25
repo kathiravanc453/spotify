@@ -20,17 +20,9 @@ export default function Profile() {
   return (
     <div className="flex flex-col h-full bg-[#121212] overflow-y-auto w-full pb-6">
       {/* Top Gradient Background */}
-      <div className="relative pt-12 pb-6 px-4 bg-gradient-to-b from-[#b3704b] to-[#121212]">
+      <div className="relative pt-8 pb-6 px-4 bg-gradient-to-b from-[#b3704b] to-[#121212]">
         
-        {/* Back Arrow */}
-        <button 
-          onClick={() => setActiveSection('home')}
-          className="absolute top-4 left-4 text-white hover:text-white/80 transition"
-        >
-          <ArrowLeft size={24} />
-        </button>
-
-        <div className="flex flex-col items-start mt-6">
+        <div className="flex flex-col items-start mt-2">
           <div className="flex items-center gap-5">
             {/* Circular Avatar */}
             <div className="w-24 h-24 rounded-full bg-[#d28b61] flex items-center justify-center shadow-2xl flex-shrink-0">
