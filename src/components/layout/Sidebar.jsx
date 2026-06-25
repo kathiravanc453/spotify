@@ -188,26 +188,31 @@ export default function Sidebar({ user, search, setSearch, onLogout }) {
             onClick={() => setMobileOpen(false)}
           />
 
-          {/* Slide-in panel */}
+          {/* Full-screen Slide-in panel */}
           <div
-            className={`md:hidden fixed top-0 right-0 bottom-0 w-72 bg-[#0d0d12]/98 border-l border-white/[0.06] shadow-2xl transition-transform duration-300 ease-out backdrop-blur-2xl`}
+            className={`md:hidden fixed inset-0 bg-[#07070a]/98 shadow-2xl transition-transform duration-300 ease-out backdrop-blur-3xl overflow-y-auto`}
             style={{ zIndex: 110, transform: mobileOpen ? 'translateX(0)' : 'translateX(100%)' }}
           >
-            {/* Close button inside panel */}
-            <button
-              className="absolute top-4 left-4 w-8 h-8 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/5 flex items-center justify-center text-white/50 hover:text-white transition-all"
-              onClick={() => setMobileOpen(false)}
-            >
-              <X size={15} />
-            </button>
+            {/* Top Bar with Back Button */}
+            <div className="sticky top-0 z-20 flex items-center px-4 py-4 bg-[#07070a]/80 backdrop-blur-md border-b border-white/5 mb-2">
+              <button
+                className="w-10 h-10 rounded-full bg-white/[0.04] hover:bg-white/[0.08] border border-white/5 flex items-center justify-center text-white hover:text-cyan-400 transition-all shadow-lg"
+                onClick={() => setMobileOpen(false)}
+              >
+                <ChevronLeft size={20} strokeWidth={2.5} />
+              </button>
+              <span className="text-white font-extrabold text-lg ml-4 tracking-wide">Menu</span>
+            </div>
 
-            <SidebarContent
-              activeSection={activeSection}
-              setActiveSection={setActiveSection}
-              onItemClick={() => setMobileOpen(false)}
-              user={user}
-              onLogout={onLogout}
-            />
+            <div className="pb-24">
+              <SidebarContent
+                activeSection={activeSection}
+                setActiveSection={setActiveSection}
+                onItemClick={() => setMobileOpen(false)}
+                user={user}
+                onLogout={onLogout}
+              />
+            </div>
           </div>
         </>,
         document.body
