@@ -133,15 +133,18 @@ function AccountMenuContent({ user, onItemClick, onLogout, setActiveSection }) {
     <div className="flex flex-col h-full py-4 px-6">
       {/* Profile Header */}
       {user ? (
-        <div className="flex items-center gap-4 mb-6">
+        <div 
+          className="flex items-center gap-4 mb-6 cursor-pointer group"
+          onClick={() => { setActiveSection('profile'); onItemClick?.(); }}
+        >
           <img
             src={user.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.name)}`}
             alt={user.name}
-            className="w-14 h-14 rounded-full object-cover bg-cyan-950 border border-white/10 shadow-lg"
+            className="w-14 h-14 rounded-full object-cover bg-cyan-950 border border-white/10 shadow-lg group-hover:scale-105 transition-transform"
           />
           <div className="flex flex-col">
-            <span className="text-white text-xl font-extrabold tracking-tight">{user.name}</span>
-            <span className="text-white/50 text-xs font-semibold mt-0.5 hover:text-white transition-colors cursor-pointer">View profile</span>
+            <span className="text-white text-xl font-extrabold tracking-tight group-hover:text-cyan-400 transition-colors">{user.name}</span>
+            <span className="text-white/50 text-xs font-semibold mt-0.5 group-hover:text-white transition-colors">View profile</span>
           </div>
         </div>
       ) : (

@@ -16,6 +16,7 @@ const Playback = lazy(() => import('./pages/Playback'));
 const AdminUpload = lazy(() => import('./pages/AdminUpload'));
 const Artist = lazy(() => import('./pages/Artist'));
 const Actor = lazy(() => import('./pages/Actor'));
+const Profile = lazy(() => import('./pages/Profile'));
 import ToastProvider from './components/ui/Toast';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import useMediaSession from './hooks/useMediaSession';
@@ -144,6 +145,7 @@ function AppContent({ user, onLogout, onLogin }) {
     if (activeSection === 'library' || activeSection === 'favorites' || activeSection?.startsWith('playlist_')) return <Library />;
     if (activeSection === 'albums')      return <Albums setSearch={handleSearch} />;
     if (activeSection === 'now-playing') return <Playback />;
+    if (activeSection === 'profile')     return <Profile />;
     if (activeSection === 'artist')      return <Artist />;
     if (activeSection === 'actor')       return <Actor setSearch={handleSearch} />;
     return <Home search={search} setSearch={handleSearch} activeSection={activeSection} />;
