@@ -21,9 +21,9 @@ export default function MobileNav() {
     <nav
       className="md:hidden fixed left-0 right-0 bottom-0 z-40 flex items-center justify-around border-t border-white/[0.06]"
       style={{
-        background: 'rgba(7,7,10,0.95)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
+        background: 'rgba(0, 0, 0, 0.4)',
+        backdropFilter: 'blur(24px)',
+        WebkitBackdropFilter: 'blur(24px)',
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       }}
     >
