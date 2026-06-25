@@ -174,6 +174,45 @@ const CHARTS_FRESH_FOLDERS = [
   }
 ];
 
+const YOUR_TOP_MIXES_FOLDERS = [
+  {
+    id: "ytm_gv_prakash",
+    title: "G.V. Prakash Mix",
+    subtitle: "Hits of GV Prakash Kumar",
+    query: "GV Prakash Tamil Hits",
+    color: "from-rose-500 to-red-600",
+    icon: Music,
+    cover: "https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?w=500"
+  },
+  {
+    id: "ytm_2020s_mix",
+    title: "2020s Mixes",
+    subtitle: "Modern chartbusters from 2020",
+    query: "2020s Tamil Hits Mix",
+    color: "from-blue-600 to-indigo-600",
+    icon: Sparkles,
+    cover: "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=500"
+  },
+  {
+    id: "ytm_kollywood_mix",
+    title: "Kollywood Mix",
+    subtitle: "The best of Tamil cinema soundscapes",
+    query: "Kollywood Hits Tamil Mix",
+    color: "from-amber-500 to-orange-600",
+    icon: Disc3,
+    cover: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500"
+  },
+  {
+    id: "ytm_karutha_machan",
+    title: "Karutha Machan Mix",
+    subtitle: "Karutha Machan Shakthisree Official Mix",
+    query: "Karutha Machan Shakthisree Gopalan",
+    color: "from-teal-500 to-emerald-600",
+    icon: Heart,
+    cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500"
+  }
+];
+
 // YOUR 5 MASTER CATEGORIES
 const MASTER_MOODS = ['kuthu', 'romance', 'melody', 'sad', 'vibes'];
 
@@ -746,6 +785,7 @@ export default function Home({ search = '', setSearch, activeSection = 'home' })
             )}
 
             {renderFolderSection("Kadhale Kadhale", "Love & nostalgic classics", Heart, KADHALE_KADHALE_FOLDERS)}
+            {renderFolderSection("Your Top Mixes", "Your personalized top compilation mixes", Music2, YOUR_TOP_MIXES_FOLDERS)}
             {renderFolderSection("Community Mixes", "Popular compilation mixes", Coffee, COMMUNITY_FOLDERS)}
             {renderFolderSection("Made For Your Moods", "Personalized soundscapes for every mood", Sparkles, MOOD_FOLDERS)}
             {renderFolderSection("Top Charts & Fresh Hits", "The latest releases and trends", TrendingUp, CHARTS_FRESH_FOLDERS)}
