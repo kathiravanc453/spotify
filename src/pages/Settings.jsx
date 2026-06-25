@@ -1,9 +1,12 @@
 import React from 'react';
 import { User, Contact, ShieldCheck, PlayCircle, Smartphone, Wifi, AudioLines, Megaphone, HelpCircle, ChevronRight, Crown } from 'lucide-react';
+import { usePlayer } from '../context/PlayerContext';
 
 export default function Settings() {
+  const { setActiveSection } = usePlayer() || {};
+
   const settingsItems = [
-    { label: 'Account', icon: User },
+    { label: 'Account', icon: User, id: 'account-settings' },
     { label: 'Contact and display', icon: Contact },
     { label: 'Privacy and social', icon: ShieldCheck },
     { label: 'Playback', icon: PlayCircle },
@@ -22,7 +25,10 @@ export default function Settings() {
         <div className="flex items-center gap-2 mb-6">
           <span className="text-white/60 font-medium">Free account</span>
         </div>
-        <button className="bg-white text-black hover:scale-105 active:scale-95 transition-all font-bold px-8 py-3 rounded-full flex items-center gap-2 shadow-xl shadow-white/10">
+        <button 
+          onClick={() => setActiveSection('premium-plans')}
+          className="bg-white text-black hover:scale-105 active:scale-95 transition-all font-bold px-8 py-3 rounded-full flex items-center gap-2 shadow-xl shadow-white/10"
+        >
           <Crown size={20} className="text-amber-500" />
           Go Premium
         </button>
@@ -33,6 +39,7 @@ export default function Settings() {
         {settingsItems.map((item, i) => (
           <button 
             key={i}
+            onClick={() => item.id && setActiveSection(item.id)}
             className="flex items-center justify-between w-full px-4 py-4 rounded-2xl hover:bg-white/[0.04] transition-colors group"
           >
             <div className="flex items-center gap-4">
