@@ -181,7 +181,7 @@ function AppContent({ user, onLogout, onLogin }) {
       {/* Content wrapper above blobs */}
       <div className="relative z-10 flex flex-1 overflow-hidden">
         {/* Sidebar — desktop only */}
-        <Sidebar user={user} search={search} setSearch={handleSearch} />
+        <Sidebar user={user} search={search} setSearch={handleSearch} onLogout={onLogout} />
 
         {/* Main content area */}
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden">

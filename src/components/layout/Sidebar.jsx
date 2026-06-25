@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Home, Search, Library, TrendingUp, Star, X, Music2, Disc, Heart, ChevronRight, ChevronLeft, Menu, Shield } from 'lucide-react';
+import { Home, Search, Library, TrendingUp, Star, X, Music2, Disc, Heart, ChevronRight, ChevronLeft, Menu, Shield, LogOut, User } from 'lucide-react';
 import { usePlayer } from '../../context/PlayerContext';
 
 const navItems = [
@@ -12,11 +12,11 @@ const navItems = [
   { icon: Star,       label: 'Recommended', id: 'recommended'},
 ];
 
-function SidebarContent({ activeSection, setActiveSection, onItemClick, user, playlists = [], createPlaylist }) {
+function SidebarContent({ activeSection, setActiveSection, onItemClick, user, playlists = [], createPlaylist, onLogout }) {
   return (
     <div className="flex flex-col h-full py-6 px-4">
       {/* Logo */}
-      <div className="flex items-center gap-3 px-2 mb-8">
+      <div className="flex items-center gap-3 px-2 mb-6">
         <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-400 to-violet-500 flex items-center justify-center shadow-lg shadow-cyan-500/20">
           <Music2 size={20} color="#fff" />
         </div>
@@ -24,6 +24,38 @@ function SidebarContent({ activeSection, setActiveSection, onItemClick, user, pl
           Rhythmix
         </span>
       </div>
+
+      {/* Account Details */}
+      {user ? (
+        <div className="px-2 mb-6">
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.04] border border-white/5">
+            <img
+              src={user.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.name)}`}
+              alt={user.name}
+              className="w-10 h-10 rounded-full object-cover bg-cyan-950 border border-cyan-500/20 flex-shrink-0"
+            />
+            <div className="min-w-0 flex-1">
+              <p className="text-white text-sm font-bold truncate">{user.name}</p>
+              <p className="text-white/40 text-[10px] truncate">{user.email}</p>
+            </div>
+            {onLogout && (
+              <button onClick={() => { onLogout(); onItemClick?.(); }} className="text-rose-400 hover:text-rose-300 transition-colors p-1" title="Sign Out">
+                <LogOut size={16} />
+              </button>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="px-2 mb-6">
+          <button
+            onClick={() => { setActiveSection('login'); onItemClick?.(); }}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-black font-bold text-sm shadow-lg shadow-cyan-500/20 transition-all cursor-pointer"
+          >
+            <User size={16} />
+            <span>Sign In</span>
+          </button>
+        </div>
+      )}
 
       {/* Nav */}
       <nav className="flex flex-col gap-1.5">
@@ -96,7 +128,7 @@ function SidebarContent({ activeSection, setActiveSection, onItemClick, user, pl
   );
 }
 
-export default function Sidebar({ user, search, setSearch }) {
+export default function Sidebar({ user, search, setSearch, onLogout }) {
   const { activeSection, setActiveSection, playlists, createPlaylist } = usePlayer();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -110,14 +142,15 @@ export default function Sidebar({ user, search, setSearch }) {
           user={user}
           playlists={playlists}
           createPlaylist={createPlaylist}
+          onLogout={onLogout}
         />
       </aside>
 
-      {/* ── Mobile: Header Top Left Icon ───────────── */}
+      {/* ── Mobile: Header Top Right Icon ───────────── */}
       {['home', 'albums', 'favorites'].includes(activeSection) || (activeSection === 'search' && !search) ? (
         <button
           id="mobile-sidebar-toggle"
-          className={`md:hidden fixed top-3.5 left-4 z-[50] w-9 h-9 rounded-xl flex items-center justify-center text-white/60 hover:text-white hover:bg-white/[0.06] transition-all duration-200 border border-white/5 ${(mobileOpen || activeSection === 'now-playing') ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}
+          className={`md:hidden fixed top-3.5 right-4 z-[50] w-9 h-9 rounded-xl flex items-center justify-center text-white/60 hover:text-white hover:bg-white/[0.06] transition-all duration-200 border border-white/5 ${(mobileOpen || activeSection === 'now-playing') ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}
           onClick={() => setMobileOpen(true)}
           aria-label="Open menu"
         >
@@ -125,7 +158,7 @@ export default function Sidebar({ user, search, setSearch }) {
         </button>
       ) : (
         <button
-          className={`md:hidden fixed top-3.5 left-4 z-[999] w-9 h-9 rounded-xl flex items-center justify-center text-white/60 hover:text-white hover:bg-white/[0.06] transition-all duration-200 border border-white/5 ${(mobileOpen || activeSection === 'now-playing') ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}
+          className={`md:hidden fixed top-3.5 right-4 z-[999] w-9 h-9 rounded-xl flex items-center justify-center text-white/60 hover:text-white hover:bg-white/[0.06] transition-all duration-200 border border-white/5 ${(mobileOpen || activeSection === 'now-playing') ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}
           onClick={() => {
             setActiveSection('home');
             if (setSearch) setSearch('');
@@ -149,12 +182,12 @@ export default function Sidebar({ user, search, setSearch }) {
 
           {/* Slide-in panel */}
           <div
-            className={`md:hidden fixed top-0 left-0 bottom-0 w-72 bg-[#0d0d12]/98 border-r border-white/[0.06] shadow-2xl transition-transform duration-300 ease-out backdrop-blur-2xl`}
-            style={{ zIndex: 110, transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)' }}
+            className={`md:hidden fixed top-0 right-0 bottom-0 w-72 bg-[#0d0d12]/98 border-l border-white/[0.06] shadow-2xl transition-transform duration-300 ease-out backdrop-blur-2xl`}
+            style={{ zIndex: 110, transform: mobileOpen ? 'translateX(0)' : 'translateX(100%)' }}
           >
             {/* Close button inside panel */}
             <button
-              className="absolute top-4 right-4 w-8 h-8 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/5 flex items-center justify-center text-white/50 hover:text-white transition-all"
+              className="absolute top-4 left-4 w-8 h-8 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/5 flex items-center justify-center text-white/50 hover:text-white transition-all"
               onClick={() => setMobileOpen(false)}
             >
               <X size={15} />
@@ -165,6 +198,7 @@ export default function Sidebar({ user, search, setSearch }) {
               setActiveSection={setActiveSection}
               onItemClick={() => setMobileOpen(false)}
               user={user}
+              onLogout={onLogout}
             />
           </div>
         </>,
