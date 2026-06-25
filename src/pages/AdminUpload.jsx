@@ -82,7 +82,7 @@ export default function AdminUpload() {
   // ── Custom Folder Management State ──
   const [folders, setFolders] = useState([]);
   const [folderForm, setFolderForm] = useState({
-    title: '', subtitle: '', query: '', color: 'from-orange-500 to-rose-600', icon: 'Flame'
+    title: '', subtitle: '', query: '', color: 'from-orange-500 to-rose-600', icon: 'Flame', cover: ''
   });
   const [folderStatus, setFolderStatus] = useState('idle');
   const [folderError, setFolderError] = useState('');
@@ -114,7 +114,7 @@ export default function AdminUpload() {
         ...folderForm,
         createdAt: new Date().toISOString()
       });
-      setFolderForm({ title: '', subtitle: '', query: '', color: 'from-orange-500 to-rose-600', icon: 'Flame' });
+      setFolderForm({ title: '', subtitle: '', query: '', color: 'from-orange-500 to-rose-600', icon: 'Flame', cover: '' });
       setFolderStatus('success');
       fetchFolders();
       setTimeout(() => setFolderStatus('idle'), 3000);
@@ -558,6 +558,16 @@ export default function AdminUpload() {
             </div>
           </div>
 
+          <div className="space-y-2">
+            <label className="text-white/60 text-sm font-semibold">Cover Image URL (optional)</label>
+            <input 
+              value={folderForm.cover} 
+              onChange={e => setFolderForm({...folderForm, cover: e.target.value})}
+              placeholder="e.g. https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500" 
+              className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500 transition-all text-sm" 
+            />
+          </div>
+
           <button
             type="submit"
             disabled={folderStatus === 'loading'}
@@ -592,9 +602,14 @@ export default function AdminUpload() {
                 return (
                   <div 
                     key={folder.id} 
-                    className="relative overflow-hidden rounded-2xl p-4 bg-white/[0.02] border border-white/5 flex flex-col justify-between gap-4 group hover:border-white/10 transition-all duration-300"
+                    className="relative overflow-hidden rounded-2xl p-4 bg-white/[0.02] border border-white/5 flex flex-col justify-between gap-4 group hover:border-white/10 transition-all duration-300 min-h-[140px]"
                   >
-                    <div className={`absolute -right-6 -bottom-6 w-20 h-20 rounded-full bg-gradient-to-tr ${folder.color} opacity-10 blur-xl`} />
+                    <div 
+                      className="absolute inset-0 bg-cover bg-center opacity-25 group-hover:opacity-40 transition-opacity duration-300"
+                      style={{ backgroundImage: `url(${folder.cover || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500'})` }}
+                    />
+                    <div className="absolute inset-0 bg-black/40" />
+                    <div className={`absolute -right-6 -bottom-6 w-20 h-20 rounded-full bg-gradient-to-tr ${folder.color} opacity-10 blur-xl z-0`} />
                     
                     <div className="flex items-start justify-between gap-2 z-10">
                       <div className={`w-10 h-10 rounded-xl bg-gradient-to-tr ${folder.color} flex items-center justify-center shadow-md`}>

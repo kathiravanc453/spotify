@@ -25,7 +25,8 @@ const KADHALE_KADHALE_FOLDERS = [
     subtitle: "Retro hits of Thalapathy",
     query: "Vijay 90s hits tamil",
     color: "from-amber-500 to-rose-600",
-    icon: Star
+    icon: Star,
+    cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500"
   },
   {
     id: "kk_raaja_love",
@@ -33,7 +34,8 @@ const KADHALE_KADHALE_FOLDERS = [
     subtitle: "Eternal melody king classics",
     query: "Ilaiyaraaja love songs tamil",
     color: "from-teal-500 to-emerald-600",
-    icon: Heart
+    icon: Heart,
+    cover: "https://images.unsplash.com/photo-1487180142328-0c4e37023af5?w=500"
   },
   {
     id: "kk_2000s_hits",
@@ -41,7 +43,8 @@ const KADHALE_KADHALE_FOLDERS = [
     subtitle: "Millennium era blockbusters",
     query: "2000s hits tamil",
     color: "from-indigo-500 to-purple-600",
-    icon: Music
+    icon: Music,
+    cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500"
   },
   {
     id: "kk_arr_love",
@@ -49,7 +52,8 @@ const KADHALE_KADHALE_FOLDERS = [
     subtitle: "Romance from the Mozart of Madras",
     query: "A R Rahman love songs tamil",
     color: "from-blue-600 to-cyan-500",
-    icon: Disc3
+    icon: Disc3,
+    cover: "https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=500"
   },
   {
     id: "kk_dance_in_love",
@@ -57,7 +61,8 @@ const KADHALE_KADHALE_FOLDERS = [
     subtitle: "Romantic dance hits",
     query: "tamil love dance songs",
     color: "from-pink-500 to-rose-500",
-    icon: Flame
+    icon: Flame,
+    cover: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=500"
   }
 ];
 
@@ -68,7 +73,8 @@ const COMMUNITY_FOLDERS = [
     subtitle: "Perfect mix for romance",
     query: "tamil romantic mix",
     color: "from-fuchsia-500 to-pink-500",
-    icon: FolderHeart
+    icon: FolderHeart,
+    cover: "https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=500"
   },
   {
     id: "comm_karuna_happy",
@@ -76,7 +82,8 @@ const COMMUNITY_FOLDERS = [
     subtitle: "Bass-boosted happy tracks",
     query: "tamil happy bass songs",
     color: "from-violet-600 to-indigo-600",
-    icon: Zap
+    icon: Zap,
+    cover: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500"
   },
   {
     id: "comm_og_south",
@@ -84,7 +91,8 @@ const COMMUNITY_FOLDERS = [
     subtitle: "Original South Indian classics",
     query: "og south indian hits",
     color: "from-orange-500 to-amber-500",
-    icon: Compass
+    icon: Compass,
+    cover: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=500"
   },
   {
     id: "comm_1990s_mix",
@@ -92,7 +100,8 @@ const COMMUNITY_FOLDERS = [
     subtitle: "Nostalgic 90s mix",
     query: "tamil 1990s mix hits",
     color: "from-yellow-500 to-orange-500",
-    icon: Coffee
+    icon: Coffee,
+    cover: "https://images.unsplash.com/photo-1516280440614-37939bbacd6a?w=500"
   },
   {
     id: "comm_beast_mode",
@@ -100,7 +109,8 @@ const COMMUNITY_FOLDERS = [
     subtitle: "Gym & high-energy beats",
     query: "tamil gym workout beast mode",
     color: "from-red-600 to-rose-950",
-    icon: TrendingUp
+    icon: TrendingUp,
+    cover: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=500"
   }
 ];
 
@@ -111,7 +121,8 @@ const MOOD_FOLDERS = [
     subtitle: "Dance hits & fast beats",
     query: "tamil dance mix",
     color: "from-orange-500 to-yellow-500",
-    icon: Flame
+    icon: Flame,
+    cover: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=500"
   },
   {
     id: "mood_romantic_mix",
@@ -119,7 +130,8 @@ const MOOD_FOLDERS = [
     subtitle: "Romantic melodies & songs",
     query: "tamil romance hits mix",
     color: "from-rose-500 to-pink-600",
-    icon: Heart
+    icon: Heart,
+    cover: "https://images.unsplash.com/photo-1494905998402-395d579af36f?w=500"
   },
   {
     id: "mood_2010s_hits",
@@ -127,7 +139,8 @@ const MOOD_FOLDERS = [
     subtitle: "Chartbusters from 2010-2019",
     query: "tamil 2010s hits mix",
     color: "from-blue-500 to-indigo-500",
-    icon: Sparkles
+    icon: Sparkles,
+    cover: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=500"
   },
   {
     id: "mood_2010s_dance",
@@ -135,7 +148,8 @@ const MOOD_FOLDERS = [
     subtitle: "Dance chartbusters of the 2010s",
     query: "tamil 2010s dance hits mix",
     color: "from-cyan-500 to-blue-600",
-    icon: Zap
+    icon: Zap,
+    cover: "https://images.unsplash.com/photo-1486591978090-58e619d37fe7?w=500"
   }
 ];
 
@@ -146,7 +160,8 @@ const CHARTS_FRESH_FOLDERS = [
     subtitle: "The hottest songs right now",
     query: "tamil top chart songs",
     color: "from-purple-600 to-fuchsia-600",
-    icon: TrendingUp
+    icon: TrendingUp,
+    cover: "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=500"
   },
   {
     id: "cf_fresh_hits",
@@ -154,7 +169,8 @@ const CHARTS_FRESH_FOLDERS = [
     subtitle: "Brand new weekly releases",
     query: "tamil fresh hits new songs",
     color: "from-emerald-500 to-teal-600",
-    icon: Sparkles
+    icon: Sparkles,
+    cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500"
   }
 ];
 
@@ -297,21 +313,28 @@ export default function Home({ search = '', setSearch, activeSection = 'home' })
                   setSearch(folder.query);
                   setGlobalSection('search');
                 }}
-                className="group relative overflow-hidden rounded-3xl p-5 bg-white/[0.02] border border-white/5 hover:border-white/20 cursor-pointer transition-all duration-500 hover:-translate-y-1.5 shadow-lg flex flex-col justify-between aspect-square select-none flex-shrink-0 w-36 sm:w-44 md:w-48 scroll-snap-start"
+                className="group relative overflow-hidden rounded-3xl p-5 bg-white/[0.02] border border-white/5 hover:border-white/20 cursor-pointer transition-all duration-500 hover:-translate-y-1.5 shadow-lg flex flex-col justify-between aspect-square select-none flex-shrink-0 w-36 sm:w-44 md:w-48 scroll-snap-start min-h-[160px]"
                 style={{ scrollSnapAlign: 'start' }}
               >
-                {/* Decorative background glow */}
-                <div className={`absolute -right-8 -bottom-8 w-24 h-24 rounded-full bg-gradient-to-tr ${folder.color} opacity-10 group-hover:opacity-30 blur-2xl transition-opacity duration-500`} />
+                {/* Background cover image with overlay */}
+                <div 
+                  className="absolute inset-0 bg-cover bg-center transition-transform duration-[5000ms] group-hover:scale-110"
+                  style={{ 
+                    backgroundImage: `url(${folder.cover || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500'})`, 
+                    filter: 'brightness(0.35) saturate(0.85)' 
+                  }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent z-0" />
                 
                 {/* Icon with colored container */}
-                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-tr ${folder.color} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-500`}>
+                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-tr ${folder.color} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-500 z-10`}>
                   <FolderIcon size={22} className="text-white" />
                 </div>
                 
                 {/* Text details */}
-                <div className="mt-4">
-                  <h3 className="text-white font-extrabold text-sm sm:text-base group-hover:text-cyan-300 transition-colors">{folder.title}</h3>
-                  <p className="text-white/40 text-[10px] sm:text-xs font-semibold leading-snug mt-1">{folder.subtitle}</p>
+                <div className="mt-4 z-10">
+                  <h3 className="text-white font-extrabold text-sm sm:text-base group-hover:text-cyan-300 transition-colors truncate">{folder.title}</h3>
+                  <p className="text-white/40 text-[10px] sm:text-xs font-semibold leading-snug mt-1 line-clamp-2">{folder.subtitle}</p>
                 </div>
               </div>
             );
