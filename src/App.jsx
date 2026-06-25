@@ -133,10 +133,13 @@ function AppContent({ user, onLogout, onLogin }) {
   );
 
   const renderContent = () => {
-    if (activeSection === 'login' && !user) {
+    if (activeSection === 'login') {
       return (
         <div className="fixed inset-0 z-[100] bg-[#07070a]">
-          <Login onLogin={(u) => { onLogin(u); setActiveSection('home'); }} />
+          <Login 
+            onLogin={(u) => { onLogin(u); setActiveSection('home'); }} 
+            onClose={user ? () => setActiveSection('home') : null}
+          />
         </div>
       );
     }

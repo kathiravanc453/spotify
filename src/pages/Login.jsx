@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Mail, Lock, ShieldCheck, ArrowRight, Music2, Loader2, UserPlus } from 'lucide-react';
+import { Mail, Lock, ShieldCheck, ArrowRight, Music2, Loader2, UserPlus, X } from 'lucide-react';
 import { auth, db } from '../firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
@@ -13,7 +13,7 @@ const safeJson = async (res) => {
 
 const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'admin@rhythmix.com';
 
-export default function Login({ onLogin }) {
+export default function Login({ onLogin, onClose }) {
   const [isSignUp, setIsSignUp]       = useState(false);
   const [email, setEmail]             = useState('');
   const [password, setPassword]       = useState('');
@@ -199,6 +199,17 @@ export default function Login({ onLogin }) {
 
       {/* Glass card */}
       <div className="relative z-10 w-full max-w-sm bg-white/[0.025] border border-white/8 backdrop-blur-2xl rounded-3xl p-7 shadow-2xl flex flex-col gap-6">
+        
+        {/* Close Button (only if onClose provided) */}
+        {onClose && (
+          <button 
+            onClick={onClose}
+            className="absolute top-4 right-4 p-1.5 rounded-full bg-white/5 border border-white/10 text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+          >
+            <X size={18} />
+          </button>
+        )}
+
         {/* Brand */}
         <div className="flex flex-col items-center text-center gap-2">
           <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-cyan-400 to-violet-500 flex items-center justify-center shadow-lg shadow-cyan-500/25">
