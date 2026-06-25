@@ -541,7 +541,7 @@ export function PlayerProvider({ children, user }) {
     let lastTime = 0;
     const onTimeUpdate = () => {
       const now = Date.now();
-      if (now - lastTime > 1000) {
+      if (now - lastTime > 150) {
         setProgress(audio.currentTime);
         lastTime = now;
       }
