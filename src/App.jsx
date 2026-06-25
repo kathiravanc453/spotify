@@ -21,6 +21,7 @@ const AccountSettings = lazy(() => import('./pages/AccountSettings'));
 const PremiumPlans = lazy(() => import('./pages/PremiumPlans'));
 const ContentDisplay = lazy(() => import('./pages/ContentDisplay'));
 const LanguageOptions = lazy(() => import('./pages/LanguageOptions'));
+const SearchBrowse = lazy(() => import('./pages/SearchBrowse'));
 const Artist = lazy(() => import('./pages/Artist'));
 const Actor = lazy(() => import('./pages/Actor'));
 const Profile = lazy(() => import('./pages/Profile'));
@@ -171,6 +172,11 @@ function AppContent({ user, onLogout, onLogin }) {
     }
     if (activeSection === 'artist')      return <Artist />;
     if (activeSection === 'actor')       return <Actor setSearch={handleSearch} />;
+
+    if (activeSection === 'search' && !search) {
+      return <SearchBrowse setSearch={handleSearch} />;
+    }
+
     return <Home search={search} setSearch={handleSearch} activeSection={activeSection} />;
   };
 
