@@ -3,7 +3,7 @@ import { usePlayer } from '../context/PlayerContext';
 import { ChevronLeft, ChevronRight, Globe2, Sparkles, MonitorSmartphone } from 'lucide-react';
 
 export default function ContentDisplay() {
-  const { setActiveSection } = usePlayer() || {};
+  const { setActiveSection, goBack } = usePlayer() || {};
   const [reduceAnimation, setReduceAnimation] = useState(false);
 
   return (
@@ -11,7 +11,7 @@ export default function ContentDisplay() {
       {/* Header */}
       <div className="flex items-center gap-4 mb-8">
         <button 
-          onClick={() => setActiveSection('settings')}
+          onClick={() => goBack('settings')}
           className="w-10 h-10 rounded-full bg-white/[0.04] hover:bg-white/[0.08] border border-white/5 flex items-center justify-center text-white hover:text-cyan-400 transition-all"
         >
           <ChevronLeft size={20} />

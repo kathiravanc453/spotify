@@ -739,6 +739,14 @@ export function PlayerProvider({ children, user }) {
     setVolume(val);
   }, []);
 
+  const goBack = useCallback((fallback = 'home') => {
+    if (window.history.length > 1 && window.history.state && window.history.state.section) {
+      window.history.back();
+    } else {
+      setActiveSection(fallback);
+    }
+  }, []);
+
   const stopPlayback = useCallback(() => {
     const audio = audioRef.current;
     audio.pause();
@@ -760,7 +768,7 @@ export function PlayerProvider({ children, user }) {
       currentSong, isPlaying, progress, duration, volume,
       recentlyPlayed, allSongs, loading, favorites, playCounts, albumCovers,
       playSong, togglePlay, playNext, playPrev, seek, changeVolume, toggleLike,
-      activeSection, setActiveSection, activeArtist, setActiveArtist,
+      activeSection, setActiveSection, goBack, activeArtist, setActiveArtist,
       activeActor, setActiveActor,
       isShuffle, setIsShuffle, repeatMode, setRepeatMode,
       stopPlayback,

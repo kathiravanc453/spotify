@@ -3,7 +3,7 @@ import { usePlayer } from '../context/PlayerContext';
 import { ChevronLeft, Check } from 'lucide-react';
 
 export default function LanguageOptions() {
-  const { setActiveSection } = usePlayer() || {};
+  const { setActiveSection, goBack } = usePlayer() || {};
   const [selected, setSelected] = useState(['English', 'Hindi']);
 
   const languages = [
@@ -23,7 +23,7 @@ export default function LanguageOptions() {
       {/* Header */}
       <div className="flex items-center gap-4 mb-2">
         <button 
-          onClick={() => setActiveSection('content-display')}
+          onClick={() => goBack('content-display')}
           className="w-10 h-10 rounded-full bg-white/[0.04] hover:bg-white/[0.08] border border-white/5 flex items-center justify-center text-white hover:text-cyan-400 transition-all"
         >
           <ChevronLeft size={20} />

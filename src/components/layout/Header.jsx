@@ -2,7 +2,7 @@ import { usePlayer } from '../../context/PlayerContext';
 import { Music2, User, ChevronLeft } from 'lucide-react';
 
 export default function Header({ search, setSearch, user }) {
-  const { activeSection, setActiveSection } = usePlayer();
+  const { activeSection, setActiveSection, goBack } = usePlayer();
   const isHomeView = ['home', 'albums', 'favorites'].includes(activeSection) || (activeSection === 'search' && !search);
   return (
     <header className="relative z-30 flex items-center justify-between px-4 md:px-8 py-4 bg-transparent h-16">
@@ -40,8 +40,8 @@ export default function Header({ search, setSearch, user }) {
         ) : (
           <button
             onClick={() => {
-              setActiveSection('home');
               if (setSearch) setSearch('');
+              goBack('home');
             }}
             className="w-9 h-9 rounded-xl flex items-center justify-center text-white/60 hover:text-white hover:bg-white/[0.06] transition-all duration-200 border border-white/5"
           >

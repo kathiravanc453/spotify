@@ -3,14 +3,14 @@ import { usePlayer } from '../context/PlayerContext';
 import { Crown, Check, ChevronLeft, Zap, Music2 } from 'lucide-react';
 
 export default function PremiumPlans() {
-  const { setActiveSection } = usePlayer() || {};
+  const { setActiveSection, goBack } = usePlayer() || {};
 
   return (
     <div className="p-4 md:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-500 pb-32 max-w-4xl mx-auto w-full">
       {/* Header */}
       <div className="flex items-center gap-4 mb-4">
         <button 
-          onClick={() => setActiveSection('account-settings')}
+          onClick={() => goBack('account-settings')}
           className="w-10 h-10 rounded-full bg-white/[0.04] hover:bg-white/[0.08] border border-white/5 flex items-center justify-center text-white hover:text-cyan-400 transition-all"
         >
           <ChevronLeft size={20} />
