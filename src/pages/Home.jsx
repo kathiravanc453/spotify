@@ -5,11 +5,17 @@ import SongRow from '../components/shared/SongRow';
 import { SongCardSkeleton, SongRowSkeleton } from '../components/ui/Skeleton';
 import { 
   TrendingUp, Star, Clock, Music, Loader2, Music2, Heart, Zap, Coffee, Sparkles, Search, X, Play,
-  Flame, Disc3, Waves, Compass, FolderHeart
+  Flame, Disc3, Waves, Compass, FolderHeart, CloudRain
 } from 'lucide-react';
 import { cleanTitle, splitArtists } from '../utils/cleanTitle';
 import artistImages from '../data/artistImages.json';
-import { CloudRain } from 'lucide-react'; // Added for Sad mood
+import { db } from '../firebase';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+
+const ICON_MAP = {
+  TrendingUp, Star, Clock, Music, Loader2, Music2, Heart, Zap, Coffee, Sparkles, Search, X, Play,
+  Flame, Disc3, Waves, Compass, FolderHeart, CloudRain
+};
 
 // Handpicked dynamic music folders
 const DISCOVER_FOLDERS = [
@@ -89,6 +95,30 @@ function SectionHeader({ icon: Icon, title, gradient }) {
 
 export default function Home({ search = '', setSearch, activeSection = 'home' }) {
   const { recentlyPlayed = [], allSongs = [], loading = false, playSong, currentSong, playCounts = {}, albumCovers = {}, setActiveArtist, setActiveActor, setActiveSection: setGlobalSection, saavnResults = [], saavnLoading = false, searchSaavnGlobal, saavnHomeData = { trending: [], playlists: [], albums: [] }, saavnHomeLoading = false } = usePlayer() || {};
+
+  const [customFolders, setCustomFolders] = useState([]);
+
+  useEffect(() => {
+    const fetchCustomFolders = async () => {
+      if (!db) return;
+      try {
+        const q = query(collection(db, 'folders'), orderBy('createdAt', 'asc'));
+        const querySnapshot = await getDocs(q);
+        const folders = [];
+        querySnapshot.forEach((doc) => {
+          folders.push({ id: doc.id, ...doc.data() });
+        });
+        setCustomFolders(folders);
+      } catch (err) {
+        console.error("Failed to fetch custom folders from Firestore:", err);
+      }
+    };
+    fetchCustomFolders();
+  }, []);
+
+  const allFolders = useMemo(() => {
+    return [...DISCOVER_FOLDERS, ...customFolders];
+  }, [customFolders]);
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
@@ -170,8 +200,8 @@ export default function Home({ search = '', setSearch, activeSection = 'home' })
           </div>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {DISCOVER_FOLDERS.map((folder) => {
-            const FolderIcon = folder.icon;
+          {allFolders.map((folder) => {
+            const FolderIcon = typeof folder.icon === 'string' ? (ICON_MAP[folder.icon] || FolderHeart) : folder.icon;
             return (
               <div
                 key={folder.id}

@@ -1,6 +1,15 @@
 import { useState, useCallback, useEffect } from 'react';
 import { usePlayer } from '../context/PlayerContext';
-import { Upload, Music, Image, CheckCircle, AlertCircle, X, Plus, Loader2, TrendingUp, Star, Download, LogOut, ShieldAlert, Key } from 'lucide-react';
+import { 
+  Upload, Music, Image, CheckCircle, AlertCircle, X, Plus, Loader2, TrendingUp, Star, Download, 
+  LogOut, ShieldAlert, Key, Trash2, FolderPlus, FolderHeart, Flame, Waves, Compass, Sparkles, Disc3, Heart, Zap, Coffee
+} from 'lucide-react';
+import { db } from '../firebase';
+import { collection, addDoc, getDocs, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
+
+const ICON_MAP = {
+  Flame, Sparkles, Disc3, Music, Waves, Compass, TrendingUp, Star, Heart, Zap, Coffee, FolderHeart
+};
 
 const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dm1cwbbfg/auto/upload';
 const CLOUDINARY_PRESET = 'j4mjnnll';
@@ -69,6 +78,61 @@ export default function AdminUpload() {
   const [resetPassword, setResetPassword] = useState('');
   const [resetStatus, setResetStatus] = useState('idle');
   const [resetMsg, setResetMsg] = useState('');
+
+  // ── Custom Folder Management State ──
+  const [folders, setFolders] = useState([]);
+  const [folderForm, setFolderForm] = useState({
+    title: '', subtitle: '', query: '', color: 'from-orange-500 to-rose-600', icon: 'Flame'
+  });
+  const [folderStatus, setFolderStatus] = useState('idle');
+  const [folderError, setFolderError] = useState('');
+
+  const fetchFolders = async () => {
+    if (!db) return;
+    try {
+      const q = query(collection(db, 'folders'), orderBy('createdAt', 'asc'));
+      const snapshot = await getDocs(q);
+      const list = [];
+      snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
+      setFolders(list);
+    } catch (err) {
+      console.error("Failed to load custom folders:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchFolders();
+  }, []);
+
+  const handleAddFolder = async (e) => {
+    e.preventDefault();
+    if (!folderForm.title || !folderForm.query) return alert("Title and Query are required.");
+    setFolderStatus('loading');
+    setFolderError('');
+    try {
+      await addDoc(collection(db, 'folders'), {
+        ...folderForm,
+        createdAt: new Date().toISOString()
+      });
+      setFolderForm({ title: '', subtitle: '', query: '', color: 'from-orange-500 to-rose-600', icon: 'Flame' });
+      setFolderStatus('success');
+      fetchFolders();
+      setTimeout(() => setFolderStatus('idle'), 3000);
+    } catch (err) {
+      setFolderStatus('error');
+      setFolderError(err.message);
+    }
+  };
+
+  const handleDeleteFolder = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this folder?")) return;
+    try {
+      await deleteDoc(doc(db, 'folders', id));
+      fetchFolders();
+    } catch (err) {
+      alert("Failed to delete folder: " + err.message);
+    }
+  };
 
   // ── Email Auth gate — reads from main rhythmix_session ──────────────────
   const adminSession = (() => {
@@ -402,6 +466,162 @@ export default function AdminUpload() {
             <AlertCircle size={16} /> {resetMsg}
           </div>
         )}
+      </div>
+
+      {/* ── CUSTOM DYNAMIC FOLDERS MANAGEMENT ── */}
+      <div className="bg-white/5 rounded-3xl border border-white/10 p-6 md:p-8 space-y-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center border border-cyan-500/30">
+            <FolderPlus size={20} className="text-cyan-400" />
+          </div>
+          <div>
+            <h2 className="text-white text-xl font-bold">Manage Discover Music Folders</h2>
+            <p className="text-white/40 text-xs font-medium">Create and manage custom music folders that display dynamically on the Home screen.</p>
+          </div>
+        </div>
+
+        <form onSubmit={handleAddFolder} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-white/60 text-sm font-semibold">Folder Title</label>
+              <input 
+                required 
+                value={folderForm.title} 
+                onChange={e => setFolderForm({...folderForm, title: e.target.value})}
+                placeholder="e.g. Vintage Hits" 
+                className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500 transition-all text-sm" 
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-white/60 text-sm font-semibold">Subtitle / Description</label>
+              <input 
+                required 
+                value={folderForm.subtitle} 
+                onChange={e => setFolderForm({...folderForm, subtitle: e.target.value})}
+                placeholder="e.g. Classic retro songs from 70s & 80s" 
+                className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500 transition-all text-sm" 
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <label className="text-white/60 text-sm font-semibold">Search Query (Loads songs in Search)</label>
+              <input 
+                required 
+                value={folderForm.query} 
+                onChange={e => setFolderForm({...folderForm, query: e.target.value})}
+                placeholder="e.g. SPB Ilaiyaraaja Hits" 
+                className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500 transition-all text-sm" 
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-white/60 text-sm font-semibold">Icon</label>
+              <select 
+                value={folderForm.icon} 
+                onChange={e => setFolderForm({...folderForm, icon: e.target.value})}
+                className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500 transition-all text-sm appearance-none"
+              >
+                <option value="Flame" className="bg-spotify-black">Flame 🔥</option>
+                <option value="Sparkles" className="bg-spotify-black">Sparkles ✨</option>
+                <option value="Disc3" className="bg-spotify-black">Vinyl Disc 💿</option>
+                <option value="Music" className="bg-spotify-black">Music Notes 🎵</option>
+                <option value="Waves" className="bg-spotify-black">Waves 🌊</option>
+                <option value="Compass" className="bg-spotify-black">Compass 🧭</option>
+                <option value="TrendingUp" className="bg-spotify-black">Trending Up 📈</option>
+                <option value="Star" className="bg-spotify-black">Star ⭐</option>
+                <option value="Heart" className="bg-spotify-black">Heart ❤️</option>
+                <option value="Zap" className="bg-spotify-black">Lightning ⚡</option>
+                <option value="Coffee" className="bg-spotify-black">Coffee ☕</option>
+                <option value="FolderHeart" className="bg-spotify-black">Folder Heart 📁</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-white/60 text-sm font-semibold">Color Gradient</label>
+              <select 
+                value={folderForm.color} 
+                onChange={e => setFolderForm({...folderForm, color: e.target.value})}
+                className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500 transition-all text-sm appearance-none"
+              >
+                <option value="from-orange-500 to-rose-600" className="bg-spotify-black">Orange to Rose</option>
+                <option value="from-amber-400 to-orange-600" className="bg-spotify-black">Amber to Orange</option>
+                <option value="from-blue-600 to-cyan-500" className="bg-spotify-black">Blue to Cyan</option>
+                <option value="from-rose-500 to-indigo-600" className="bg-spotify-black">Rose to Indigo</option>
+                <option value="from-indigo-500 to-purple-600" className="bg-spotify-black">Indigo to Purple</option>
+                <option value="from-teal-500 to-emerald-600" className="bg-spotify-black">Teal to Emerald</option>
+                <option value="from-pink-500 to-rose-500" className="bg-spotify-black">Pink to Rose</option>
+                <option value="from-violet-600 to-indigo-500" className="bg-spotify-black">Violet to Indigo</option>
+                <option value="from-slate-600 to-gray-500" className="bg-spotify-black">Slate to Gray</option>
+              </select>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={folderStatus === 'loading'}
+            className="w-full bg-cyan-500 hover:bg-cyan-400 hover:scale-[1.01] text-black font-bold text-sm rounded-xl py-3.5 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+          >
+            {folderStatus === 'loading' ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} />}
+            Create Folder
+          </button>
+        </form>
+
+        {folderStatus === 'success' && (
+          <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-xl flex items-center gap-2 text-green-400 text-sm font-semibold">
+            <CheckCircle size={16} /> Folder created successfully!
+          </div>
+        )}
+        {folderStatus === 'error' && (
+          <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-2 text-red-400 text-sm font-semibold">
+            <AlertCircle size={16} /> Error: {folderError}
+          </div>
+        )}
+
+        {/* Existing Custom Folders List */}
+        <div className="mt-8 pt-6 border-t border-white/10 space-y-4">
+          <h3 className="text-white font-bold text-lg">Current Custom Folders ({folders.length})</h3>
+          
+          {folders.length === 0 ? (
+            <p className="text-white/40 text-sm">No custom folders created yet. They will appear here once added.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {folders.map((folder) => {
+                const FolderIcon = ICON_MAP[folder.icon] || FolderHeart;
+                return (
+                  <div 
+                    key={folder.id} 
+                    className="relative overflow-hidden rounded-2xl p-4 bg-white/[0.02] border border-white/5 flex flex-col justify-between gap-4 group hover:border-white/10 transition-all duration-300"
+                  >
+                    <div className={`absolute -right-6 -bottom-6 w-20 h-20 rounded-full bg-gradient-to-tr ${folder.color} opacity-10 blur-xl`} />
+                    
+                    <div className="flex items-start justify-between gap-2 z-10">
+                      <div className={`w-10 h-10 rounded-xl bg-gradient-to-tr ${folder.color} flex items-center justify-center shadow-md`}>
+                        <FolderIcon size={18} className="text-white" />
+                      </div>
+                      <button 
+                        onClick={() => handleDeleteFolder(folder.id)}
+                        className="p-2 rounded-lg bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-400 transition-all cursor-pointer"
+                        title="Delete folder"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+
+                    <div className="z-10">
+                      <h4 className="text-white font-bold text-sm truncate">{folder.title}</h4>
+                      <p className="text-white/40 text-xs truncate mt-0.5">{folder.subtitle}</p>
+                      <div className="mt-2 inline-flex items-center px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[10px] text-cyan-400 font-semibold max-w-full truncate">
+                        Query: {folder.query}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
     </div>
