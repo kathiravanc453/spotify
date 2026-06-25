@@ -660,6 +660,83 @@ app.get('/api/songs', (req, res) => {
   }
 });
 
+// Helper to send email notification to all registered users when a new song is added
+async function notifyUsersOfNewSong(newSong) {
+  try {
+    console.log(`📣 Preparing new song notification for: "${newSong.title}"`);
+    
+    // 1. Collect emails from legacy users.json
+    const legacyUsers = readUsers() || [];
+    const emails = legacyUsers.map(u => u.email ? u.email.toLowerCase().trim() : '').filter(Boolean);
+    
+    // 2. Collect emails from Firebase Auth (if initialized)
+    try {
+      if (admin.apps.length > 0) {
+        const listUsersResult = await getAuth().listUsers();
+        listUsersResult.users.forEach((userRecord) => {
+          if (userRecord.email) {
+            emails.push(userRecord.email.toLowerCase().trim());
+          }
+        });
+      }
+    } catch (firebaseErr) {
+      console.warn("⚠️ Failed to list Firebase users for notification:", firebaseErr.message);
+    }
+    
+    // Deduplicate emails
+    const uniqueEmails = [...new Set(emails)];
+    if (uniqueEmails.length === 0) {
+      console.log("No users found to notify.");
+      return;
+    }
+
+    console.log(`Sending notifications to ${uniqueEmails.length} users...`);
+
+    // Send emails using BCC for privacy
+    await transporter.sendMail({
+      from: '"Rhythmix" <kathiravanc453@gmail.com>',
+      to: 'kathiravanc453@gmail.com', // To self
+      bcc: uniqueEmails.join(','), // BCC everyone else
+      subject: `New Song Alert: "${newSong.title}" is now on Rhythmix! 🎵`,
+      text: `Hey! A new song has just been added to Rhythmix:\n\n"${newSong.title}" by ${newSong.artist}\n\nVisit Rhythmix now to listen: https://spotify-ten-ivory-54.vercel.app/\n\nEnjoy the music!\n- The Rhythmix Team`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border-radius: 10px; background-color: #07070a; border: 1px solid #1db954; color: #ffffff;">
+          <div style="text-align: center; margin-bottom: 20px;">
+            <h1 style="color: #1db954; margin: 0; font-size: 28px; letter-spacing: 2px;">Rhythmix</h1>
+            <p style="color: #888888; font-size: 14px; margin: 5px 0 0 0;">New Music Alert</p>
+          </div>
+          
+          <div style="background-color: #121218; padding: 20px; border-radius: 8px; border: 1px solid #282830; text-align: center; margin: 20px 0;">
+            <img src="${newSong.cover.startsWith('http') ? newSong.cover : 'https://spotify-ten-ivory-54.vercel.app' + newSong.cover}" style="width: 150px; height: 150px; border-radius: 8px; object-fit: cover; box-shadow: 0 4px 15px rgba(0,0,0,0.5); margin-bottom: 15px;" alt="Cover Art">
+            <h2 style="margin: 5px 0; color: #ffffff; font-size: 20px;">${newSong.title}</h2>
+            <p style="margin: 0; color: #1db954; font-size: 16px; font-weight: bold;">${newSong.artist}</p>
+            <p style="margin: 5px 0 0 0; color: #888888; font-size: 14px; font-style: italic;">Album: ${newSong.album || 'Singles'}</p>
+          </div>
+          
+          <p style="color: #dddddd; line-height: 1.6; font-size: 15px; text-align: center;">
+            A brand new track has just been uploaded to Rhythmix! Open the app to listen to it and update your queue.
+          </p>
+          
+          <div style="text-align: center; margin: 30px 0 10px 0;">
+            <a href="https://spotify-ten-ivory-54.vercel.app/" style="background-color: #1db954; color: #000000; text-decoration: none; padding: 12px 30px; font-size: 16px; font-weight: bold; border-radius: 25px; display: inline-block;">
+              Visit & Listen Now
+            </a>
+          </div>
+          
+          <hr style="border: 0; border-top: 1px solid #282830; margin: 30px 0 15px 0;">
+          <p style="color: #666666; font-size: 11px; text-align: center; margin: 0;">
+            You are receiving this email because you are registered on Rhythmix.<br>
+            © 2026 Rhythmix Team. All rights reserved.
+          </p>
+        </div>
+      `
+    });
+    console.log("✅ New song notification email dispatched successfully!");
+  } catch (err) {
+    console.error("❌ Failed to send new song notifications:", err.message);
+  }
+}
+
 app.post('/api/songs', (req, res) => {
   try {
     const { title, artist, src, cover, album, genre, mood } = req.body;
@@ -697,6 +774,10 @@ app.post('/api/songs', (req, res) => {
     fs.writeFileSync(SONGS_JSON, JSON.stringify(songs, null, 2));
 
     console.log(`✅ [POST /api/songs] Successfully added new song: "${title}"`);
+    
+    // Dispatch notifications in the background
+    notifyUsersOfNewSong(newSong).catch(err => console.error(err));
+
     res.status(201).json(newSong);
   } catch (e) {
     res.status(500).json({ error: e.message });
