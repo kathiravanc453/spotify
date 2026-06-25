@@ -213,6 +213,63 @@ const YOUR_TOP_MIXES_FOLDERS = [
   }
 ];
 
+const TOP_GENRES_MOODS_FOLDERS = [
+  {
+    id: "tgm_vidyasagar",
+    title: "Vidyasagar Love Songs",
+    subtitle: "Sweet melodies of Vidyasagar",
+    query: "Vidyasagar Love Hits Tamil",
+    color: "from-pink-500 to-rose-500",
+    icon: Heart,
+    cover: "https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=500"
+  },
+  {
+    id: "tgm_folk_melody",
+    title: "Folk Melody",
+    subtitle: "Traditional earthy folk melodies",
+    query: "Tamil Folk Melodies Songs",
+    color: "from-amber-500 to-yellow-600",
+    icon: Music,
+    cover: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=500"
+  },
+  {
+    id: "tgm_dance_club",
+    title: "Best Dance & Club Beat",
+    subtitle: "High-octane club dance hits",
+    query: "Tamil Dance Club Beats",
+    color: "from-purple-600 to-indigo-600",
+    icon: Zap,
+    cover: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=500"
+  },
+  {
+    id: "tgm_sad_love",
+    title: "Sad Love",
+    subtitle: "Heartbreaking romantic melodies",
+    query: "Tamil Sad Love Melodies",
+    color: "from-slate-600 to-gray-500",
+    icon: CloudRain,
+    cover: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=500"
+  },
+  {
+    id: "tgm_chill_hits",
+    title: "Chill Hits",
+    subtitle: "Relaxing chillout melodies",
+    query: "Tamil Chill Hits Lofi",
+    color: "from-teal-500 to-emerald-600",
+    icon: Coffee,
+    cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500"
+  },
+  {
+    id: "tgm_yuvan_hits",
+    title: "Yuvan Shankar Raja Hits",
+    subtitle: "BGM king & youth icon hits",
+    query: "Yuvan Shankar Raja Tamil Hits",
+    color: "from-blue-500 to-indigo-600",
+    icon: Disc3,
+    cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500"
+  }
+];
+
 // YOUR 5 MASTER CATEGORIES
 const MASTER_MOODS = ['kuthu', 'romance', 'melody', 'sad', 'vibes'];
 
@@ -788,6 +845,7 @@ export default function Home({ search = '', setSearch, activeSection = 'home' })
             {renderFolderSection("Your Top Mixes", "Your personalized top compilation mixes", Music2, YOUR_TOP_MIXES_FOLDERS)}
             {renderFolderSection("Community Mixes", "Popular compilation mixes", Coffee, COMMUNITY_FOLDERS)}
             {renderFolderSection("Made For Your Moods", "Personalized soundscapes for every mood", Sparkles, MOOD_FOLDERS)}
+            {renderFolderSection("Top Genres & Moods", "The best genres and moods curated for you", Star, TOP_GENRES_MOODS_FOLDERS)}
             {renderFolderSection("Top Charts & Fresh Hits", "The latest releases and trends", TrendingUp, CHARTS_FRESH_FOLDERS)}
             {customFolders.length > 0 && renderFolderSection("Discover More Folders", "Custom folders added by the community & admin", FolderHeart, customFolders)}
 
