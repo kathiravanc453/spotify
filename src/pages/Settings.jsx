@@ -7,7 +7,7 @@ export default function Settings() {
 
   const settingsItems = [
     { label: 'Account', icon: User, id: 'account-settings' },
-    { label: 'Contact and display', icon: Contact },
+    { label: 'Content and display', icon: Contact, id: 'content-display' },
     { label: 'Privacy and social', icon: ShieldCheck },
     { label: 'Playback', icon: PlayCircle },
     { label: 'App and devices', icon: Smartphone },

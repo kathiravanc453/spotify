@@ -19,6 +19,8 @@ const Updates = lazy(() => import('./pages/Updates'));
 const SettingsPage = lazy(() => import('./pages/Settings'));
 const AccountSettings = lazy(() => import('./pages/AccountSettings'));
 const PremiumPlans = lazy(() => import('./pages/PremiumPlans'));
+const ContentDisplay = lazy(() => import('./pages/ContentDisplay'));
+const LanguageOptions = lazy(() => import('./pages/LanguageOptions'));
 const Artist = lazy(() => import('./pages/Artist'));
 const Actor = lazy(() => import('./pages/Actor'));
 const Profile = lazy(() => import('./pages/Profile'));
@@ -155,6 +157,8 @@ function AppContent({ user, onLogout, onLogin }) {
     if (activeSection === 'settings')    return <SettingsPage />;
     if (activeSection === 'account-settings') return <AccountSettings />;
     if (activeSection === 'premium-plans') return <PremiumPlans />;
+    if (activeSection === 'content-display') return <ContentDisplay />;
+    if (activeSection === 'language-options') return <LanguageOptions />;
     if (activeSection === 'library' || activeSection === 'favorites' || activeSection?.startsWith('playlist_')) return <Library />;
     if (activeSection === 'albums')      return <Albums setSearch={handleSearch} />;
     if (activeSection === 'now-playing') return <Playback />;
