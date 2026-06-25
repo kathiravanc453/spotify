@@ -595,6 +595,14 @@ export default function Home({ search = '', setSearch, activeSection = 'home' })
             <p className="text-white/40 text-sm">Find music for any mood</p>
           </div>
           
+          {renderFolderSection("Kadhale Kadhale", "Love & nostalgic classics", Heart, KADHALE_KADHALE_FOLDERS)}
+          {renderFolderSection("Your Top Mixes", "Your personalized top compilation mixes", Music2, YOUR_TOP_MIXES_FOLDERS)}
+          {renderFolderSection("Community Mixes", "Popular compilation mixes", Coffee, COMMUNITY_FOLDERS)}
+          {renderFolderSection("Made For Your Moods", "Personalized soundscapes for every mood", Sparkles, MOOD_FOLDERS)}
+          {renderFolderSection("Top Genres & Moods", "The best genres and moods curated for you", Star, TOP_GENRES_MOODS_FOLDERS)}
+          {renderFolderSection("Top Charts & Fresh Hits", "The latest releases and trends", TrendingUp, CHARTS_FRESH_FOLDERS)}
+          {customFolders.length > 0 && renderFolderSection("Discover More Folders", "Custom folders added by the community & admin", FolderHeart, customFolders)}
+
           <div>
             <SectionHeader icon={Music2} title="Browse All Moods" gradient="from-cyan-400 to-violet-500 shadow-cyan-500/20" />
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
