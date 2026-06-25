@@ -1,47 +1,83 @@
+import crypto from 'crypto';
 import nodemailer from 'nodemailer';
-import admin from 'firebase-admin';
-import { getAuth } from 'firebase-admin/auth';
 import fs from 'fs';
 import path from 'path';
 
-// Helper to initialize Firebase Admin
-function initFirebaseAdmin() {
-  if (admin.apps.length === 0) {
-    let serviceAccount;
-    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-      try {
-        serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-      } catch (err) {
-        console.error("Failed to parse FIREBASE_SERVICE_ACCOUNT env var:", err);
-      }
-    }
-
-    if (!serviceAccount) {
-      const serviceAccountPath = path.join(process.cwd(), 'backend', 'firebase-service-account.json');
-      if (fs.existsSync(serviceAccountPath)) {
-        try {
-          serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
-        } catch (err) {
-          console.error("Failed to read local service account file:", err);
-        }
-      }
-    }
-
-    if (serviceAccount) {
-      // Fix for escaped newlines in private key from env var
-      if (serviceAccount.private_key) {
-        serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
-      }
-      
-      admin.initializeApp({
-        credential: admin.cert(serviceAccount)
-      });
-      console.log("🔥 Firebase Admin SDK Initialized");
-    } else {
-      console.warn("⚠️ Firebase service account credentials not found!");
+function getServiceAccount() {
+  let serviceAccount;
+  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    try {
+      serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    } catch (err) {
+      throw new Error("Failed to parse FIREBASE_SERVICE_ACCOUNT env var: " + err.message);
     }
   }
-  return admin;
+
+  if (!serviceAccount) {
+    const serviceAccountPath = path.join(process.cwd(), 'backend', 'firebase-service-account.json');
+    if (fs.existsSync(serviceAccountPath)) {
+      try {
+        serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+      } catch (err) {
+        throw new Error("Failed to read local service account file: " + err.message);
+      }
+    }
+  }
+  
+  if (serviceAccount && serviceAccount.private_key) {
+    serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+  }
+  return serviceAccount;
+}
+
+// Generate Google OAuth2 access token for the service account natively
+async function getAccessToken(serviceAccount) {
+  const now = Math.floor(Date.now() / 1000);
+  const payload = {
+    iss: serviceAccount.client_email,
+    scope: 'https://www.googleapis.com/auth/firebase.database https://www.googleapis.com/auth/identitytoolkit https://www.googleapis.com/auth/datastore',
+    aud: 'https://oauth2.googleapis.com/token',
+    exp: now + 3600,
+    iat: now
+  };
+
+  const header = {
+    alg: 'RS256',
+    typ: 'JWT'
+  };
+
+  const base64UrlEncode = (str) => {
+    return Buffer.from(str)
+      .toString('base64')
+      .replace(/=/g, '')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_');
+  };
+
+  const headerEncoded = base64UrlEncode(JSON.stringify(header));
+  const payloadEncoded = base64UrlEncode(JSON.stringify(payload));
+  const input = `${headerEncoded}.${payloadEncoded}`;
+
+  const sign = crypto.createSign('RSA-SHA256');
+  sign.update(input);
+  const signature = sign.sign(serviceAccount.private_key, 'base64')
+    .replace(/=/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
+
+  const jwt = `${input}.${signature}`;
+
+  const res = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(`Token exchange failed: ${JSON.stringify(data)}`);
+  }
+  return data.access_token;
 }
 
 const readUsers = () => {
@@ -70,33 +106,62 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Gmail App Password not configured in Vercel environment variables! Please add GMAIL_APP_PASSWORD.' });
     }
 
-    // Initialize Firebase Admin
-    initFirebaseAdmin();
+    const serviceAccount = getServiceAccount();
+    if (!serviceAccount) {
+      return res.status(500).json({ error: 'Firebase service account credentials not configured in Vercel environment variables! Please add FIREBASE_SERVICE_ACCOUNT.' });
+    }
 
-    // Check if user exists in Firebase Auth
+    const token = await getAccessToken(serviceAccount);
+    const projectId = serviceAccount.project_id;
+
+    // Check if user exists in Firebase Auth (except admin@rhythmix.com)
     if (email.toLowerCase() !== 'admin@rhythmix.com') {
-      try {
-        await getAuth().getUserByEmail(email.toLowerCase());
-      } catch (err) {
+      const lookupUrl = `https://identitytoolkit.googleapis.com/v1/projects/${projectId}/accounts:lookup`;
+      const lookupRes = await fetch(lookupUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: [email.toLowerCase()]
+        })
+      });
+
+      const lookupData = await lookupRes.json();
+      const userExists = lookupRes.ok && lookupData.users && lookupData.users.length > 0;
+
+      if (!userExists) {
         // Migration logic: Check if they exist in legacy users.json
         const users = readUsers();
         const legacyUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
 
         if (legacyUser) {
           console.log(`🚀 Auto-migrating legacy user ${email} to Firebase Auth...`);
-          try {
-            await getAuth().createUser({
-              uid: legacyUser.id,
+          
+          // Call Identity Toolkit REST API to create the user
+          const createUrl = `https://identitytoolkit.googleapis.com/v1/projects/${projectId}/accounts`;
+          const createRes = await fetch(createUrl, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              localId: legacyUser.id,
               email: legacyUser.email,
               password: legacyUser.password,
               displayName: legacyUser.name,
-              photoURL: legacyUser.avatar
-            });
-            console.log(`✅ Legacy user ${email} migrated successfully!`);
-          } catch (migrateErr) {
-            console.error("Migration failed:", migrateErr);
+              photoUrl: legacyUser.avatar
+            })
+          });
+
+          if (!createRes.ok) {
+            const createData = await createRes.json();
+            console.error("Migration failed:", createData);
             return res.status(500).json({ error: 'Failed to migrate legacy account to Firebase.' });
           }
+          console.log(`✅ Legacy user ${email} migrated successfully!`);
         } else {
           return res.status(404).json({ error: 'No account is registered with this email address.' });
         }
@@ -106,12 +171,26 @@ export default async function handler(req, res) {
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Store in Firestore (Stateless OTP store for Vercel)
-    const db = admin.firestore();
-    await db.collection('otps').doc(email.toLowerCase()).set({
-      otp,
-      expires: Date.now() + 15 * 60 * 1000
+    // Store in Firestore using REST API (Stateless OTP store for Vercel)
+    const firestoreUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/otps/${email.toLowerCase()}`;
+    const writeRes = await fetch(firestoreUrl, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        fields: {
+          otp: { stringValue: otp },
+          expires: { doubleValue: Date.now() + 15 * 60 * 1000 }
+        }
+      })
     });
+
+    if (!writeRes.ok) {
+      const writeData = await writeRes.json();
+      throw new Error(`Failed to write OTP to Firestore: ${JSON.stringify(writeData)}`);
+    }
 
     console.log(`🔑 OTP CODE FOR ${email} IS: ${otp}`);
 

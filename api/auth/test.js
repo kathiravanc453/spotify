@@ -29,7 +29,7 @@ function getServiceAccount() {
   return serviceAccount;
 }
 
-// Generate Google OAuth2 access token for the service account natively
+// Generate Google OAuth2 access token natively
 async function getAccessToken(serviceAccount) {
   const now = Math.floor(Date.now() / 1000);
   const payload = {
@@ -86,15 +86,12 @@ export default async function handler(req, res) {
       throw new Error("No service account credentials found!");
     }
 
-    // 1. Get Access Token
     const token = await getAccessToken(serviceAccount);
     const projectId = serviceAccount.project_id;
 
-    // 2. Try Firestore write via REST API
+    // Test Firestore write via REST API
     const testDocName = 'test_email_check';
     const firestoreUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/otps/${testDocName}`;
-    
-    console.log(`Firestore URL: ${firestoreUrl}`);
     const writeRes = await fetch(firestoreUrl, {
       method: 'PATCH',
       headers: {
@@ -108,11 +105,9 @@ export default async function handler(req, res) {
         }
       })
     });
-
     const writeData = await writeRes.json();
 
-    // 3. Try Identity Toolkit check via REST API
-    // Endpoint to lookup user details by email
+    // Test Identity Toolkit lookup via REST API
     const lookupUrl = `https://identitytoolkit.googleapis.com/v1/projects/${projectId}/accounts:lookup`;
     const lookupRes = await fetch(lookupUrl, {
       method: 'POST',
@@ -124,7 +119,6 @@ export default async function handler(req, res) {
         email: ['kathiravanc453@gmail.com']
       })
     });
-    
     const lookupData = await lookupRes.json();
 
     res.status(200).json({
