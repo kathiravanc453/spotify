@@ -726,6 +726,7 @@ export function PlayerProvider({ children, user }) {
   // ─── Provide context ──────────────────────────────────────────────────────
   return (
     <PlayerContext.Provider value={{
+      user,
       currentSong, isPlaying, progress, duration, volume,
       recentlyPlayed, allSongs, loading, favorites, playCounts, albumCovers,
       playSong, togglePlay, playNext, playPrev, seek, changeVolume, toggleLike,
