@@ -172,8 +172,8 @@ function AccountMenuContent({ user, onItemClick, onLogout, setActiveSection }) {
           <span className="font-semibold text-base">Add account</span>
         </button>
         <button 
-          onClick={() => { alert('Recents feature is coming soon!'); onItemClick?.(); }}
-          className="flex items-center gap-4 px-2 py-3.5 text-white hover:bg-white/[0.04] rounded-xl transition-all text-left"
+          onClick={() => { setActiveSection('recents'); onItemClick?.(); }}
+          className={`flex items-center gap-4 px-2 py-3.5 hover:bg-white/[0.04] rounded-xl transition-all text-left ${activeSection === 'recents' ? 'text-cyan-400 bg-white/[0.04]' : 'text-white'}`}
         >
           <History size={22} className="text-white/70" />
           <span className="font-semibold text-base">Recents</span>
