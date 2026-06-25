@@ -186,10 +186,10 @@ function AccountMenuContent({ user, onItemClick, onLogout, activeSection, setAct
           <span className="font-semibold text-base">Your updates</span>
         </button>
         <button 
-          onClick={() => { alert('Settings and privacy feature is coming soon!'); onItemClick?.(); }}
-          className="flex items-center gap-4 px-2 py-3.5 text-white hover:bg-white/[0.04] rounded-xl transition-all text-left"
+          onClick={() => { setActiveSection('settings'); onItemClick?.(); }}
+          className={`flex items-center gap-4 px-2 py-3.5 hover:bg-white/[0.04] rounded-xl transition-all text-left ${activeSection === 'settings' ? 'text-cyan-400 bg-white/[0.04]' : 'text-white'}`}
         >
-          <Settings size={22} className="text-white/70" />
+          <Settings size={22} className={activeSection === 'settings' ? 'text-cyan-400' : 'text-white/70'} />
           <span className="font-semibold text-base">Settings and privacy</span>
         </button>
       </nav>

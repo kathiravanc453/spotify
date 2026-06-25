@@ -16,6 +16,7 @@ const Playback = lazy(() => import('./pages/Playback'));
 const AdminUpload = lazy(() => import('./pages/AdminUpload'));
 const Recents = lazy(() => import('./pages/Recents'));
 const Updates = lazy(() => import('./pages/Updates'));
+const SettingsPage = lazy(() => import('./pages/Settings'));
 const Artist = lazy(() => import('./pages/Artist'));
 const Actor = lazy(() => import('./pages/Actor'));
 const Profile = lazy(() => import('./pages/Profile'));
@@ -149,6 +150,7 @@ function AppContent({ user, onLogout, onLogin }) {
     if (activeSection === 'admin')       return <AdminUpload />;
     if (activeSection === 'recents')     return <Recents />;
     if (activeSection === 'updates')     return <Updates />;
+    if (activeSection === 'settings')    return <SettingsPage />;
     if (activeSection === 'library' || activeSection === 'favorites' || activeSection?.startsWith('playlist_')) return <Library />;
     if (activeSection === 'albums')      return <Albums setSearch={handleSearch} />;
     if (activeSection === 'now-playing') return <Playback />;
