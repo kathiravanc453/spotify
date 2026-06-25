@@ -270,6 +270,37 @@ const TOP_GENRES_MOODS_FOLDERS = [
   }
 ];
 
+const CURATED_PODCASTS = [
+  {
+    id: "pod_filmibeat",
+    title: "Tamil Filmibeat Podcast",
+    subtitle: "Latest Kollywood reviews & gossips",
+    cover: "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=500",
+    query: "Tamil Filmibeat Podcast"
+  },
+  {
+    id: "pod_voice",
+    title: "Voice of Tamil",
+    subtitle: "Heartwarming stories & motivational talks",
+    cover: "https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=500",
+    query: "Voice of Tamil Podcast"
+  },
+  {
+    id: "pod_lofi",
+    title: "Tamil Lofi Storytelling",
+    subtitle: "Late-night chill stories & lofi talk",
+    cover: "https://images.unsplash.com/photo-1516280440614-37939bbacd6a?w=500",
+    query: "Tamil Lofi Podcast"
+  },
+  {
+    id: "pod_comedy",
+    title: "Tamil Kadhaigal Comedy",
+    subtitle: "Fun jokes, humorous stories & gags",
+    cover: "https://images.unsplash.com/photo-1527224857830-43a7acc85260?w=500",
+    query: "Tamil Comedy Podcast"
+  }
+];
+
 // YOUR 5 MASTER CATEGORIES
 const MASTER_MOODS = ['kuthu', 'romance', 'melody', 'sad', 'vibes'];
 
@@ -298,6 +329,7 @@ export default function Home({ search = '', setSearch, activeSection = 'home' })
   const { recentlyPlayed = [], allSongs = [], loading = false, playSong, currentSong, playCounts = {}, albumCovers = {}, setActiveArtist, setActiveActor, setActiveSection: setGlobalSection, saavnResults = [], saavnLoading = false, searchSaavnGlobal, saavnHomeData = { trending: [], playlists: [], albums: [] }, saavnHomeLoading = false } = usePlayer() || {};
 
   const [customFolders, setCustomFolders] = useState([]);
+  const [homeFilter, setHomeFilter] = useState('music'); // music, podcasts, rhythmix_tunes
 
   useEffect(() => {
     const fetchCustomFolders = async () => {
@@ -799,75 +831,169 @@ export default function Home({ search = '', setSearch, activeSection = 'home' })
     return (
       <div className="space-y-4 md:space-y-8 pb-10">
 
-        {/* JIOSAAVN GLOBAL DATA */}
-        {saavnHomeLoading ? (
-          <div className="flex items-center justify-center py-32"><div className="w-10 h-10 rounded-full border-2 border-cyan-500/20 border-t-cyan-400 animate-spin" /></div>
-        ) : (
+        {/* TOP FILTER BAR - SIMPLE DESIGN */}
+        <div className="flex gap-2.5 pb-4 border-b border-white/5 mb-4 items-center">
+          <button
+            onClick={() => setHomeFilter('music')}
+            className={`px-5 py-2 rounded-full text-xs sm:text-sm font-extrabold transition-all duration-300 cursor-pointer
+              ${homeFilter === 'music' 
+                ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/25 scale-105' 
+                : 'bg-white/5 border border-white/10 text-white/80 hover:bg-white/10 hover:border-white/20'}`}
+          >
+            Music
+          </button>
+          <button
+            onClick={() => setHomeFilter('podcasts')}
+            className={`px-5 py-2 rounded-full text-xs sm:text-sm font-extrabold transition-all duration-300 cursor-pointer
+              ${homeFilter === 'podcasts' 
+                ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/25 scale-105' 
+                : 'bg-white/5 border border-white/10 text-white/80 hover:bg-white/10 hover:border-white/20'}`}
+          >
+            Podcasts
+          </button>
+          <button
+            onClick={() => setHomeFilter('rhythmix_tunes')}
+            className={`px-5 py-2 rounded-full text-xs sm:text-sm font-extrabold transition-all duration-300 cursor-pointer
+              ${homeFilter === 'rhythmix_tunes' 
+                ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/25 scale-105' 
+                : 'bg-white/5 border border-white/10 text-white/80 hover:bg-white/10 hover:border-white/20'}`}
+          >
+            Rhythmix Tunes
+          </button>
+        </div>
+
+        {homeFilter === 'music' && (
           <>
-            {/* LOCAL DATA - VINYL STACK STYLE (MOVED TO VERY TOP) */}
-            {/* LOCAL DATA - VINYL STACK STYLE (MOVED TO VERY TOP) */}
-            {recentlyPlayed.length > 0 && (
-              <section className="mb-12 animate-in fade-in slide-in-from-bottom-8">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center border border-blue-500/30">
-                    <Clock size={20} className="text-blue-400" />
-                  </div>
-                  <div>
-                    <h2 className="text-white text-2xl font-bold tracking-tight">Recently Played</h2>
-                    <p className="text-white/40 text-sm font-medium">Jump back in to your favorites</p>
-                  </div>
-                </div>
-                <div className="flex gap-4 overflow-x-auto scroll-snap-x scrollbar-none pb-4">
-                  {recentlyPlayed.slice(0, 20).map((song, i) => (
-                    <div 
-                      key={song.id} 
-                      onClick={() => playSong(song)}
-                      className="group relative flex items-center gap-4 p-3 pr-6 bg-white/[0.03] hover:bg-white/[0.08] border border-white/5 hover:border-white/20 rounded-[24px] cursor-pointer transition-all duration-300 hover:scale-[1.02] flex-shrink-0 w-[280px] md:w-[320px] scroll-snap-start"
-                      style={{ scrollSnapAlign: 'start' }}
-                    >
-                      <div className="relative w-16 h-16 flex-shrink-0">
-                        <div className="absolute inset-0 bg-black rounded-full shadow-[0_0_10px_rgba(0,0,0,0.5)] flex items-center justify-center transition-all duration-500 group-hover:translate-x-6 group-hover:rotate-180">
-                          <div className="w-6 h-6 rounded-full border border-[#222] bg-gradient-to-tr from-cyan-600 to-violet-600" />
-                        </div>
-                        <img 
-                          src={albumCovers[song.id] || song.cover} 
-                          alt={song.title} 
-                          className="absolute inset-0 w-full h-full object-cover rounded-[16px] shadow-lg z-10" 
-                          onError={e => { e.target.src = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500'; }}
-                        />
+            {/* JIOSAAVN GLOBAL DATA */}
+            {saavnHomeLoading ? (
+              <div className="flex items-center justify-center py-32"><div className="w-10 h-10 rounded-full border-2 border-cyan-500/20 border-t-cyan-400 animate-spin" /></div>
+            ) : (
+              <>
+                {/* LOCAL DATA - VINYL STACK STYLE (MOVED TO VERY TOP) */}
+                {recentlyPlayed.length > 0 && (
+                  <section className="mb-12 animate-in fade-in slide-in-from-bottom-8">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center border border-blue-500/30">
+                        <Clock size={20} className="text-blue-400" />
                       </div>
-                      <div className="min-w-0 flex-1 z-10">
-                        <h3 className="text-white font-bold truncate text-base">{cleanTitle(song.title)}</h3>
-                        <p className="text-white/50 text-xs truncate mt-0.5 font-medium">{song.artist}</p>
-                      </div>
-                      <div className="w-8 h-8 rounded-full bg-white/10 flex flex-shrink-0 items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                        <Play size={14} fill="#fff" className="ml-0.5 text-white" />
+                      <div>
+                        <h2 className="text-white text-2xl font-bold tracking-tight">Recently Played</h2>
+                        <p className="text-white/40 text-sm font-medium">Jump back in to your favorites</p>
                       </div>
                     </div>
-                  ))}
+                    <div className="flex gap-4 overflow-x-auto scroll-snap-x scrollbar-none pb-4">
+                      {recentlyPlayed.slice(0, 20).map((song, i) => (
+                        <div 
+                          key={song.id} 
+                          onClick={() => playSong(song)}
+                          className="group relative flex items-center gap-4 p-3 pr-6 bg-white/[0.03] hover:bg-white/[0.08] border border-white/5 hover:border-white/20 rounded-[24px] cursor-pointer transition-all duration-300 hover:scale-[1.02] flex-shrink-0 w-[280px] md:w-[320px] scroll-snap-start"
+                          style={{ scrollSnapAlign: 'start' }}
+                        >
+                          <div className="relative w-16 h-16 flex-shrink-0">
+                            <div className="absolute inset-0 bg-black rounded-full shadow-[0_0_10px_rgba(0,0,0,0.5)] flex items-center justify-center transition-all duration-500 group-hover:translate-x-6 group-hover:rotate-180">
+                              <div className="w-6 h-6 rounded-full border border-[#222] bg-gradient-to-tr from-cyan-600 to-violet-600" />
+                            </div>
+                            <img 
+                              src={albumCovers[song.id] || song.cover} 
+                              alt={song.title} 
+                              className="absolute inset-0 w-full h-full object-cover rounded-[16px] shadow-lg z-10" 
+                              onError={e => { e.target.src = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500'; }}
+                            />
+                          </div>
+                          <div className="min-w-0 flex-1 z-10">
+                            <h3 className="text-white font-bold truncate text-base">{cleanTitle(song.title)}</h3>
+                            <p className="text-white/50 text-xs truncate mt-0.5 font-medium">{song.artist}</p>
+                          </div>
+                          <div className="w-8 h-8 rounded-full bg-white/10 flex flex-shrink-0 items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                            <Play size={14} fill="#fff" className="ml-0.5 text-white" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {renderFolderSection("Kadhale Kadhale", "Love & nostalgic classics", Heart, KADHALE_KADHALE_FOLDERS)}
+                {renderFolderSection("Your Top Mixes", "Your personalized top compilation mixes", Music2, YOUR_TOP_MIXES_FOLDERS)}
+                {renderFolderSection("Community Mixes", "Popular compilation mixes", Coffee, COMMUNITY_FOLDERS)}
+                {renderFolderSection("Made For Your Moods", "Personalized soundscapes for every mood", Sparkles, MOOD_FOLDERS)}
+                {renderFolderSection("Top Genres & Moods", "The best genres and moods curated for you", Star, TOP_GENRES_MOODS_FOLDERS)}
+                {renderFolderSection("Top Charts & Fresh Hits", "The latest releases and trends", TrendingUp, CHARTS_FRESH_FOLDERS)}
+                {customFolders.length > 0 && renderFolderSection("Discover More Folders", "Custom folders added by the community & admin", FolderHeart, customFolders)}
+
+                <div className="mb-12">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-white text-2xl font-bold tracking-tight">Trending Songs</h2>
+                  </div>
+                  {renderBentoSpotlight(saavnHomeData.trending)}
                 </div>
-              </section>
+
+                {renderArtistCarousel('Popular Artists', [...maleArtistsData, ...femaleArtistsData].sort((a, b) => b.count - a.count))}
+                {renderGlassCarousel('Popular Albums', saavnHomeData.albums)}
+                {renderGlassCarousel('Curated For You', saavnHomeData.playlists)}
+              </>
             )}
-
-            {renderFolderSection("Kadhale Kadhale", "Love & nostalgic classics", Heart, KADHALE_KADHALE_FOLDERS)}
-            {renderFolderSection("Your Top Mixes", "Your personalized top compilation mixes", Music2, YOUR_TOP_MIXES_FOLDERS)}
-            {renderFolderSection("Community Mixes", "Popular compilation mixes", Coffee, COMMUNITY_FOLDERS)}
-            {renderFolderSection("Made For Your Moods", "Personalized soundscapes for every mood", Sparkles, MOOD_FOLDERS)}
-            {renderFolderSection("Top Genres & Moods", "The best genres and moods curated for you", Star, TOP_GENRES_MOODS_FOLDERS)}
-            {renderFolderSection("Top Charts & Fresh Hits", "The latest releases and trends", TrendingUp, CHARTS_FRESH_FOLDERS)}
-            {customFolders.length > 0 && renderFolderSection("Discover More Folders", "Custom folders added by the community & admin", FolderHeart, customFolders)}
-
-            <div className="mb-12">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-white text-2xl font-bold tracking-tight">Trending Songs</h2>
-              </div>
-              {renderBentoSpotlight(saavnHomeData.trending)}
-            </div>
-
-            {renderArtistCarousel('Popular Artists', [...maleArtistsData, ...femaleArtistsData].sort((a, b) => b.count - a.count))}
-            {renderGlassCarousel('Popular Albums', saavnHomeData.albums)}
-            {renderGlassCarousel('Curated For You', saavnHomeData.playlists)}
           </>
+        )}
+
+        {homeFilter === 'podcasts' && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div>
+              <h2 className="text-white text-2xl font-bold tracking-tight">Popular Podcasts</h2>
+              <p className="text-white/40 text-sm font-medium">Browse curated trending stories, comedies, and movie talks</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {CURATED_PODCASTS.map((podcast) => (
+                <div 
+                  key={podcast.id}
+                  onClick={() => {
+                    setSearch(podcast.query);
+                    setGlobalSection('search');
+                  }}
+                  className="group relative overflow-hidden rounded-3xl p-5 bg-white/[0.02] border border-white/5 hover:border-white/20 cursor-pointer transition-all duration-350 hover:-translate-y-1.5 flex flex-col justify-between aspect-video min-h-[160px] select-none"
+                >
+                  <div 
+                    className="absolute inset-0 bg-cover bg-center transition-transform duration-[5000ms] group-hover:scale-110"
+                    style={{ 
+                      backgroundImage: `url(${podcast.cover})`, 
+                      filter: 'brightness(0.35) saturate(0.85)' 
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent z-0" />
+                  
+                  <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-500 z-10">
+                    <Music size={18} className="text-cyan-400" />
+                  </div>
+                  
+                  <div className="z-10 mt-4">
+                    <h3 className="text-white font-extrabold text-base group-hover:text-cyan-300 transition-colors truncate">{podcast.title}</h3>
+                    <p className="text-white/40 text-xs font-semibold leading-snug mt-1">{podcast.subtitle}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {homeFilter === 'rhythmix_tunes' && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div>
+              <h2 className="text-white text-2xl font-bold tracking-tight">Your Rhythmix Tunes</h2>
+              <p className="text-white/40 text-sm font-medium">Uploaded local tracks and custom music library</p>
+            </div>
+            {allSongs.length === 0 ? (
+              <div className="text-center py-24 bg-white/[0.01] border border-white/5 rounded-3xl">
+                <Music size={48} className="mx-auto mb-4 text-white/10" />
+                <p className="text-white/30 font-medium">No uploaded tunes found. Use the Admin Dashboard to add songs!</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+                {allSongs.map((song) => (
+                  <SongCard key={song.id} song={song} songsList={allSongs} />
+                ))}
+              </div>
+            )}
+          </div>
         )}
 
 
