@@ -16,7 +16,37 @@ export function PlayerProvider({ children, user }) {
   const [loading, setLoading]           = useState(false);
   const [favorites, setFavorites]       = useState([]);
   const loadedRef                       = useRef(true);
-  const [activeSection, setActiveSection] = useState('home');
+  const [activeSection, setActiveSection] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash.replace('#', '');
+      return hash || 'home';
+    }
+    return 'home';
+  });
+
+  // Sync activeSection with browser history to enable mobile native back button
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const currentHash = window.location.hash.replace('#', '') || 'home';
+      if (currentHash !== activeSection) {
+        window.history.pushState({ section: activeSection }, '', `#${activeSection}`);
+      }
+    }
+  }, [activeSection]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handlePopState = (event) => {
+      if (event.state && event.state.section) {
+        setActiveSection(event.state.section);
+      } else {
+        const hash = window.location.hash.replace('#', '');
+        setActiveSection(hash || 'home');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
   const [activeArtist, setActiveArtist] = useState(null);
   const [activeActor, setActiveActor] = useState(null);
   const [saavnResults, setSaavnResults] = useState([]);
