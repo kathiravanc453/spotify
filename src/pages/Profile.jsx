@@ -18,7 +18,7 @@ export default function Profile() {
   const initial = user.name ? user.name.charAt(0).toUpperCase() : '?';
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#121212] overflow-y-auto w-full pb-32">
+    <div className="flex flex-col h-full bg-[#121212] overflow-y-auto w-full pb-6">
       {/* Top Gradient Background */}
       <div className="relative pt-12 pb-6 px-4 bg-gradient-to-b from-[#b3704b] to-[#121212]">
         

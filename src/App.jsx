@@ -145,7 +145,13 @@ function AppContent({ user, onLogout, onLogin }) {
     if (activeSection === 'library' || activeSection === 'favorites' || activeSection?.startsWith('playlist_')) return <Library />;
     if (activeSection === 'albums')      return <Albums setSearch={handleSearch} />;
     if (activeSection === 'now-playing') return <Playback />;
-    if (activeSection === 'profile')     return <Profile />;
+    if (activeSection === 'profile') {
+      return (
+        <div className="fixed inset-0 z-[100] bg-[#121212] overflow-hidden">
+          <Profile />
+        </div>
+      );
+    }
     if (activeSection === 'artist')      return <Artist />;
     if (activeSection === 'actor')       return <Actor setSearch={handleSearch} />;
     return <Home search={search} setSearch={handleSearch} activeSection={activeSection} />;
