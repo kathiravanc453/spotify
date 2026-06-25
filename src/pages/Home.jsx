@@ -287,7 +287,7 @@ export default function Home({ search = '', setSearch, activeSection = 'home' })
             <p className="text-white/40 text-sm font-medium">{subtitle}</p>
           </div>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+        <div className="flex gap-4 overflow-x-auto scroll-snap-x scrollbar-none pb-4 -mx-4 px-4 md:mx-0 md:px-0">
           {foldersList.map((folder) => {
             const FolderIcon = typeof folder.icon === 'string' ? (ICON_MAP[folder.icon] || FolderHeart) : folder.icon;
             return (
@@ -297,7 +297,8 @@ export default function Home({ search = '', setSearch, activeSection = 'home' })
                   setSearch(folder.query);
                   setGlobalSection('search');
                 }}
-                className="group relative overflow-hidden rounded-3xl p-5 bg-white/[0.02] border border-white/5 hover:border-white/20 cursor-pointer transition-all duration-500 hover:-translate-y-1.5 shadow-lg flex flex-col justify-between aspect-square select-none"
+                className="group relative overflow-hidden rounded-3xl p-5 bg-white/[0.02] border border-white/5 hover:border-white/20 cursor-pointer transition-all duration-500 hover:-translate-y-1.5 shadow-lg flex flex-col justify-between aspect-square select-none flex-shrink-0 w-36 sm:w-44 md:w-48 scroll-snap-start"
+                style={{ scrollSnapAlign: 'start' }}
               >
                 {/* Decorative background glow */}
                 <div className={`absolute -right-8 -bottom-8 w-24 h-24 rounded-full bg-gradient-to-tr ${folder.color} opacity-10 group-hover:opacity-30 blur-2xl transition-opacity duration-500`} />
