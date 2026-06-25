@@ -3,7 +3,7 @@ import { Music2 } from 'lucide-react';
 
 export default function Header() {
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between px-4 md:px-8 py-4 bg-transparent h-16">
+    <header className="relative z-30 flex items-center justify-between px-4 md:px-8 py-4 bg-transparent h-16">
       {/* Massive Frost Gradient behind header */}
       <div className="absolute inset-0 bg-gradient-to-b from-[#07070a] to-transparent pointer-events-none opacity-80" />
       <div className="absolute inset-0 backdrop-blur-[2px] pointer-events-none [mask-image:linear-gradient(to_bottom,black,transparent)]" />

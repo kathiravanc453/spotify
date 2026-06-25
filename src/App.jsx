@@ -193,9 +193,7 @@ function AppContent({ user, onLogout, onLogin }) {
 
         {/* Main content area */}
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-          {activeSection !== 'now-playing' && (
-            <Header search={search} setSearch={handleSearch} user={user} onLogout={onLogout} />
-          )}
+
 
           {/* Pull-to-refresh indicator */}
           {activeSection !== 'now-playing' && (
@@ -218,6 +216,9 @@ function AppContent({ user, onLogout, onLogin }) {
             onTouchMove={onTouchMove}
             onTouchEnd={onTouchEnd}
           >
+            {activeSection !== 'now-playing' && (
+              <Header search={search} setSearch={handleSearch} user={user} onLogout={onLogout} />
+            )}
             <div className="flex-1 flex flex-col w-full">
               {/* Native PWA Install Banner */}
               {installPrompt && activeSection !== 'now-playing' && (
