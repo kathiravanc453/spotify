@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Home, Search, Library, TrendingUp, Star, X, Music2, Disc, Heart, ChevronRight, ChevronLeft, Menu, Shield, LogOut, User, Plus, History, Bell, Settings } from 'lucide-react';
 import { usePlayer } from '../../context/PlayerContext';
@@ -211,6 +211,12 @@ export default function Sidebar({ user, search, setSearch, onLogout }) {
   const { activeSection, setActiveSection, playlists, createPlaylist } = usePlayer();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  useEffect(() => {
+    const handler = () => setMobileOpen(true);
+    window.addEventListener('toggleMobileMenu', handler);
+    return () => window.removeEventListener('toggleMobileMenu', handler);
+  }, []);
+
   return (
     <>
       {/* ── Desktop Sidebar (md+) ─────────────────────────────────── */}
@@ -224,37 +230,6 @@ export default function Sidebar({ user, search, setSearch, onLogout }) {
           onLogout={onLogout}
         />
       </aside>
-
-      {/* ── Mobile: Header Top Right Icon ───────────── */}
-      {['home', 'albums', 'favorites'].includes(activeSection) || (activeSection === 'search' && !search) ? (
-        <button
-          id="mobile-sidebar-toggle"
-          className={`md:hidden fixed top-3.5 right-4 z-[50] w-9 h-9 rounded-xl flex items-center justify-center text-white/60 hover:text-white hover:bg-white/[0.06] transition-all duration-200 border border-white/5 ${(mobileOpen || activeSection === 'now-playing') ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'} p-0 overflow-hidden`}
-          onClick={() => setMobileOpen(true)}
-          aria-label="Open menu"
-        >
-          {user ? (
-            <img
-              src={user.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.name)}`}
-              alt={user.name}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <User size={18} />
-          )}
-        </button>
-      ) : (
-        <button
-          className={`md:hidden fixed top-3.5 right-4 z-[999] w-9 h-9 rounded-xl flex items-center justify-center text-white/60 hover:text-white hover:bg-white/[0.06] transition-all duration-200 border border-white/5 ${(mobileOpen || activeSection === 'now-playing') ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}
-          onClick={() => {
-            setActiveSection('home');
-            if (setSearch) setSearch('');
-          }}
-          aria-label="Go back"
-        >
-          <ChevronLeft size={20} />
-        </button>
-      )}
 
       {/* ── Mobile Sidebar Overlay ────────────────────────────────── */}
       {/* Render mobile sidebar in a portal so it sits above z-10 parent context */}

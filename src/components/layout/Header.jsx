@@ -1,7 +1,9 @@
 import { usePlayer } from '../../context/PlayerContext';
-import { Music2 } from 'lucide-react';
+import { Music2, User, ChevronLeft } from 'lucide-react';
 
-export default function Header() {
+export default function Header({ search, setSearch, user }) {
+  const { activeSection, setActiveSection } = usePlayer();
+  const isHomeView = ['home', 'albums', 'favorites'].includes(activeSection) || (activeSection === 'search' && !search);
   return (
     <header className="relative z-30 flex items-center justify-between px-4 md:px-8 py-4 bg-transparent h-16">
       {/* Massive Frost Gradient behind header */}
@@ -18,8 +20,35 @@ export default function Header() {
         </span>
       </div>
 
-      {/* Right spacer for mobile hamburger (now on the right) */}
-      <div className="relative z-10 w-10 md:hidden flex-shrink-0 ml-auto" />
+      {/* Right Icon (Profile or Back) */}
+      <div className="relative z-10 flex md:hidden items-center justify-center ml-auto">
+        {isHomeView ? (
+          <button
+            onClick={() => window.dispatchEvent(new Event('toggleMobileMenu'))}
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-white/60 hover:text-white hover:bg-white/[0.06] transition-all duration-200 border border-white/5 overflow-hidden p-0"
+          >
+            {user ? (
+              <img
+                src={user.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.name)}`}
+                alt={user.name}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <User size={18} />
+            )}
+          </button>
+        ) : (
+          <button
+            onClick={() => {
+              setActiveSection('home');
+              if (setSearch) setSearch('');
+            }}
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-white/60 hover:text-white hover:bg-white/[0.06] transition-all duration-200 border border-white/5"
+          >
+            <ChevronLeft size={20} />
+          </button>
+        )}
+      </div>
     </header>
   );
 }
