@@ -670,40 +670,6 @@ export default function Home({ search = '', setSearch, activeSection = 'home' })
     // Default Home view
     return (
       <div className="space-y-4 md:space-y-8 pb-10">
-        
-        {/* VIBE CHECK (MOOD RINGS) */}
-        <section className="animate-in fade-in duration-500 pt-2 pb-6">
-          <div className="flex overflow-x-auto gap-3 pb-4 snap-x scrollbar-none -mx-4 px-4 md:mx-0 md:px-0">
-            <button
-              onClick={() => setSearch('')}
-              className={`flex-shrink-0 group flex items-center gap-3 px-5 py-3 rounded-[20px] text-sm font-bold transition-all duration-300 snap-start
-                ${search.trim() === '' ? 'bg-gradient-to-r from-cyan-400 to-blue-500 shadow-[0_0_20px_rgba(34,211,238,0.4)] text-white scale-105 border border-transparent' : 'bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/30 hover:-translate-y-1'}`}
-            >
-              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-white/20 shadow-[0_0_15px_rgba(255,255,255,0.1)] group-hover:shadow-[0_0_20px_rgba(255,255,255,0.3)]">
-                <Music2 size={14} color="#fff" />
-              </div>
-              <span className="text-white/90 group-hover:text-white">All Music</span>
-            </button>
-            {MASTER_MOODS.map(moodKey => {
-              const theme = MOOD_THEMES[moodKey];
-              const Icon = theme.icon;
-              const isSelected = search.toLowerCase().includes(theme.label.toLowerCase());
-              return (
-                <button
-                  key={moodKey}
-                  onClick={() => setSearch(`${theme.label} Tamil Songs`)}
-                  className={`flex-shrink-0 group flex items-center gap-3 px-5 py-3 rounded-[20px] text-sm font-bold transition-all duration-300 snap-start
-                    ${isSelected ? 'bg-white/10 border border-white/30 shadow-[0_0_20px_rgba(255,255,255,0.1)] scale-105' : 'bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/30 hover:-translate-y-1'}`}
-                >
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center bg-gradient-to-tr ${theme.color} shadow-[0_0_15px_rgba(255,255,255,0.1)] group-hover:shadow-[0_0_20px_rgba(255,255,255,0.3)]`}>
-                    <Icon size={14} color="#fff" />
-                  </div>
-                  <span className="text-white/90 group-hover:text-white">{theme.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </section>
 
         {/* JIOSAAVN GLOBAL DATA */}
         {saavnHomeLoading ? (
