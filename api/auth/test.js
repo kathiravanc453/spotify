@@ -1,6 +1,5 @@
 import nodemailer from 'nodemailer';
 import admin from 'firebase-admin';
-import { getAuth } from 'firebase-admin/auth';
 import fs from 'fs';
 import path from 'path';
 
@@ -48,7 +47,7 @@ export default async function handler(req, res) {
     // 2. Test Firebase Auth
     let userRecord;
     try {
-      userRecord = await getAuth().getUserByEmail('kathiravanc453@gmail.com');
+      userRecord = await admin.auth().getUserByEmail('kathiravanc453@gmail.com');
     } catch (authErr) {
       userRecord = { error: authErr.message };
     }
