@@ -164,19 +164,31 @@ function AccountMenuContent({ user, onItemClick, onLogout, setActiveSection }) {
 
       {/* Menu Items */}
       <nav className="flex flex-col gap-1 mt-4">
-        <button className="flex items-center gap-4 px-2 py-3.5 text-white hover:bg-white/[0.04] rounded-xl transition-all text-left">
+        <button 
+          onClick={() => { setActiveSection('login'); onItemClick?.(); }}
+          className="flex items-center gap-4 px-2 py-3.5 text-white hover:bg-white/[0.04] rounded-xl transition-all text-left"
+        >
           <Plus size={22} className="text-white/70" />
           <span className="font-semibold text-base">Add account</span>
         </button>
-        <button className="flex items-center gap-4 px-2 py-3.5 text-white hover:bg-white/[0.04] rounded-xl transition-all text-left">
+        <button 
+          onClick={() => { alert('Recents feature is coming soon!'); onItemClick?.(); }}
+          className="flex items-center gap-4 px-2 py-3.5 text-white hover:bg-white/[0.04] rounded-xl transition-all text-left"
+        >
           <History size={22} className="text-white/70" />
           <span className="font-semibold text-base">Recents</span>
         </button>
-        <button className="flex items-center gap-4 px-2 py-3.5 text-white hover:bg-white/[0.04] rounded-xl transition-all text-left">
+        <button 
+          onClick={() => { alert('Your updates feature is coming soon!'); onItemClick?.(); }}
+          className="flex items-center gap-4 px-2 py-3.5 text-white hover:bg-white/[0.04] rounded-xl transition-all text-left"
+        >
           <Bell size={22} className="text-white/70" />
           <span className="font-semibold text-base">Your updates</span>
         </button>
-        <button className="flex items-center gap-4 px-2 py-3.5 text-white hover:bg-white/[0.04] rounded-xl transition-all text-left">
+        <button 
+          onClick={() => { alert('Settings and privacy feature is coming soon!'); onItemClick?.(); }}
+          className="flex items-center gap-4 px-2 py-3.5 text-white hover:bg-white/[0.04] rounded-xl transition-all text-left"
+        >
           <Settings size={22} className="text-white/70" />
           <span className="font-semibold text-base">Settings and privacy</span>
         </button>
