@@ -17,55 +17,144 @@ const ICON_MAP = {
   Flame, Disc3, Waves, Compass, FolderHeart, CloudRain
 };
 
-// Handpicked dynamic music folders
-const DISCOVER_FOLDERS = [
+// Curated static folders for the homepage sections
+const KADHALE_KADHALE_FOLDERS = [
   {
-    id: "folder_kuthu",
-    title: "Kuthu & Dance",
-    subtitle: "High-energy beats & dance hits",
-    query: "Tamil Kuthu Dance Songs",
-    color: "from-orange-500 to-rose-600",
-    icon: Flame
+    id: "kk_vijay_90s",
+    title: "Vijay 90s Hits",
+    subtitle: "Retro hits of Thalapathy",
+    query: "Vijay 90s hits tamil",
+    color: "from-amber-500 to-rose-600",
+    icon: Star
   },
   {
-    id: "folder_90s",
-    title: "90s Gold Melodies",
-    subtitle: "Golden era classics & nostalgic hits",
-    query: "90s Tamil Hits",
-    color: "from-amber-400 to-orange-600",
-    icon: Sparkles
+    id: "kk_raaja_love",
+    title: "Ilaiyaraaja Love",
+    subtitle: "Eternal melody king classics",
+    query: "Ilaiyaraaja love songs tamil",
+    color: "from-teal-500 to-emerald-600",
+    icon: Heart
   },
   {
-    id: "folder_arr",
-    title: "A.R.R. Magic",
-    subtitle: "Masterpieces from the Mozart of Madras",
-    query: "A R Rahman Tamil Hits",
+    id: "kk_2000s_hits",
+    title: "2000s Hits",
+    subtitle: "Millennium era blockbusters",
+    query: "2000s hits tamil",
+    color: "from-indigo-500 to-purple-600",
+    icon: Music
+  },
+  {
+    id: "kk_arr_love",
+    title: "A.R.R. Love Songs",
+    subtitle: "Romance from the Mozart of Madras",
+    query: "A R Rahman love songs tamil",
     color: "from-blue-600 to-cyan-500",
     icon: Disc3
   },
   {
-    id: "folder_anirudh",
-    title: "Anirudh Sensations",
-    subtitle: "Trending charts & viral rock hits",
-    query: "Anirudh Tamil Hits",
-    color: "from-rose-500 to-indigo-600",
-    icon: Music
+    id: "kk_dance_in_love",
+    title: "Dance in Love",
+    subtitle: "Romantic dance hits",
+    query: "tamil love dance songs",
+    color: "from-pink-500 to-rose-500",
+    icon: Flame
+  }
+];
+
+const COMMUNITY_FOLDERS = [
+  {
+    id: "comm_romantic_mix",
+    title: "Tamil Romantic Mix",
+    subtitle: "Perfect mix for romance",
+    query: "tamil romantic mix",
+    color: "from-fuchsia-500 to-pink-500",
+    icon: FolderHeart
   },
   {
-    id: "folder_lofi",
-    title: "Lofi Chillout",
-    subtitle: "Relaxing beats & chill Tamil vocals",
-    query: "Tamil Lofi Chill",
-    color: "from-indigo-500 to-purple-600",
-    icon: Waves
+    id: "comm_karuna_happy",
+    title: "Karuna.Tamil Happy Bass",
+    subtitle: "Bass-boosted happy tracks",
+    query: "tamil happy bass songs",
+    color: "from-violet-600 to-indigo-600",
+    icon: Zap
   },
   {
-    id: "folder_devotional",
-    title: "Spiritual & Peace",
-    subtitle: "Divine chants, prayers & peaceful songs",
-    query: "Tamil Devotional Songs",
-    color: "from-teal-500 to-emerald-600",
+    id: "comm_og_south",
+    title: "OG South",
+    subtitle: "Original South Indian classics",
+    query: "og south indian hits",
+    color: "from-orange-500 to-amber-500",
     icon: Compass
+  },
+  {
+    id: "comm_1990s_mix",
+    title: "Tamil 1990s Mix Hits",
+    subtitle: "Nostalgic 90s mix",
+    query: "tamil 1990s mix hits",
+    color: "from-yellow-500 to-orange-500",
+    icon: Coffee
+  },
+  {
+    id: "comm_beast_mode",
+    title: "Beast Mode",
+    subtitle: "Gym & high-energy beats",
+    query: "tamil gym workout beast mode",
+    color: "from-red-600 to-rose-950",
+    icon: TrendingUp
+  }
+];
+
+const MOOD_FOLDERS = [
+  {
+    id: "mood_dance_mix",
+    title: "Tamil Dance Mix",
+    subtitle: "Dance hits & fast beats",
+    query: "tamil dance mix",
+    color: "from-orange-500 to-yellow-500",
+    icon: Flame
+  },
+  {
+    id: "mood_romantic_mix",
+    title: "Tamil Romantic Mix",
+    subtitle: "Romantic melodies & songs",
+    query: "tamil romance hits mix",
+    color: "from-rose-500 to-pink-600",
+    icon: Heart
+  },
+  {
+    id: "mood_2010s_hits",
+    title: "Tamil 2010s Hits Mix",
+    subtitle: "Chartbusters from 2010-2019",
+    query: "tamil 2010s hits mix",
+    color: "from-blue-500 to-indigo-500",
+    icon: Sparkles
+  },
+  {
+    id: "mood_2010s_dance",
+    title: "Tamil 2010s Dance Hits",
+    subtitle: "Dance chartbusters of the 2010s",
+    query: "tamil 2010s dance hits mix",
+    color: "from-cyan-500 to-blue-600",
+    icon: Zap
+  }
+];
+
+const CHARTS_FRESH_FOLDERS = [
+  {
+    id: "cf_top_chart",
+    title: "Top Chart Songs",
+    subtitle: "The hottest songs right now",
+    query: "tamil top chart songs",
+    color: "from-purple-600 to-fuchsia-600",
+    icon: TrendingUp
+  },
+  {
+    id: "cf_fresh_hits",
+    title: "Fresh Hits",
+    subtitle: "Brand new weekly releases",
+    query: "tamil fresh hits new songs",
+    color: "from-emerald-500 to-teal-600",
+    icon: Sparkles
   }
 ];
 
@@ -116,9 +205,7 @@ export default function Home({ search = '', setSearch, activeSection = 'home' })
     fetchCustomFolders();
   }, []);
 
-  const allFolders = useMemo(() => {
-    return [...DISCOVER_FOLDERS, ...customFolders];
-  }, [customFolders]);
+  // No longer merging static folders globally since they are separated by section
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
@@ -187,20 +274,21 @@ export default function Home({ search = '', setSearch, activeSection = 'home' })
     );
   };
 
-  const renderDiscoverFolders = () => {
+  const renderFolderSection = (title, subtitle, SectionIcon, foldersList) => {
+    if (!foldersList || foldersList.length === 0) return null;
     return (
       <section className="mb-12 animate-in fade-in slide-in-from-bottom-8 duration-500">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center border border-cyan-500/30">
-            <FolderHeart size={20} className="text-cyan-400" />
+            <SectionIcon size={20} className="text-cyan-400" />
           </div>
           <div>
-            <h2 className="text-white text-2xl font-bold tracking-tight">Discover Music Folders</h2>
-            <p className="text-white/40 text-sm font-medium">Explore handpicked dynamic Tamil music categories</p>
+            <h2 className="text-white text-2xl font-bold tracking-tight">{title}</h2>
+            <p className="text-white/40 text-sm font-medium">{subtitle}</p>
           </div>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {allFolders.map((folder) => {
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          {foldersList.map((folder) => {
             const FolderIcon = typeof folder.icon === 'string' ? (ICON_MAP[folder.icon] || FolderHeart) : folder.icon;
             return (
               <div
@@ -667,7 +755,11 @@ export default function Home({ search = '', setSearch, activeSection = 'home' })
               </section>
             )}
 
-            {renderDiscoverFolders()}
+            {renderFolderSection("Kadhale Kadhale", "Love & nostalgic classics", Heart, KADHALE_KADHALE_FOLDERS)}
+            {renderFolderSection("Community Mixes", "Popular compilation mixes", Coffee, COMMUNITY_FOLDERS)}
+            {renderFolderSection("Made For Your Moods", "Personalized soundscapes for every mood", Sparkles, MOOD_FOLDERS)}
+            {renderFolderSection("Top Charts & Fresh Hits", "The latest releases and trends", TrendingUp, CHARTS_FRESH_FOLDERS)}
+            {customFolders.length > 0 && renderFolderSection("Discover More Folders", "Custom folders added by the community & admin", FolderHeart, customFolders)}
 
             <div className="mb-12">
               <div className="flex items-center justify-between mb-6">
@@ -676,7 +768,7 @@ export default function Home({ search = '', setSearch, activeSection = 'home' })
               {renderBentoSpotlight(saavnHomeData.trending)}
             </div>
 
-            {renderArtistCarousel('Popular Artists', [...maleArtistsData, ...femaleArtistsData].sort((a, b) => b.count - a.count).slice(0, 15))}
+            {renderArtistCarousel('Popular Artists', [...maleArtistsData, ...femaleArtistsData].sort((a, b) => b.count - a.count))}
             {renderGlassCarousel('Popular Albums', saavnHomeData.albums)}
             {renderGlassCarousel('Curated For You', saavnHomeData.playlists)}
           </>
