@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Home, Search, Library, TrendingUp, Star, X, Music2, Disc, Heart, ChevronRight, ChevronLeft, Menu, Shield, LogOut, User } from 'lucide-react';
+import { Home, Search, Library, TrendingUp, Star, X, Music2, Disc, Heart, ChevronRight, ChevronLeft, Menu, Shield, LogOut, User, Plus, History, Bell, Settings } from 'lucide-react';
 import { usePlayer } from '../../context/PlayerContext';
 
 const navItems = [
@@ -128,6 +128,70 @@ function SidebarContent({ activeSection, setActiveSection, onItemClick, user, pl
   );
 }
 
+function AccountMenuContent({ user, onItemClick, onLogout, setActiveSection }) {
+  return (
+    <div className="flex flex-col h-full py-4 px-6">
+      {/* Profile Header */}
+      {user ? (
+        <div className="flex items-center gap-4 mb-6">
+          <img
+            src={user.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.name)}`}
+            alt={user.name}
+            className="w-14 h-14 rounded-full object-cover bg-cyan-950 border border-white/10 shadow-lg"
+          />
+          <div className="flex flex-col">
+            <span className="text-white text-xl font-extrabold tracking-tight">{user.name}</span>
+            <span className="text-white/50 text-xs font-semibold mt-0.5 hover:text-white transition-colors cursor-pointer">View profile</span>
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-center gap-4 mb-6 cursor-pointer" onClick={() => { setActiveSection('login'); onItemClick?.(); }}>
+          <div className="w-14 h-14 rounded-full bg-white/[0.04] flex items-center justify-center border border-white/10 shadow-lg">
+            <User size={28} className="text-white/40" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-white text-xl font-extrabold tracking-tight">Sign In</span>
+            <span className="text-white/50 text-xs font-semibold mt-0.5 hover:text-white transition-colors cursor-pointer">Log in to view profile</span>
+          </div>
+        </div>
+      )}
+
+      {/* Thin Line */}
+      <hr className="border-white/[0.08] my-2" />
+
+      {/* Menu Items */}
+      <nav className="flex flex-col gap-1 mt-4">
+        <button className="flex items-center gap-4 px-2 py-3.5 text-white hover:bg-white/[0.04] rounded-xl transition-all text-left">
+          <Plus size={22} className="text-white/70" />
+          <span className="font-semibold text-base">Add account</span>
+        </button>
+        <button className="flex items-center gap-4 px-2 py-3.5 text-white hover:bg-white/[0.04] rounded-xl transition-all text-left">
+          <History size={22} className="text-white/70" />
+          <span className="font-semibold text-base">Recents</span>
+        </button>
+        <button className="flex items-center gap-4 px-2 py-3.5 text-white hover:bg-white/[0.04] rounded-xl transition-all text-left">
+          <Bell size={22} className="text-white/70" />
+          <span className="font-semibold text-base">Your updates</span>
+        </button>
+        <button className="flex items-center gap-4 px-2 py-3.5 text-white hover:bg-white/[0.04] rounded-xl transition-all text-left">
+          <Settings size={22} className="text-white/70" />
+          <span className="font-semibold text-base">Settings and privacy</span>
+        </button>
+      </nav>
+      
+      {/* Log out button */}
+      {user && onLogout && (
+        <button 
+          onClick={() => { onLogout(); onItemClick?.(); }}
+          className="mt-6 mx-2 w-max px-6 py-2.5 rounded-full border border-white/20 text-white font-bold text-sm hover:bg-white/10 transition-colors shadow-md"
+        >
+          Log out
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function Sidebar({ user, search, setSearch, onLogout }) {
   const { activeSection, setActiveSection, playlists, createPlaylist } = usePlayer();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -205,12 +269,11 @@ export default function Sidebar({ user, search, setSearch, onLogout }) {
             </div>
 
             <div className="pb-24">
-              <SidebarContent
-                activeSection={activeSection}
-                setActiveSection={setActiveSection}
-                onItemClick={() => setMobileOpen(false)}
+              <AccountMenuContent
                 user={user}
+                onItemClick={() => setMobileOpen(false)}
                 onLogout={onLogout}
+                setActiveSection={setActiveSection}
               />
             </div>
           </div>
