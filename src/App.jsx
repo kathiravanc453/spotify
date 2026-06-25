@@ -298,6 +298,32 @@ export default function App() {
     } catch { return null; }
   });
 
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    const loadSession = () => {
+      try {
+        const session = localStorage.getItem('rhythmix_session');
+        if (session) {
+          setUser(JSON.parse(session));
+        } else {
+          setUser(null);
+        }
+      } catch (e) {
+        console.error('Error loading session', e);
+      }
+    };
+    
+    loadSession();
+    window.addEventListener('storage', loadSession);
+    window.addEventListener('userUpdated', loadSession);
+    
+    return () => {
+      window.removeEventListener('storage', loadSession);
+      window.removeEventListener('userUpdated', loadSession);
+    };
+  }, []);
+
   const handleLogout = async () => {
     localStorage.removeItem('rhythmix_session');
     localStorage.removeItem('rhythmix_admin_session');

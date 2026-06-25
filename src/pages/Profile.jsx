@@ -1,22 +1,82 @@
-import React from 'react';
-import { ArrowLeft, Settings, MoreVertical, Pencil, Music2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Settings, MoreVertical, Pencil, Music2, X, Share, Eye, QrCode } from 'lucide-react';
 import { usePlayer } from '../context/PlayerContext';
 
 export default function Profile() {
   const { user, playlists, setActiveSection } = usePlayer();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [showMenu, setShowMenu] = useState(false);
 
   if (!user) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen text-white">
+      <div className="flex flex-col items-center justify-center min-h-screen text-white bg-[#121212]">
         <p>Please log in to view profile.</p>
         <button onClick={() => setActiveSection('login')} className="mt-4 px-4 py-2 bg-cyan-500 rounded-full text-black font-bold">Log In</button>
       </div>
     );
   }
 
-  // Get first letter of name for the avatar
+  const handleEditClick = () => {
+    setEditName(user.name || '');
+    setIsEditing(true);
+  };
+
+  const handleSave = () => {
+    if (editName.trim() === '') return;
+    const updatedUser = { ...user, name: editName.trim() };
+    localStorage.setItem('rhythmix_session', JSON.stringify(updatedUser));
+    window.dispatchEvent(new Event('userUpdated')); // Broadcast change to App.jsx
+    setIsEditing(false);
+  };
+
   const initial = user.name ? user.name.charAt(0).toUpperCase() : '?';
 
+  // ─── Edit Profile Full Screen Modal ──────────────────────────────
+  if (isEditing) {
+    return (
+      <div className="fixed inset-0 z-[200] bg-[#121212] flex flex-col animate-in slide-in-from-bottom-4 duration-300">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-4">
+          <button onClick={() => setIsEditing(false)} className="text-white hover:text-white/80 p-1 cursor-pointer">
+            <X size={24} />
+          </button>
+          <h1 className="text-white font-bold text-lg">Edit profile</h1>
+          <button onClick={handleSave} className="text-white font-bold hover:text-white/80 p-1 cursor-pointer">
+            Save
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex flex-col items-center mt-8 px-6">
+          <div className="relative">
+            <div className="w-32 h-32 rounded-full bg-[#d28b61] flex items-center justify-center shadow-2xl">
+              <span className="text-black text-6xl font-bold">{initial}</span>
+            </div>
+            <button className="absolute bottom-0 right-0 w-8 h-8 bg-white rounded-md flex items-center justify-center shadow-lg hover:bg-gray-200 transition-colors cursor-pointer">
+              <Pencil size={16} className="text-black" />
+            </button>
+          </div>
+
+          <div className="w-full mt-12 flex flex-col">
+            <div className="flex items-center justify-between">
+              <label className="text-white font-bold text-sm w-20">Name</label>
+              <input 
+                type="text" 
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                className="flex-1 bg-transparent text-white outline-none text-sm font-medium border-none"
+                autoFocus
+              />
+            </div>
+            <hr className="border-white/10 mt-3" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Normal Profile View ─────────────────────────────────────────
   return (
     <div className="flex flex-col h-full bg-[#121212] overflow-y-auto w-full pb-6">
       {/* Top Gradient Background */}
@@ -38,16 +98,43 @@ export default function Profile() {
           </div>
 
           {/* Action Row */}
-          <div className="flex items-center gap-5 mt-6">
-            <button className="px-4 py-1.5 rounded-full border border-white/30 text-white font-bold text-xs hover:border-white transition cursor-pointer">
+          <div className="flex items-center gap-5 mt-6 relative w-full">
+            <button onClick={handleEditClick} className="px-4 py-1.5 rounded-full border border-white/30 text-white font-bold text-xs hover:border-white transition cursor-pointer">
               Edit
             </button>
-            <button className="text-white/80 hover:text-white transition p-1 cursor-pointer">
+            <button className="text-white/80 hover:text-white transition p-1 cursor-pointer ml-auto">
               <Settings size={20} />
             </button>
-            <button className="text-white/80 hover:text-white transition p-1 cursor-pointer">
-              <MoreVertical size={20} />
-            </button>
+            
+            <div className="relative">
+              <button 
+                onClick={() => setShowMenu(!showMenu)} 
+                className="text-white/80 hover:text-white transition p-1 cursor-pointer"
+              >
+                <MoreVertical size={20} />
+              </button>
+
+              {/* 3-Dot Dropdown Menu */}
+              {showMenu && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)}></div>
+                  <div className="absolute right-0 top-full mt-2 w-56 bg-[#282828] rounded-md shadow-2xl z-50 py-1 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                    <button className="w-full flex items-center gap-3 px-4 py-3 text-white/90 hover:bg-white/10 transition-colors text-sm font-medium text-left">
+                      <Share size={18} />
+                      Share
+                    </button>
+                    <button className="w-full flex items-center gap-3 px-4 py-3 text-white/90 hover:bg-white/10 transition-colors text-sm font-medium text-left">
+                      <Eye size={18} />
+                      Preview profile
+                    </button>
+                    <button className="w-full flex items-center gap-3 px-4 py-3 text-white/90 hover:bg-white/10 transition-colors text-sm font-medium text-left">
+                      <QrCode size={18} />
+                      Show Rhythmix code
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
