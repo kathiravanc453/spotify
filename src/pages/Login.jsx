@@ -145,12 +145,13 @@ export default function Login({ onLogin, onClose }) {
       }
 
       let userCredential;
-      const generatedName = email.split('@')[0];
-      const generatedAvatar = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(email)}`;
-      const isSystemAdmin = email === ADMIN_EMAIL;
+      const cleanEmail = email.trim();
+      const generatedName = cleanEmail.split('@')[0];
+      const generatedAvatar = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(cleanEmail)}`;
+      const isSystemAdmin = cleanEmail === ADMIN_EMAIL;
 
       if (isSignUp) {
-        userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, password);
         const fbUser = userCredential.user;
         
         // 1. Update Firebase Auth Profile
@@ -166,9 +167,17 @@ export default function Login({ onLogin, onClose }) {
             createdAt: new Date().toISOString()
           }).catch(err => console.error("Firestore Error (Did you create the database?):", err));
         }
+
+        // Successfully registered! Now log them into the app:
+        finalizeLogin({
+          email: fbUser.email,
+          uid: fbUser.uid,
+          avatar: generatedAvatar,
+        });
+        return;
       } else {
         try {
-          userCredential = await signInWithEmailAndPassword(auth, email, password);
+          userCredential = await signInWithEmailAndPassword(auth, cleanEmail, password);
           const fbUser = userCredential.user;
           finalizeLogin({
             email: fbUser.email,
