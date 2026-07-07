@@ -91,8 +91,8 @@ export default function SettingsPlayback() {
           <div className="flex items-center justify-between">
             <div className="pr-4">
               <p className="text-white font-medium">Picture in picture</p>
-              <p className="text-white/60 text-sm mt-1 leading-snug">Shrink video in a mini player when you leave Spotify, so you can continue watching while using apps.</p>
-              <p className="text-white/40 text-xs mt-2 italic">In Android settings, go to Apps &gt; Special app access &gt; Picture-in-picture &gt; Spotify to allow picture-in-picture.</p>
+              <p className="text-white/60 text-sm mt-1 leading-snug">Shrink video in a mini player when you leave Rhythmix, so you can continue watching while using apps.</p>
+              <p className="text-white/40 text-xs mt-2 italic">In Android settings, go to Apps &gt; Special app access &gt; Picture-in-picture &gt; Rhythmix to allow picture-in-picture.</p>
             </div>
             <Switch checked={pictureInPicture} onChange={setPictureInPicture} />
           </div>

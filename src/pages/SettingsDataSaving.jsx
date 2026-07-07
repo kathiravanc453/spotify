@@ -97,7 +97,7 @@ export default function SettingsDataSaving() {
             <div className="pr-4">
               <p className="text-white font-medium">Audio-only streaming for video podcasts</p>
               <p className="text-white/60 text-sm mt-1 leading-snug">Video podcasts play as audio-only when you're not connected to Wi-Fi.</p>
-              <p className="text-white/40 text-xs mt-2 italic">Video is never streamed when the Spotify app is running in the background.</p>
+              <p className="text-white/40 text-xs mt-2 italic">Video is never streamed when the Rhythmix app is running in the background.</p>
             </div>
             <Switch checked={audioOnlyStreaming} onChange={setAudioOnlyStreaming} />
           </div>

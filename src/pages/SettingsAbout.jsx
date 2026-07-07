@@ -47,7 +47,7 @@ export default function SettingsAbout() {
         <div className="w-12 h-12 bg-white/10 rounded-xl mb-4 flex items-center justify-center">
           <span className="text-white font-bold text-xl">S</span>
         </div>
-        <p className="text-white/60 text-xs text-center">© 2026 Rhythmix (Spotify Clone Demo).<br/>All rights reserved.</p>
+        <p className="text-white/60 text-xs text-center">© 2026 Rhythmix.<br/>All rights reserved.</p>
       </div>
 
     </div>

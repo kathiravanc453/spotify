@@ -61,7 +61,7 @@ export default function SettingsStorage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 rounded-full bg-cyan-400" />
-                <span className="text-white font-medium">Spotify downloads</span>
+                <span className="text-white font-medium">Rhythmix downloads</span>
               </div>
               <span className="text-white/60">{downloadsSize.toFixed(1)} MB</span>
             </div>
@@ -69,7 +69,7 @@ export default function SettingsStorage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 rounded-full bg-cyan-600" />
-                <span className="text-white font-medium">Spotify cache</span>
+                <span className="text-white font-medium">Rhythmix cache</span>
               </div>
               <span className="text-white/60">{cacheSize.toFixed(1)} MB</span>
             </div>
@@ -92,7 +92,7 @@ export default function SettingsStorage() {
             className="w-full text-left py-3 group disabled:opacity-50"
           >
             <p className="text-white font-medium group-hover:text-cyan-400 transition-colors">Remove all downloads</p>
-            <p className="text-white/60 text-sm mt-1 leading-snug">Remove all the Spotify content you've downloaded to free up space.</p>
+            <p className="text-white/60 text-sm mt-1 leading-snug">Remove all the Rhythmix content you've downloaded to free up space.</p>
           </button>
           
           <button 
