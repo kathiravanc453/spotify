@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { splitArtists } from '../utils/cleanTitle';
+import { db } from '../firebase';
+import { doc, setDoc, getDoc, onSnapshot } from 'firebase/firestore';
 
 const PlayerContext = createContext(null);
 
@@ -152,6 +154,113 @@ export function PlayerProvider({ children, user }) {
   const [playlists, setPlaylists] = useState([]);
   const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState(false);
   const [songForPlaylist, setSongForPlaylist] = useState(null);
+
+  // ─── FIRESTORE REAL-TIME SYNC ──────────────────────────────────────────────
+  const isCloudSyncing = useRef(false);
+
+  useEffect(() => {
+    if (!user || !db) return;
+
+    // 1. Initial Migration / Fetch
+    const syncData = async () => {
+      try {
+        const userRef = doc(db, 'userData', user.uid);
+        const snap = await getDoc(userRef);
+        
+        if (!snap.exists()) {
+          // Migrate local data to cloud
+          const localData = {
+            favorites,
+            playlists,
+            recentlyPlayed,
+            musicLanguages,
+            appLanguage,
+            reduceAnimations,
+            infiniteDj,
+            customQueue
+          };
+          await setDoc(userRef, localData, { merge: true });
+        } else {
+          // Load from cloud (only on first mount)
+          isCloudSyncing.current = true;
+          const data = snap.data();
+          if (data.favorites !== undefined) setFavorites(data.favorites);
+          if (data.playlists !== undefined) setPlaylists(data.playlists);
+          if (data.recentlyPlayed !== undefined) setRecentlyPlayed(data.recentlyPlayed);
+          if (data.musicLanguages !== undefined) setMusicLanguages(data.musicLanguages);
+          if (data.appLanguage !== undefined) setAppLanguage(data.appLanguage);
+          if (data.reduceAnimations !== undefined) setReduceAnimations(data.reduceAnimations);
+          if (data.infiniteDj !== undefined) setInfiniteDj(data.infiniteDj);
+          if (data.customQueue !== undefined) setCustomQueue(data.customQueue);
+          
+          // Re-sync local storage so offline mode works next time
+          try {
+            if (data.favorites) localStorage.setItem(`rhythmix_favorites_${user.email}`, JSON.stringify(data.favorites));
+            if (data.playlists) localStorage.setItem(`rhythmix_playlists_${user.email}`, JSON.stringify(data.playlists));
+            if (data.recentlyPlayed) localStorage.setItem('rhythmix_recently_played', JSON.stringify(data.recentlyPlayed));
+            if (data.musicLanguages) localStorage.setItem('rhythmix_music_langs', JSON.stringify(data.musicLanguages));
+            if (data.appLanguage) localStorage.setItem('rhythmix_app_lang', data.appLanguage);
+            if (data.reduceAnimations) localStorage.setItem('rhythmix_reduce_anim', JSON.stringify(data.reduceAnimations));
+            if (data.infiniteDj) localStorage.setItem('rhythmix_infinite_dj', JSON.stringify(data.infiniteDj));
+            if (data.customQueue) localStorage.setItem('rhythmix_custom_queue', JSON.stringify(data.customQueue));
+          } catch (e) {}
+          
+          setTimeout(() => { isCloudSyncing.current = false; }, 1000); // Debounce write-backs
+        }
+      } catch (err) {
+        console.error("Firestore sync error:", err);
+      }
+    };
+    
+    syncData();
+    
+    // 2. Real-time Listener
+    const unsubscribe = onSnapshot(doc(db, 'userData', user.uid), (docSnap) => {
+      if (docSnap.exists() && !isCloudSyncing.current) {
+        isCloudSyncing.current = true;
+        const data = docSnap.data();
+        if (data.favorites) setFavorites(data.favorites);
+        if (data.playlists) setPlaylists(data.playlists);
+        if (data.recentlyPlayed) setRecentlyPlayed(data.recentlyPlayed);
+        if (data.musicLanguages) setMusicLanguages(data.musicLanguages);
+        if (data.appLanguage) setAppLanguage(data.appLanguage);
+        if (data.reduceAnimations) setReduceAnimations(data.reduceAnimations);
+        if (data.infiniteDj) setInfiniteDj(data.infiniteDj);
+        if (data.customQueue) setCustomQueue(data.customQueue);
+        
+        // Save to local storage
+        try {
+          if (data.favorites) localStorage.setItem(`rhythmix_favorites_${user.email}`, JSON.stringify(data.favorites));
+          if (data.playlists) localStorage.setItem(`rhythmix_playlists_${user.email}`, JSON.stringify(data.playlists));
+          if (data.recentlyPlayed) localStorage.setItem('rhythmix_recently_played', JSON.stringify(data.recentlyPlayed));
+        } catch(e) {}
+        
+        setTimeout(() => { isCloudSyncing.current = false; }, 1000);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [user]); // We only trigger on user change to load data
+
+  // 3. Write changes to Firestore whenever state changes locally
+  useEffect(() => {
+    if (!user || !db || isCloudSyncing.current) return;
+    
+    const timeout = setTimeout(() => {
+      setDoc(doc(db, 'userData', user.uid), {
+        favorites,
+        playlists,
+        recentlyPlayed,
+        musicLanguages,
+        appLanguage,
+        reduceAnimations,
+        infiniteDj,
+        customQueue
+      }, { merge: true }).catch(err => console.error("Firestore write error:", err));
+    }, 1000); // Debounce writes
+    
+    return () => clearTimeout(timeout);
+  }, [favorites, playlists, recentlyPlayed, musicLanguages, appLanguage, reduceAnimations, infiniteDj, customQueue, user]);
 
 
   const audioRef = useRef(null);
