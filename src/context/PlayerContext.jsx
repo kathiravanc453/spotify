@@ -40,6 +40,65 @@ export function PlayerProvider({ children, user }) {
     try { return JSON.parse(localStorage.getItem('rhythmix_infinite_dj')) || false; } catch { return false; }
   });
 
+
+  // ─── Extended Settings State ──────────────────────────────────────────────
+  const [gaplessPlayback, setGaplessPlayback] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('rhythmix_gapless')) ?? true; } catch { return true; }
+  });
+  const [autoplayEnabled, setAutoplayEnabled] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('rhythmix_autoplay')) ?? true; } catch { return true; }
+  });
+  const [monoAudio, setMonoAudio] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('rhythmix_mono')) ?? false; } catch { return false; }
+  });
+  const [deviceBroadcast, setDeviceBroadcast] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('rhythmix_broadcast')) ?? false; } catch { return false; }
+  });
+  const [pictureInPicture, setPictureInPicture] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('rhythmix_pip')) ?? false; } catch { return false; }
+  });
+  
+  const [dataSaverMode, setDataSaverMode] = useState(() => {
+    try { return localStorage.getItem('rhythmix_data_saver') || 'Always off'; } catch { return 'Always off'; }
+  });
+  const [cellularDownloads, setCellularDownloads] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('rhythmix_cell_dl')) ?? false; } catch { return false; }
+  });
+  const [audioOnlyDownloads, setAudioOnlyDownloads] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('rhythmix_audio_dl')) ?? false; } catch { return false; }
+  });
+  const [audioOnlyStreaming, setAudioOnlyStreaming] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('rhythmix_audio_stream')) ?? false; } catch { return false; }
+  });
+
+  const [wifiQuality, setWifiQuality] = useState(() => {
+    try { return localStorage.getItem('rhythmix_wifi_q') || 'Automatic'; } catch { return 'Automatic'; }
+  });
+  const [cellularQuality, setCellularQuality] = useState(() => {
+    try { return localStorage.getItem('rhythmix_cell_q') || 'Automatic'; } catch { return 'Automatic'; }
+  });
+  const [autoAdjustQuality, setAutoAdjustQuality] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('rhythmix_auto_adjust')) ?? true; } catch { return true; }
+  });
+  const [downloadQuality, setDownloadQuality] = useState(() => {
+    try { return localStorage.getItem('rhythmix_dl_q') || 'Normal'; } catch { return 'Normal'; }
+  });
+
+  // Effects to persist to localStorage instantly on change
+  useEffect(() => { try { localStorage.setItem('rhythmix_gapless', JSON.stringify(gaplessPlayback)); } catch(e){} }, [gaplessPlayback]);
+  useEffect(() => { try { localStorage.setItem('rhythmix_autoplay', JSON.stringify(autoplayEnabled)); } catch(e){} }, [autoplayEnabled]);
+  useEffect(() => { try { localStorage.setItem('rhythmix_mono', JSON.stringify(monoAudio)); } catch(e){} }, [monoAudio]);
+  useEffect(() => { try { localStorage.setItem('rhythmix_broadcast', JSON.stringify(deviceBroadcast)); } catch(e){} }, [deviceBroadcast]);
+  useEffect(() => { try { localStorage.setItem('rhythmix_pip', JSON.stringify(pictureInPicture)); } catch(e){} }, [pictureInPicture]);
+  useEffect(() => { try { localStorage.setItem('rhythmix_data_saver', dataSaverMode); } catch(e){} }, [dataSaverMode]);
+  useEffect(() => { try { localStorage.setItem('rhythmix_cell_dl', JSON.stringify(cellularDownloads)); } catch(e){} }, [cellularDownloads]);
+  useEffect(() => { try { localStorage.setItem('rhythmix_audio_dl', JSON.stringify(audioOnlyDownloads)); } catch(e){} }, [audioOnlyDownloads]);
+  useEffect(() => { try { localStorage.setItem('rhythmix_audio_stream', JSON.stringify(audioOnlyStreaming)); } catch(e){} }, [audioOnlyStreaming]);
+  useEffect(() => { try { localStorage.setItem('rhythmix_wifi_q', wifiQuality); } catch(e){} }, [wifiQuality]);
+  useEffect(() => { try { localStorage.setItem('rhythmix_cell_q', cellularQuality); } catch(e){} }, [cellularQuality]);
+  useEffect(() => { try { localStorage.setItem('rhythmix_auto_adjust', JSON.stringify(autoAdjustQuality)); } catch(e){} }, [autoAdjustQuality]);
+  useEffect(() => { try { localStorage.setItem('rhythmix_dl_q', downloadQuality); } catch(e){} }, [downloadQuality]);
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try { localStorage.setItem('rhythmix_infinite_dj', JSON.stringify(infiniteDj)); } catch (e) {}
@@ -175,9 +234,24 @@ export function PlayerProvider({ children, user }) {
             recentlyPlayed,
             musicLanguages,
             appLanguage,
+            
             reduceAnimations,
             infiniteDj,
-            customQueue
+            customQueue,
+            gaplessPlayback,
+            autoplayEnabled,
+            monoAudio,
+            deviceBroadcast,
+            pictureInPicture,
+            dataSaverMode,
+            cellularDownloads,
+            audioOnlyDownloads,
+            audioOnlyStreaming,
+            wifiQuality,
+            cellularQuality,
+            autoAdjustQuality,
+            downloadQuality
+
           };
           await setDoc(userRef, localData, { merge: true });
         } else {
@@ -192,6 +266,20 @@ export function PlayerProvider({ children, user }) {
           if (data.reduceAnimations !== undefined) setReduceAnimations(data.reduceAnimations);
           if (data.infiniteDj !== undefined) setInfiniteDj(data.infiniteDj);
           if (data.customQueue !== undefined) setCustomQueue(data.customQueue);
+          
+          if (data.gaplessPlayback !== undefined) setGaplessPlayback(data.gaplessPlayback);
+          if (data.autoplayEnabled !== undefined) setAutoplayEnabled(data.autoplayEnabled);
+          if (data.monoAudio !== undefined) setMonoAudio(data.monoAudio);
+          if (data.deviceBroadcast !== undefined) setDeviceBroadcast(data.deviceBroadcast);
+          if (data.pictureInPicture !== undefined) setPictureInPicture(data.pictureInPicture);
+          if (data.dataSaverMode !== undefined) setDataSaverMode(data.dataSaverMode);
+          if (data.cellularDownloads !== undefined) setCellularDownloads(data.cellularDownloads);
+          if (data.audioOnlyDownloads !== undefined) setAudioOnlyDownloads(data.audioOnlyDownloads);
+          if (data.audioOnlyStreaming !== undefined) setAudioOnlyStreaming(data.audioOnlyStreaming);
+          if (data.wifiQuality !== undefined) setWifiQuality(data.wifiQuality);
+          if (data.cellularQuality !== undefined) setCellularQuality(data.cellularQuality);
+          if (data.autoAdjustQuality !== undefined) setAutoAdjustQuality(data.autoAdjustQuality);
+          if (data.downloadQuality !== undefined) setDownloadQuality(data.downloadQuality);
           
           // Re-sync local storage so offline mode works next time
           try {
@@ -253,14 +341,28 @@ export function PlayerProvider({ children, user }) {
         recentlyPlayed,
         musicLanguages,
         appLanguage,
+        
         reduceAnimations,
         infiniteDj,
-        customQueue
+        customQueue,
+        gaplessPlayback,
+        autoplayEnabled,
+        monoAudio,
+        deviceBroadcast,
+        pictureInPicture,
+        dataSaverMode,
+        cellularDownloads,
+        audioOnlyDownloads,
+        audioOnlyStreaming,
+        wifiQuality,
+        cellularQuality,
+        autoAdjustQuality,
+        downloadQuality
       }, { merge: true }).catch(err => console.error("Firestore write error:", err));
     }, 1000); // Debounce writes
     
     return () => clearTimeout(timeout);
-  }, [favorites, playlists, recentlyPlayed, musicLanguages, appLanguage, reduceAnimations, infiniteDj, customQueue, user]);
+  }, [favorites, playlists, recentlyPlayed, musicLanguages, appLanguage, reduceAnimations, infiniteDj, customQueue, gaplessPlayback, autoplayEnabled, monoAudio, deviceBroadcast, pictureInPicture, dataSaverMode, cellularDownloads, audioOnlyDownloads, audioOnlyStreaming, wifiQuality, cellularQuality, autoAdjustQuality, downloadQuality, user]);
 
 
   const audioRef = useRef(null);
@@ -997,6 +1099,19 @@ export function PlayerProvider({ children, user }) {
       appLanguage, setAppLanguage,
       reduceAnimations, setReduceAnimations,
       infiniteDj, setInfiniteDj,
+      gaplessPlayback, setGaplessPlayback,
+      autoplayEnabled, setAutoplayEnabled,
+      monoAudio, setMonoAudio,
+      deviceBroadcast, setDeviceBroadcast,
+      pictureInPicture, setPictureInPicture,
+      dataSaverMode, setDataSaverMode,
+      cellularDownloads, setCellularDownloads,
+      audioOnlyDownloads, setAudioOnlyDownloads,
+      audioOnlyStreaming, setAudioOnlyStreaming,
+      wifiQuality, setWifiQuality,
+      cellularQuality, setCellularQuality,
+      autoAdjustQuality, setAutoAdjustQuality,
+      downloadQuality, setDownloadQuality,
       isShuffle, setIsShuffle, 
       repeatMode, setRepeatMode,
       stopPlayback,

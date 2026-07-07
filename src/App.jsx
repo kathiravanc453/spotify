@@ -26,6 +26,12 @@ const SearchBrowse = lazy(() => import('./pages/SearchBrowse'));
 const Artist = lazy(() => import('./pages/Artist'));
 const Actor = lazy(() => import('./pages/Actor'));
 const Profile = lazy(() => import('./pages/Profile'));
+
+const SettingsPlayback = lazy(() => import('./pages/SettingsPlayback'));
+const SettingsDataSaving = lazy(() => import('./pages/SettingsDataSaving'));
+const SettingsStorage = lazy(() => import('./pages/SettingsStorage'));
+const SettingsMediaQuality = lazy(() => import('./pages/SettingsMediaQuality'));
+const SettingsAbout = lazy(() => import('./pages/SettingsAbout'));
 import ToastProvider from './components/ui/Toast';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import useMediaSession from './hooks/useMediaSession';
@@ -184,6 +190,11 @@ function AppContent({ user, onLogout, onLogin }) {
     if (activeSection === 'premium-plans') return <PremiumPlans />;
     if (activeSection === 'content-display') return <ContentDisplay />;
     if (activeSection === 'language-options') return <LanguageOptions />;
+    if (activeSection === 'settings-playback') return <SettingsPlayback />;
+    if (activeSection === 'settings-data-saving') return <SettingsDataSaving />;
+    if (activeSection === 'settings-storage') return <SettingsStorage />;
+    if (activeSection === 'settings-media-quality') return <SettingsMediaQuality />;
+    if (activeSection === 'settings-about') return <SettingsAbout />;
     if (activeSection === 'library' || activeSection === 'favorites' || activeSection?.startsWith('playlist_')) return <Library />;
     if (activeSection === 'albums')      return <Albums setSearch={handleSearch} />;
     if (activeSection === 'now-playing') return <Playback />;

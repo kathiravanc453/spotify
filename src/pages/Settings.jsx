@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, Contact, ShieldCheck, PlayCircle, Smartphone, Wifi, AudioLines, Megaphone, HelpCircle, ChevronRight, Crown } from 'lucide-react';
+import { User, Contact, ShieldCheck, PlayCircle, Smartphone, Wifi, AudioLines, Megaphone, HelpCircle, ChevronRight, Crown, Database } from 'lucide-react';
 import { usePlayer } from '../context/PlayerContext';
 
 export default function Settings() {
@@ -9,12 +9,13 @@ export default function Settings() {
     { label: 'Account', icon: User, id: 'account-settings' },
     { label: 'Content and display', icon: Contact, id: 'content-display' },
     { label: 'Privacy and social', icon: ShieldCheck },
-    { label: 'Playback', icon: PlayCircle },
+    { label: 'Playback', icon: PlayCircle, id: 'settings-playback' },
     { label: 'App and devices', icon: Smartphone },
-    { label: 'Data saving and offline', icon: Wifi },
-    { label: 'Media quality', icon: AudioLines },
+    { label: 'Data saving and offline', icon: Wifi, id: 'settings-data-saving' },
+    { label: 'Storage', icon: Database, id: 'settings-storage' },
+    { label: 'Media quality', icon: AudioLines, id: 'settings-media-quality' },
     { label: 'Advertisement', icon: Megaphone },
-    { label: 'About and support', icon: HelpCircle },
+    { label: 'About and support', icon: HelpCircle, id: 'settings-about' },
   ];
 
   return (
