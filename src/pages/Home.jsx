@@ -5,16 +5,17 @@ import SongRow from '../components/shared/SongRow';
 import { SongCardSkeleton, SongRowSkeleton } from '../components/ui/Skeleton';
 import { 
   TrendingUp, Star, Clock, Music, Loader2, Music2, Heart, Zap, Coffee, Sparkles, Search, X, Play,
-  Flame, Disc3, Waves, Compass, FolderHeart, CloudRain
+  Flame, Disc3, Waves, Compass, FolderHeart, CloudRain, Radio, FastForward, Repeat, Hash, Shuffle, MessageSquare, Quote
 } from 'lucide-react';
 import { cleanTitle, splitArtists } from '../utils/cleanTitle';
 import artistImages from '../data/artistImages.json';
 import { db } from '../firebase';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { useTranslation } from '../utils/i18n';
 
 const ICON_MAP = {
   TrendingUp, Star, Clock, Music, Loader2, Music2, Heart, Zap, Coffee, Sparkles, Search, X, Play,
-  Flame, Disc3, Waves, Compass, FolderHeart, CloudRain
+  Flame, Disc3, Waves, Compass, FolderHeart, CloudRain, Radio, FastForward, Repeat, Hash, Shuffle, MessageSquare, Quote
 };
 
 // Curated static folders for the homepage sections
@@ -301,6 +302,84 @@ const CURATED_PODCASTS = [
   }
 ];
 
+const LIVE_RADIO_STATIONS = [
+  {
+    id: "radio_arr",
+    title: "A.R. Rahman Radio",
+    subtitle: "Endless hits from the Maestro",
+    query: "A R Rahman hits radio",
+    cover: "https://images.unsplash.com/photo-1493225457124-a1a2a5f0f06a?w=500"
+  },
+  {
+    id: "radio_anirudh",
+    title: "Anirudh Radio",
+    subtitle: "High energy Rockstar hits",
+    query: "Anirudh Ravichander hits radio",
+    cover: "https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=500"
+  },
+  {
+    id: "radio_90s",
+    title: "90s Nostalgia Radio",
+    subtitle: "Continuous 90s gold",
+    query: "90s tamil hits radio",
+    cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500"
+  },
+  {
+    id: "radio_melody",
+    title: "Melody Radio",
+    subtitle: "Sweet, non-stop melodies",
+    query: "tamil melody hits radio",
+    cover: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=500"
+  }
+];
+
+const TIME_MACHINE_FOLDERS = [
+  {
+    id: "tm_80s",
+    title: "80s Rewind",
+    subtitle: "The golden era of Ilaiyaraaja",
+    query: "Ilaiyaraaja 80s hits",
+    color: "from-amber-700 to-yellow-900",
+    icon: Disc3,
+    cover: "https://images.unsplash.com/photo-1508215885820-4585e5610924?w=500"
+  },
+  {
+    id: "tm_90s",
+    title: "90s Kids Classics",
+    subtitle: "ARR & Vidyasagar beginnings",
+    query: "tamil 90s hits classic",
+    color: "from-orange-800 to-red-900",
+    icon: Coffee,
+    cover: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=500"
+  },
+  {
+    id: "tm_00s",
+    title: "2000s Y2K",
+    subtitle: "The Harris & Yuvan era",
+    query: "tamil 2000s super hits",
+    color: "from-stone-700 to-neutral-900",
+    icon: Compass,
+    cover: "https://images.unsplash.com/photo-1516280440614-37939bbacd6a?w=500"
+  }
+];
+
+const COMMUNITY_TICKER_MESSAGES = [
+  "Rahul is listening to Leo - Badass",
+  "Priya just favorited PS-1 Ponni Nadhi",
+  "Karthik is streaming A.R. Rahman Hits",
+  "Sneha is currently playing Jailer - Hukum",
+  "Vijay added Master - Vaathi Coming to their queue",
+  "Anand is vibing to 90s Nostalgia Radio"
+];
+
+const LYRICAL_QUOTES = [
+  { text: "Kanne kalaimaane, kanni mayilena kanden...", artist: "Ilaiyaraaja", song: "Moondram Pirai" },
+  { text: "Munbe vaa en anbe vaa, oone vaa uyire vaa...", artist: "A.R. Rahman", song: "Sillunu Oru Kadhal" },
+  { text: "Ennai thalatta varuvala, ennai thaalaatta varuvala...", artist: "Ilaiyaraaja", song: "Kadhalukku Mariyadhai" },
+  { text: "Nenjukkul peidhidum maa mazhai, neerukkul moozhgidum...", artist: "Harris Jayaraj", song: "Vaaranam Aayiram" },
+  { text: "Idhuvarai illadha uravidhu, idhayathil undana kanavidhu...", artist: "Yuvan Shankar Raja", song: "Goa" }
+];
+
 // YOUR 5 MASTER CATEGORIES
 const MASTER_MOODS = ['kuthu', 'romance', 'melody', 'sad', 'vibes'];
 
@@ -325,11 +404,23 @@ function SectionHeader({ icon: Icon, title, gradient }) {
   );
 }
 
-export default function Home({ search = '', setSearch, activeSection = 'home' }) {
-  const { recentlyPlayed = [], allSongs = [], loading = false, playSong, currentSong, playCounts = {}, albumCovers = {}, setActiveArtist, setActiveActor, setActiveSection: setGlobalSection, saavnResults = [], saavnLoading = false, searchSaavnGlobal, saavnHomeData = { trending: [], playlists: [], albums: [] }, saavnHomeLoading = false } = usePlayer() || {};
+const MOOD_PILLS = [
+  { label: 'Dance', icon: Flame, query: 'dance hits' },
+  { label: 'Romance', icon: Heart, query: 'romantic love' },
+  { label: 'Lofi', icon: Coffee, query: 'lofi chill' },
+  { label: 'Party', icon: Zap, query: 'party mix' },
+  { label: 'Melody', icon: Music, query: 'sweet melodies' },
+  { label: 'Sad', icon: CloudRain, query: 'sad broken heart' },
+  { label: 'Retro', icon: Disc3, query: 'retro 80s 90s' }
+];
 
+export default function Home({ search = '', setSearch, activeSection = 'home' }) {
+  const { recentlyPlayed = [], allSongs = [], loading = false, playSong, currentSong, playCounts = {}, albumCovers = {}, setActiveArtist, setActiveActor, setActiveSection: setGlobalSection, saavnResults = [], saavnLoading = false, searchSaavnGlobal, saavnHomeData = { trending: [], playlists: [], albums: [] }, saavnHomeLoading = false, musicLanguages = ['English'] } = usePlayer() || {};
+  const { t } = useTranslation();
+  
   const [customFolders, setCustomFolders] = useState([]);
   const [homeFilter, setHomeFilter] = useState('music'); // music, podcasts, rhythmix_tunes
+  const [heroIndex, setHeroIndex] = useState(0);
 
   useEffect(() => {
     const fetchCustomFolders = async () => {
@@ -360,7 +451,43 @@ export default function Home({ search = '', setSearch, activeSection = 'home' })
     return () => clearTimeout(delayDebounceFn);
   }, [search]);
 
+  // Hero Banner auto-scroll
+  useEffect(() => {
+    if (homeFilter !== 'music' || saavnHomeLoading || !saavnHomeData.trending?.length) return;
+    const interval = setInterval(() => {
+      setHeroIndex(prev => (prev + 1) % Math.min(5, saavnHomeData.trending.length));
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [homeFilter, saavnHomeLoading, saavnHomeData.trending]);
+
   const trending = useMemo(() => allSongs.filter(s => s?.trending), [allSongs]);
+
+  // Generate dynamic mixes based on recently played artists
+  const dynamicMixes = useMemo(() => {
+    if (!recentlyPlayed || recentlyPlayed.length === 0) return [];
+    const artists = recentlyPlayed.map(s => s.artist).filter(Boolean);
+    const uniqueArtists = [...new Set(artists)].slice(0, 5); // top 5 recent artists
+    
+    return uniqueArtists.map((artist, idx) => ({
+      id: `dyn_mix_${idx}`,
+      title: `${artist} Mix`,
+      subtitle: `Your personalized mix for ${artist}`,
+      query: `${artist} best hits ${musicLanguages[0] || ''}`,
+      color: ['from-rose-500 to-red-600', 'from-blue-600 to-indigo-600', 'from-amber-500 to-orange-600', 'from-teal-500 to-emerald-600', 'from-purple-500 to-fuchsia-600'][idx % 5],
+      icon: Music2,
+      cover: `https://ui-avatars.com/api/?name=${encodeURIComponent(artist)}&background=random&color=fff&size=500`
+    }));
+  }, [recentlyPlayed, musicLanguages]);
+
+  // Calculate Heavy Rotation based on playCounts
+  const heavyRotation = useMemo(() => {
+    if (!allSongs || allSongs.length === 0 || Object.keys(playCounts).length === 0) return [];
+    const withCounts = allSongs.filter(s => playCounts[s.id] > 0);
+    withCounts.sort((a, b) => (playCounts[b.id] || 0) - (playCounts[a.id] || 0));
+    return withCounts.slice(0, 6);
+  }, [allSongs, playCounts]);
+
+  const randomQuote = useMemo(() => LYRICAL_QUOTES[Math.floor(Math.random() * LYRICAL_QUOTES.length)], []);
 
   const renderBentoSpotlight = (items) => {
     if (!items || items.length < 3) return null;
@@ -438,7 +565,17 @@ export default function Home({ search = '', setSearch, activeSection = 'home' })
               <div
                 key={folder.id}
                 onClick={() => {
-                  setSearch(folder.query);
+                  const recentArtists = recentlyPlayed.map(s => s.artist?.split(',')[0]).filter(Boolean);
+                  const uniqueArtists = [...new Set(recentArtists)];
+                  let dynamicQuery = folder.query;
+                  
+                  // Make it dynamic by injecting an artist from their listening history
+                  if (uniqueArtists.length > 0) {
+                    const randomArtist = uniqueArtists[Math.floor(Math.random() * uniqueArtists.length)];
+                    dynamicQuery = `${folder.query} ${randomArtist}`;
+                  }
+                  
+                  setSearch(dynamicQuery);
                   setGlobalSection('search');
                 }}
                 className="group relative overflow-hidden rounded-3xl p-5 bg-white/[0.02] border border-white/5 hover:border-white/20 cursor-pointer transition-all duration-500 hover:-translate-y-1.5 shadow-lg flex flex-col justify-between aspect-square select-none flex-shrink-0 w-36 sm:w-44 md:w-48 scroll-snap-start min-h-[160px]"
@@ -471,6 +608,223 @@ export default function Home({ search = '', setSearch, activeSection = 'home' })
       </section>
     );
   };
+
+  const renderRadioStations = (title, subtitle, stationsList) => {
+    if (!stationsList || stationsList.length === 0) return null;
+    return (
+      <section className="mb-12 animate-in fade-in slide-in-from-bottom-8 duration-500">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center border border-red-500/30">
+            <Radio size={20} className="text-red-400" />
+          </div>
+          <div>
+            <h2 className="text-white text-2xl font-bold tracking-tight">{title}</h2>
+            <p className="text-white/40 text-sm font-medium">{subtitle}</p>
+          </div>
+        </div>
+        <div className="flex gap-4 overflow-x-auto scroll-snap-x scrollbar-none pb-4 -mx-4 px-4 md:mx-0 md:px-0">
+          {stationsList.map((station) => (
+            <div
+              key={station.id}
+              onClick={() => {
+                setSearch(station.query);
+                setGlobalSection('search');
+              }}
+              className="group relative overflow-hidden rounded-2xl cursor-pointer transition-all duration-500 hover:-translate-y-2 shadow-2xl flex-shrink-0 w-40 sm:w-48 scroll-snap-start h-64 md:h-72"
+              style={{ scrollSnapAlign: 'start' }}
+            >
+              <div 
+                className="absolute inset-0 bg-cover bg-center transition-transform duration-[10000ms] group-hover:scale-110"
+                style={{ 
+                  backgroundImage: `url(${station.cover})`, 
+                  filter: 'brightness(0.4) saturate(1.2)' 
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-red-950/90 via-black/40 to-transparent z-0" />
+              
+              <div className="absolute top-4 left-4 z-10 flex items-center gap-1.5 px-2 py-1 bg-red-500/20 backdrop-blur-md rounded-md border border-red-500/30">
+                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                <span className="text-[10px] font-bold text-red-200 uppercase tracking-wider">Live Radio</span>
+              </div>
+              
+              <div className="absolute inset-x-4 bottom-4 z-10">
+                <h3 className="text-white font-extrabold text-lg sm:text-xl leading-tight group-hover:text-red-300 transition-colors">{station.title}</h3>
+                <p className="text-white/50 text-xs font-semibold leading-snug mt-2 line-clamp-2">{station.subtitle}</p>
+              </div>
+
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20 backdrop-blur-sm bg-black/20">
+                <div className="w-14 h-14 rounded-full bg-red-500 text-white flex items-center justify-center shadow-[0_0_20px_rgba(239,68,68,0.5)] group-hover:scale-110 transition-transform">
+                  <Play size={24} fill="#fff" className="ml-1" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  };
+
+  const renderTop10Tower = (trendingList) => {
+    if (!trendingList || trendingList.length === 0) return null;
+    const top10 = trendingList.slice(0, 10);
+    return (
+      <section className="mb-12 animate-in fade-in duration-500 bg-gradient-to-b from-white/[0.03] to-transparent rounded-[32px] p-6 md:p-8 border border-white/5 shadow-2xl">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-yellow-400 to-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/20">
+              <Hash size={24} className="text-black" />
+            </div>
+            <div>
+              <h2 className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 to-amber-500 text-3xl font-black tracking-tighter uppercase">Global Top 10</h2>
+              <p className="text-white/40 text-sm font-semibold tracking-wide">The hottest tracks in the world right now</p>
+            </div>
+          </div>
+          <button className="hidden md:flex items-center gap-2 px-6 py-2.5 rounded-full bg-white/5 hover:bg-white/10 text-white font-bold transition-colors">
+            <Play size={16} fill="#fff" /> Play All
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          {top10.map((song, i) => (
+            <div 
+              key={song.id}
+              onClick={() => {
+                if (song.type === 'song') playSong(song, { initialQueue: top10 });
+              }}
+              className="group flex items-center gap-4 md:gap-6 p-3 md:p-4 rounded-2xl hover:bg-white/[0.06] transition-all duration-300 cursor-pointer"
+            >
+              <div className="w-8 md:w-12 text-center flex-shrink-0">
+                <span className={`text-2xl md:text-4xl font-black italic transition-colors duration-300 ${i === 0 ? 'text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.5)]' : i === 1 ? 'text-slate-300' : i === 2 ? 'text-amber-700' : 'text-white/10 group-hover:text-white/30'}`}>
+                  {i + 1}
+                </span>
+              </div>
+              <div className="relative w-14 h-14 md:w-16 md:h-16 rounded-xl overflow-hidden shadow-lg flex-shrink-0">
+                <img src={song.image || song.cover} alt={song.title} className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Play size={20} fill="#fff" />
+                </div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-white text-base md:text-lg font-bold truncate group-hover:text-yellow-100 transition-colors">{cleanTitle(song.title)}</h3>
+                <p className="text-white/50 text-xs md:text-sm truncate font-medium mt-0.5">{song.subtitle || song.artist}</p>
+              </div>
+              <div className="hidden sm:block text-white/30 text-sm font-medium mr-4">
+                {(Math.random() * 5 + 1).toFixed(1)}M Plays
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  };
+
+  const renderHeavyRotation = (songsList) => {
+    if (!songsList || songsList.length === 0) return null;
+    return (
+      <section className="mb-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <h2 className="text-white text-2xl font-bold tracking-tight mb-4">Your Heavy Rotation</h2>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+          {songsList.map((song) => (
+            <div 
+              key={song.id}
+              onClick={() => playSong(song, { initialQueue: songsList })}
+              className="group flex items-center bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/20 rounded-md overflow-hidden cursor-pointer transition-all duration-300 shadow-md hover:shadow-cyan-500/10"
+            >
+              <div className="w-12 h-12 md:w-16 md:h-16 flex-shrink-0 relative">
+                <img src={song.image || song.cover} alt={song.title} className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Play size={16} fill="#fff" />
+                </div>
+              </div>
+              <div className="px-3 md:px-4 py-2 min-w-0 flex-1">
+                <h3 className="text-white text-xs md:text-sm font-bold truncate">{cleanTitle(song.title)}</h3>
+                <p className="text-white/50 text-[10px] md:text-xs truncate font-medium">{song.artist}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  };
+
+  const renderFreshRadar = (albums) => {
+    if (!albums || albums.length === 0) return null;
+    const freshAlbums = albums.slice(0, 10);
+    return (
+      <section className="mb-12 animate-in fade-in duration-500">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30">
+            <Zap size={20} className="text-emerald-400" />
+          </div>
+          <div>
+            <h2 className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-teal-500 text-2xl font-black tracking-tighter uppercase">Fresh Radar</h2>
+            <p className="text-white/40 text-sm font-semibold tracking-wide">Brand new drops</p>
+          </div>
+        </div>
+        <div className="flex gap-4 overflow-x-auto scroll-snap-x scrollbar-none pb-4 -mx-4 px-4 md:mx-0 md:px-0">
+          {freshAlbums.map(album => (
+            <div 
+              key={album.id} 
+              className="group cursor-pointer flex-shrink-0 w-36 sm:w-44 md:w-48 scroll-snap-x transition-all duration-300"
+              style={{ scrollSnapAlign: 'start' }}
+              onClick={() => {
+                setSearch(album.title);
+                setGlobalSection('search');
+              }}
+            >
+              <div className="relative rounded-[24px] aspect-square overflow-hidden mb-3 shadow-lg border border-white/5 hover:border-emerald-500/50 transition-colors duration-300">
+                <img src={album.cover} alt={album.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                <div className="absolute top-2 left-2 z-10 flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/90 rounded-md shadow-lg shadow-emerald-500/20 animate-pulse">
+                  <span className="text-[10px] font-bold text-black uppercase tracking-widest">NEW</span>
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 backdrop-blur-sm bg-black/20">
+                  <Play size={32} fill="#10b981" color="#10b981" className="drop-shadow-[0_0_15px_rgba(16,185,129,0.5)]" />
+                </div>
+              </div>
+              <h3 className="text-white text-sm md:text-base font-bold truncate px-1 group-hover:text-emerald-300 transition-colors">{album.title}</h3>
+              <p className="text-emerald-400/60 text-xs mt-0.5 truncate px-1 font-semibold">Just Dropped</p>
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  };
+
+  const renderQuoteCard = () => (
+    <section className="mb-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
+      <div 
+        onClick={() => {
+          setSearch(randomQuote.song);
+          setGlobalSection('search');
+        }}
+        className="relative overflow-hidden rounded-[32px] p-6 md:p-10 cursor-pointer group shadow-2xl transition-all duration-500 hover:-translate-y-2 hover:shadow-purple-500/20 border border-white/10"
+        style={{ background: 'linear-gradient(135deg, rgba(30,27,75,0.8) 0%, rgba(15,23,42,0.9) 100%)' }}
+      >
+        <div className="absolute -right-10 -top-10 text-white/5 transform group-hover:rotate-12 transition-transform duration-700 group-hover:scale-110">
+          <Quote size={200} />
+        </div>
+        <div className="relative z-10">
+          <div className="flex items-center gap-2 text-purple-400 mb-4">
+            <Sparkles size={16} />
+            <span className="text-xs font-bold uppercase tracking-widest">Quote of the Day</span>
+          </div>
+          <h3 className="text-white text-2xl md:text-4xl font-extrabold italic leading-tight mb-6">
+            "{randomQuote.text}"
+          </h3>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-purple-300 font-bold">{randomQuote.song}</p>
+              <p className="text-white/50 text-sm font-medium mt-1">Music by {randomQuote.artist}</p>
+            </div>
+            <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-purple-500 group-hover:shadow-[0_0_20px_rgba(168,85,247,0.5)] transition-all duration-300">
+              <Play size={20} fill="#fff" className="text-white ml-1" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
 
   // The real "Top Play" — the song with the highest play count, falls back to first song
   const topSong = useMemo(() => {
@@ -589,7 +943,7 @@ export default function Home({ search = '', setSearch, activeSection = 'home' })
  
   const renderSectionContent = () => {
     // Search query results view
-    if (search.trim()) {
+    if (activeSection === 'search' && search.trim()) {
       return (
         <div className="space-y-12 animate-in fade-in duration-300">
           {/* GLOBAL SAAVN RESULTS */}
@@ -831,8 +1185,23 @@ export default function Home({ search = '', setSearch, activeSection = 'home' })
     return (
       <div className="space-y-4 md:space-y-8 pb-10">
 
+        {/* Surprise Me Floating Button */}
+        <button
+          onClick={() => {
+            const pool = saavnHomeData.trending?.filter(item => item.type === 'song') || [];
+            if (pool.length > 0) {
+              const randomSong = pool[Math.floor(Math.random() * pool.length)];
+              playSong(randomSong, { initialQueue: pool });
+            }
+          }}
+          className="fixed bottom-24 right-4 md:right-8 z-50 bg-gradient-to-r from-cyan-400 to-violet-500 text-white p-4 rounded-full shadow-[0_0_20px_rgba(34,211,238,0.4)] hover:shadow-[0_0_30px_rgba(34,211,238,0.8)] hover:scale-110 transition-all duration-300 group"
+          title="Surprise Me"
+        >
+          <Sparkles size={24} className="group-hover:animate-pulse" />
+        </button>
+
         {/* TOP FILTER BAR - SIMPLE DESIGN */}
-        <div className="flex gap-2.5 pb-4 border-b border-white/5 mb-4 items-center">
+        <div className="flex gap-2.5 pb-4 items-center">
           <button
             onClick={() => setHomeFilter('music')}
             className={`px-5 py-2 rounded-full text-xs sm:text-sm font-extrabold transition-all duration-300 cursor-pointer
@@ -864,11 +1233,125 @@ export default function Home({ search = '', setSearch, activeSection = 'home' })
 
         {homeFilter === 'music' && (
           <>
+            {/* LIVE COMMUNITY TICKER */}
+            <div className="relative w-full overflow-hidden bg-white/[0.03] border-y border-white/5 py-2 mb-6 -mx-4 md:mx-0 px-4 md:px-0 flex items-center rounded-xl md:rounded-full shadow-inner">
+              <div className="flex items-center gap-2 text-cyan-400 flex-shrink-0 z-10 bg-[#0a0a0f] md:bg-transparent pr-4 pl-2 md:pl-6">
+                <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                <span className="text-[10px] font-bold uppercase tracking-widest hidden md:inline-block">Live</span>
+              </div>
+              <div className="flex flex-1 overflow-hidden">
+                <div className="flex whitespace-nowrap animate-[marquee_20s_linear_infinite]">
+                  {COMMUNITY_TICKER_MESSAGES.map((msg, i) => (
+                    <span key={i} className="text-white/60 text-xs md:text-sm font-medium mx-8 flex items-center gap-2">
+                      <MessageSquare size={14} className="text-white/30" /> {msg}
+                    </span>
+                  ))}
+                  {COMMUNITY_TICKER_MESSAGES.map((msg, i) => (
+                    <span key={i + 'dup'} className="text-white/60 text-xs md:text-sm font-medium mx-8 flex items-center gap-2">
+                      <MessageSquare size={14} className="text-white/30" /> {msg}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* QUICK MOOD PILLS */}
+            <div className="flex gap-2 overflow-x-auto scrollbar-none pb-4 mb-2 -mx-4 px-4 md:mx-0 md:px-0">
+              {MOOD_PILLS.map((pill, idx) => {
+                const Icon = pill.icon;
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      setSearch(`${pill.query} ${musicLanguages[0] || ''}`);
+                      setGlobalSection('search');
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-300 flex-shrink-0 text-white/80 hover:text-white"
+                  >
+                    <Icon size={14} className="text-cyan-400" />
+                    <span className="text-xs font-bold tracking-wide">{pill.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
             {/* JIOSAAVN GLOBAL DATA */}
             {saavnHomeLoading ? (
               <div className="flex items-center justify-center py-32"><div className="w-10 h-10 rounded-full border-2 border-cyan-500/20 border-t-cyan-400 animate-spin" /></div>
             ) : (
               <>
+                {/* HERO BANNER CAROUSEL */}
+                {saavnHomeData.trending?.length > 0 && (
+                  <section className="mb-10 relative rounded-[32px] overflow-hidden shadow-2xl h-[300px] md:h-[400px] group">
+                    <div 
+                      className="absolute inset-0 bg-cover bg-center transition-all duration-1000"
+                      style={{ 
+                        backgroundImage: `url(${saavnHomeData.trending[heroIndex]?.cover?.replace('150x150', '500x500')})`, 
+                        filter: 'blur(20px) brightness(0.4) saturate(1.5)',
+                        transform: 'scale(1.1)'
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+                    
+                    <div className="absolute inset-0 p-6 md:p-10 flex items-center">
+                      <div className="flex gap-6 md:gap-10 items-center w-full animate-in fade-in slide-in-from-right-8 duration-700" key={heroIndex}>
+                        <div className="w-32 h-32 md:w-56 md:h-56 rounded-2xl overflow-hidden shadow-[0_0_30px_rgba(0,0,0,0.5)] flex-shrink-0 border border-white/10">
+                          <img 
+                            src={saavnHomeData.trending[heroIndex]?.cover?.replace('150x150', '500x500')} 
+                            alt={saavnHomeData.trending[heroIndex]?.title} 
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-400 text-[10px] md:text-xs font-bold uppercase tracking-widest mb-3 border border-cyan-500/20">
+                            <Sparkles size={12} /> Featured
+                          </span>
+                          <h2 className="text-white text-3xl md:text-5xl font-extrabold tracking-tight leading-tight truncate mb-2">
+                            {saavnHomeData.trending[heroIndex]?.title}
+                          </h2>
+                          <p className="text-white/60 text-sm md:text-lg font-medium truncate mb-6">
+                            {saavnHomeData.trending[heroIndex]?.subtitle}
+                          </p>
+                          <button
+                            onClick={() => {
+                              const item = saavnHomeData.trending[heroIndex];
+                              if (item.type === 'song') {
+                                playSong(item, { initialQueue: saavnHomeData.trending.filter(i => i.type === 'song') });
+                              } else {
+                                setSearch(item.title);
+                                setGlobalSection('search');
+                              }
+                            }}
+                            className="flex items-center gap-2 px-6 py-3 bg-cyan-400 hover:bg-cyan-300 text-black rounded-full font-bold transition-all duration-300 hover:scale-105 shadow-[0_0_20px_rgba(34,211,238,0.3)]"
+                          >
+                            <Play size={18} fill="#000" />
+                            Play Now
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Carousel Indicators */}
+                    <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-2 z-10">
+                      {saavnHomeData.trending.slice(0, 5).map((_, idx) => (
+                        <div 
+                          key={idx} 
+                          className={`h-1.5 rounded-full transition-all duration-300 ${idx === heroIndex ? 'w-6 bg-cyan-400' : 'w-2 bg-white/20'}`}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {/* HEAVY ROTATION (LOCAL) */}
+                {renderHeavyRotation(heavyRotation)}
+
+                {/* FRESH RADAR (NEW RELEASES) */}
+                {renderFreshRadar(saavnHomeData.albums)}
+
+                {/* LYRICAL QUOTE OF THE DAY */}
+                {renderQuoteCard()}
+
                 {/* LOCAL DATA - VINYL STACK STYLE (MOVED TO VERY TOP) */}
                 {recentlyPlayed.length > 0 && (
                   <section className="mb-12 animate-in fade-in slide-in-from-bottom-8">
@@ -913,6 +1396,18 @@ export default function Home({ search = '', setSearch, activeSection = 'home' })
                   </section>
                 )}
 
+                {/* LIVE ARTIST RADIO */}
+                {renderRadioStations("Live Artist Radio", "Non-stop curated stations", LIVE_RADIO_STATIONS)}
+
+                {/* DYNAMIC MIXES BASED ON RECENTLY PLAYED */}
+                {dynamicMixes.length > 0 && renderFolderSection("Made For You", "Dynamic mixes based on your recent listening", Sparkles, dynamicMixes)}
+
+                {/* TIME MACHINE (RETRO) */}
+                {renderFolderSection("Time Machine", "Nostalgic hits from the 80s, 90s and 2000s", Clock, TIME_MACHINE_FOLDERS)}
+
+                {/* TOP 10 TOWER */}
+                {renderTop10Tower(saavnHomeData.trending?.filter(item => item.type === 'song'))}
+
                 {renderFolderSection("Kadhale Kadhale", "Love & nostalgic classics", Heart, KADHALE_KADHALE_FOLDERS)}
                 {renderFolderSection("Your Top Mixes", "Your personalized top compilation mixes", Music2, YOUR_TOP_MIXES_FOLDERS)}
                 {renderFolderSection("Community Mixes", "Popular compilation mixes", Coffee, COMMUNITY_FOLDERS)}
@@ -921,12 +1416,6 @@ export default function Home({ search = '', setSearch, activeSection = 'home' })
                 {renderFolderSection("Top Charts & Fresh Hits", "The latest releases and trends", TrendingUp, CHARTS_FRESH_FOLDERS)}
                 {customFolders.length > 0 && renderFolderSection("Discover More Folders", "Custom folders added by the community & admin", FolderHeart, customFolders)}
 
-                <div className="mb-12">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-white text-2xl font-bold tracking-tight">Trending Songs</h2>
-                  </div>
-                  {renderBentoSpotlight(saavnHomeData.trending)}
-                </div>
 
                 {renderArtistCarousel('Popular Artists', [...maleArtistsData, ...femaleArtistsData].sort((a, b) => b.count - a.count))}
                 {renderGlassCarousel('Popular Albums', saavnHomeData.albums)}

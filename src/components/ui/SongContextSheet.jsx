@@ -4,7 +4,7 @@ import { cleanTitle, moodAccent } from '../../utils/cleanTitle';
 import { toast } from '../ui/Toast';
 import {
   Play, Heart, Share2, ListPlus, X, Info,
-  SkipForward, Ban
+  SkipForward, Ban, FolderPlus
 } from 'lucide-react';
 
 /**
@@ -16,6 +16,7 @@ export default function SongContextSheet({ song, onClose }) {
   const {
     playSong, currentSong, favorites = [],
     toggleLike, playNextSong, addToQueue, allSongs = [],
+    openPlaylistModal, activeSection, removeSongFromPlaylist
   } = usePlayer() || {};
 
   const sheetRef = useRef(null);
@@ -24,6 +25,8 @@ export default function SongContextSheet({ song, onClose }) {
   const accent = moodAccent(song?.mood);
   const displayTitle = cleanTitle(song?.title || '');
   const isLiked = favorites.includes(song?.id);
+  const isPlaylistView = activeSection?.startsWith('playlist_');
+  const currentPlaylistId = isPlaylistView ? activeSection.split('playlist_')[1] : null;
 
   // Animate in
   useEffect(() => {
@@ -103,6 +106,20 @@ export default function SongContextSheet({ song, onClose }) {
       label: 'Add to Queue',
       color: 'text-white/70',
       action: handleAddToQueue,
+    },
+    {
+      icon: isPlaylistView ? Ban : FolderPlus,
+      label: isPlaylistView ? 'Remove from Playlist' : 'Add to Playlist',
+      color: isPlaylistView ? 'text-rose-400' : 'text-white/70',
+      action: () => {
+        if (isPlaylistView && currentPlaylistId && removeSongFromPlaylist) {
+          removeSongFromPlaylist(currentPlaylistId, song.id);
+          toast.success('Removed from playlist');
+        } else {
+          openPlaylistModal?.(song);
+        }
+        close();
+      },
     },
     {
       icon: Share2,

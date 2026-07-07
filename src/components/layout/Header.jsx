@@ -72,11 +72,8 @@ export default function Header({ search, setSearch, user }) {
           </button>
         ) : (
           <button
-            onClick={() => {
-              if (setSearch) setSearch('');
-              goBack('home');
-            }}
-            className="w-9 h-9 rounded-xl flex items-center justify-center text-white/60 hover:text-white hover:bg-white/[0.06] transition-all duration-200 border border-white/5 flex-shrink-0"
+            onClick={() => goBack('home')}
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-white/60 hover:text-white hover:bg-white/[0.06] transition-all duration-200 border border-white/5 flex-shrink-0 cursor-pointer"
           >
             <ChevronLeft size={20} />
           </button>

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { usePlayer } from '../context/PlayerContext';
 import SongCard from '../components/shared/SongCard';
 import SongRow from '../components/shared/SongRow';
-import { Heart, Zap, Coffee, Sparkles, Music2, ChevronLeft, Music, Search, X, Play, Download } from 'lucide-react';
+import { Heart, Zap, Coffee, Sparkles, Music2, ChevronLeft, Music, Search, X, Play, Download, Trash2, Plus } from 'lucide-react';
 
 import { CloudRain } from 'lucide-react'; // Need CloudRain for Sad mood
 
@@ -44,7 +44,7 @@ function CoverCollage({ songs, albumCovers }) {
 }
 
 export default function Library() {
-  const { allSongs = [], favorites = [], activeSection, setActiveSection, albumCovers = {}, setActiveArtist } = usePlayer() || {};
+  const { allSongs = [], favorites = [], activeSection, setActiveSection, albumCovers = {}, setActiveArtist, playlists = [], deletePlaylist, createPlaylist } = usePlayer() || {};
   const [selectedMood, setSelectedMood] = useState(null);
   const [showArtistsList, setShowArtistsList] = useState(false);
   const [moodSearchQuery, setMoodSearchQuery] = useState('');
@@ -83,7 +83,6 @@ export default function Library() {
   const likedSongs = useMemo(() => allSongs.filter(s => favorites.includes(s.id)), [favorites, allSongs]);
 
   // ── 0. Custom Playlist View ───────────────────────────────────────────────
-  const { playlists = [], deletePlaylist } = usePlayer() || {};
   const isPlaylistView = activeSection?.startsWith('playlist_');
   
   if (isPlaylistView) {
@@ -99,17 +98,10 @@ export default function Library() {
       );
     }
 
-    const playlistSongs = playlist.songs.map(id => allSongs.find(s => s?.id === id)).filter(Boolean);
+    // playlist.songs contains full song objects (as added by addSongToPlaylist)
+    const playlistSongs = playlist.songs || [];
 
-    const handleDownload = () => {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(playlistSongs, null, 2));
-      const downloadAnchorNode = document.createElement('a');
-      downloadAnchorNode.setAttribute("href", dataStr);
-      downloadAnchorNode.setAttribute("download", `${playlist.name}.json`);
-      document.body.appendChild(downloadAnchorNode);
-      downloadAnchorNode.click();
-      downloadAnchorNode.remove();
-    };
+
 
     return (
       <div className="p-4 md:p-8 animate-in fade-in slide-in-from-left-4 duration-300 pb-[140px]">
@@ -133,12 +125,7 @@ export default function Library() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <button 
-              onClick={handleDownload}
-              className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-sm font-bold transition-colors flex items-center gap-2"
-            >
-              <Download size={16} /> Download
-            </button>
+
             <button 
               onClick={() => {
                 if (window.confirm('Are you sure you want to delete this playlist?')) {
@@ -156,12 +143,14 @@ export default function Library() {
         {playlistSongs.length === 0 ? (
           <div className="text-center py-20 bg-white/[0.02] border border-white/5 rounded-3xl">
             <Music2 size={44} className="mx-auto mb-4 text-white/10" />
-            <p className="text-white/40 font-medium">This playlist is empty.</p>
-            <p className="text-white/30 text-sm mt-1">Click the + icon on any song to add it here!</p>
+            <p className="text-white/40 font-medium mt-4">This playlist is empty.</p>
+            <p className="text-white/40 text-sm mt-1">Click the 3-dots menu on any song to add it here!</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-6">
-            {playlistSongs.map(song => <SongCard key={song?.id} song={song} songsList={playlistSongs} />)}
+          <div className="flex flex-col gap-2 mt-6">
+            {playlistSongs.map((song, idx) => (
+              <SongRow key={song?.id} song={song} index={idx} songsList={playlistSongs} />
+            ))}
           </div>
         )}
       </div>
@@ -198,8 +187,10 @@ export default function Library() {
             <p className="text-white/40 font-medium">No liked songs yet. Tap the ♥ on any song!</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-6">
-            {likedSongs.map(song => <SongCard key={song?.id} song={song} songsList={likedSongs} />)}
+          <div className="flex flex-col gap-2 mt-6">
+            {likedSongs.map((song, idx) => (
+              <SongRow key={song?.id} song={song} index={idx} songsList={likedSongs} />
+            ))}
           </div>
         )}
       </div>
@@ -293,6 +284,66 @@ export default function Library() {
             <h3 className="text-white text-xl font-extrabold tracking-tight">Liked Songs</h3>
             <p className="text-white/50 text-xs font-semibold mt-1 uppercase tracking-wider">{favorites.length} Tracks Saved</p>
           </div>
+        </button>
+
+        {/* Custom Playlists */}
+        {playlists.map(playlist => (
+          <div
+            key={playlist.id}
+            onClick={() => setActiveSection(`playlist_${playlist.id}`)}
+            className="ripple-container group relative overflow-hidden rounded-3xl aspect-[16/9] flex flex-col justify-end p-6 border border-white/8 card-hover-lift text-left shadow-lg hover:shadow-cyan-500/10 cursor-pointer"
+          >
+            {/* Delete Playlist Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (window.confirm('Delete this playlist?')) {
+                  deletePlaylist(playlist.id);
+                }
+              }}
+              className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-black/40 hover:bg-rose-500 flex items-center justify-center text-white/60 hover:text-white transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100"
+              title="Delete Playlist"
+            >
+              <Trash2 size={16} />
+            </button>
+
+            {playlist.songs.length > 0 && (
+              <div className="absolute inset-0 opacity-30 pointer-events-none">
+                <img 
+                  src={playlist.songs[0].cover} 
+                  alt="" 
+                  className="w-full h-full object-cover" 
+                  onError={(e) => { e.target.style.display = 'none'; }}
+                />
+              </div>
+            )}
+            <div className="absolute inset-0 bg-gradient-to-tr from-cyan-600/20 to-blue-500/10 opacity-100 group-hover:opacity-100 pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#07070a] via-[#07070a]/75 to-[#07070a]/30 pointer-events-none" />
+
+            <div className="relative z-10 pointer-events-none">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-500 flex items-center justify-center mb-3 shadow-lg shadow-cyan-500/30">
+                <Music2 size={22} className="text-white" />
+              </div>
+              <h3 className="text-white text-xl font-extrabold tracking-tight truncate w-full">{playlist.name}</h3>
+              <p className="text-white/50 text-xs font-semibold mt-1 uppercase tracking-wider">{playlist.songs.length} Tracks</p>
+            </div>
+          </div>
+        ))}
+
+        {/* Create New Playlist Card */}
+        <button
+          onClick={() => {
+            const name = window.prompt('Enter a name for your new playlist:');
+            if (name && name.trim()) {
+              createPlaylist(name.trim());
+            }
+          }}
+          className="ripple-container group relative overflow-hidden rounded-3xl aspect-[16/9] flex flex-col justify-center items-center p-6 border-2 border-dashed border-white/20 card-hover-lift text-center shadow-lg hover:border-cyan-400/50 hover:bg-white/[0.02] transition-all cursor-pointer"
+        >
+          <div className="w-12 h-12 rounded-full border border-white/20 flex items-center justify-center mb-3 group-hover:bg-cyan-400 group-hover:text-black group-hover:border-transparent transition-all">
+            <Plus size={24} />
+          </div>
+          <h3 className="text-white/70 group-hover:text-white text-lg font-bold tracking-tight transition-colors">Create Playlist</h3>
         </button>
 
         {/* Mood Cards */}

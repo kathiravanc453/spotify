@@ -24,6 +24,50 @@ export function PlayerProvider({ children, user }) {
     return 'home';
   });
 
+  // Global Preferences
+  const [musicLanguages, setMusicLanguages] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('rhythmix_music_langs')) || ['English', 'Hindi']; } catch { return ['English', 'Hindi']; }
+  });
+  const [appLanguage, setAppLanguage] = useState(() => {
+    try { return localStorage.getItem('rhythmix_app_lang') || 'en'; } catch { return 'en'; }
+  });
+  const [reduceAnimations, setReduceAnimations] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('rhythmix_reduce_anim')) || false; } catch { return false; }
+  });
+  const [infiniteDj, setInfiniteDj] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('rhythmix_infinite_dj')) || false; } catch { return false; }
+  });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try { localStorage.setItem('rhythmix_infinite_dj', JSON.stringify(infiniteDj)); } catch (e) {}
+    }
+  }, [infiniteDj]);
+
+  // Apply reduced animations class globally
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (reduceAnimations) {
+        document.body.classList.add('reduce-animations');
+      } else {
+        document.body.classList.remove('reduce-animations');
+      }
+      try { localStorage.setItem('rhythmix_reduce_anim', JSON.stringify(reduceAnimations)); } catch (e) {}
+    }
+  }, [reduceAnimations]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try { localStorage.setItem('rhythmix_music_langs', JSON.stringify(musicLanguages)); } catch (e) {}
+    }
+  }, [musicLanguages]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try { localStorage.setItem('rhythmix_app_lang', appLanguage); } catch (e) {}
+    }
+  }, [appLanguage]);
+
   // Sync activeSection with browser history to enable mobile native back button
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -52,6 +96,7 @@ export function PlayerProvider({ children, user }) {
   const [saavnResults, setSaavnResults] = useState([]);
   const [saavnLoading, setSaavnLoading] = useState(false);
   const [saavnRadioPool, setSaavnRadioPool] = useState([]);
+  const [isContextualQueue, setIsContextualQueue] = useState(false);
 
   // ─── Custom User Queue ──────────────────────────────────────────────────
   const [customQueue, setCustomQueue] = useState(() => {
@@ -100,8 +145,14 @@ export function PlayerProvider({ children, user }) {
     try { return JSON.parse(localStorage.getItem('rhythmix_shuffle') || 'false'); } catch { return false; }
   });
   const [repeatMode, setRepeatMode] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('rhythmix_repeat') || '"off"'); } catch { return 'off'; }
+    try { return JSON.parse(localStorage.getItem('rhythmix_repeat')) || 'off'; } catch { return 'off'; }
   });
+  
+  // Custom Playlists State
+  const [playlists, setPlaylists] = useState([]);
+  const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState(false);
+  const [songForPlaylist, setSongForPlaylist] = useState(null);
+
 
   const audioRef = useRef(null);
   if (!audioRef.current && typeof window !== 'undefined') {
@@ -185,8 +236,91 @@ export function PlayerProvider({ children, user }) {
     } catch (e) { console.error(e); }
   }, []);
 
+  // ─── Playlists ───────────────────────────────────────────────────────────
+  const getPlaylistsKey = useCallback(() => {
+    const session = localStorage.getItem('rhythmix_session');
+    const userEmail = session ? JSON.parse(session)?.email : 'default';
+    return `rhythmix_playlists_${userEmail}`;
+  }, []);
+
+  const fetchPlaylists = useCallback(() => {
+    try {
+      const saved = localStorage.getItem(getPlaylistsKey());
+      if (saved) {
+        setPlaylists(JSON.parse(saved));
+      } else {
+        setPlaylists([]);
+      }
+    } catch (e) {
+      console.error('Failed to fetch playlists from localStorage:', e);
+      setPlaylists([]);
+    }
+  }, [getPlaylistsKey]);
+
+  useEffect(() => {
+    fetchPlaylists();
+    const handleStorage = () => fetchPlaylists();
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, [fetchPlaylists]);
+
+  const savePlaylists = useCallback((newPlaylists) => {
+    try {
+      localStorage.setItem(getPlaylistsKey(), JSON.stringify(newPlaylists));
+      setPlaylists(newPlaylists);
+    } catch (e) {
+      console.error('Failed to save playlists to localStorage:', e);
+    }
+  }, [getPlaylistsKey]);
+
+  const createPlaylist = useCallback((name) => {
+    if (!name || name.trim() === '') return;
+    const newPlaylist = {
+      id: Date.now().toString(),
+      name: name.trim(),
+      songs: []
+    };
+    savePlaylists([...playlists, newPlaylist]);
+  }, [playlists, savePlaylists]);
+
+  const deletePlaylist = useCallback((playlistId) => {
+    const updated = playlists.filter(p => p.id !== playlistId);
+    savePlaylists(updated);
+  }, [playlists, savePlaylists]);
+
+  const addSongToPlaylist = useCallback((playlistId, song) => {
+    savePlaylists(playlists.map(p => {
+      if (p.id === playlistId) {
+        if (!p.songs.some(s => s.id === song.id)) {
+          return { ...p, songs: [...p.songs, song] };
+        }
+      }
+      return p;
+    }));
+  }, [playlists, savePlaylists]);
+
+  const removeSongFromPlaylist = useCallback((playlistId, songId) => {
+    savePlaylists(playlists.map(p => {
+      if (p.id === playlistId) {
+        return { ...p, songs: p.songs.filter(s => s.id !== songId) };
+      }
+      return p;
+    }));
+  }, [playlists, savePlaylists]);
+
+  const openPlaylistModal = useCallback((song) => {
+    if (!song) return;
+    setSongForPlaylist(song);
+    setIsPlaylistModalOpen(true);
+  }, []);
+
+  const closePlaylistModal = useCallback(() => {
+    setIsPlaylistModalOpen(false);
+    setTimeout(() => setSongForPlaylist(null), 300); // Wait for transition
+  }, []);
+
   // ─── GLOBAL SAAVN SEARCH ──────────────────────────────────────────────────
-  const searchSaavnGlobal = async (query) => {
+  const searchSaavnGlobal = async (query, shuffleFull = false) => {
     if (!query || query.trim() === '') {
       setSaavnResults([]);
       return;
@@ -195,7 +329,16 @@ export function PlayerProvider({ children, user }) {
     try {
       const res = await fetch(`/api/saavn/search?q=${encodeURIComponent(query.trim())}`);
       const data = await res.json();
-      setSaavnResults(Array.isArray(data) ? data : []);
+      if (Array.isArray(data)) {
+        if (shuffleFull) {
+          const shuffled = data.sort(() => 0.5 - Math.random());
+          setSaavnResults(shuffled);
+        } else {
+          setSaavnResults(data);
+        }
+      } else {
+        setSaavnResults([]);
+      }
     } catch (e) {
       console.error('Saavn Search Error:', e);
       setSaavnResults([]);
@@ -208,7 +351,8 @@ export function PlayerProvider({ children, user }) {
   const fetchSaavnHome = useCallback(async () => {
     setSaavnHomeLoading(true);
     try {
-      const res = await fetch('/api/saavn/home');
+      const langQuery = musicLanguages.map(l => l.toLowerCase()).join(',');
+      const res = await fetch(`/api/saavn/home?languages=${langQuery}`);
       const data = await res.json();
       if (data && data.trending) {
         setSaavnHomeData(data);
@@ -218,13 +362,11 @@ export function PlayerProvider({ children, user }) {
     } finally {
       setSaavnHomeLoading(false);
     }
-  }, []);
+  }, [musicLanguages]);
 
   useEffect(() => {
     fetchSaavnHome();
   }, [fetchSaavnHome]);
-
-
 
   // ─── Play count tracking ──────────────────────────────────────────────────
   const incrementPlayCount = useCallback((songId) => {
@@ -387,6 +529,7 @@ export function PlayerProvider({ children, user }) {
 
     // Handle Custom Queue based on initialQueue or keepQueue
     if (initialQueue && Array.isArray(initialQueue)) {
+      setIsContextualQueue(true);
       const idx = initialQueue.findIndex(s => s.id === resolvedSong.id || s.id === song.id);
       if (idx !== -1) {
         const nextQueue = initialQueue.slice(idx + 1);
@@ -398,6 +541,7 @@ export function PlayerProvider({ children, user }) {
       }
     } else if (!keepQueue) {
       // Clear custom queue if playing a single track from outside
+      setIsContextualQueue(false);
       setCustomQueue([]);
       try { localStorage.setItem('rhythmix_custom_queue', JSON.stringify([])); } catch (e) {}
     } else {
@@ -477,6 +621,11 @@ export function PlayerProvider({ children, user }) {
     });
 
     let recommended = [];
+
+    if (isContextualQueue) {
+      return [...customQueue];
+    }
+
     if (isShuffle) {
       // Pure random shuffle ignoring mood
       recommended = shuffledAvailable.slice(0, 300);
@@ -519,11 +668,11 @@ export function PlayerProvider({ children, user }) {
     }
 
     return [...customQueue, ...recommended];
-  }, [currentSong, allSongs, isShuffle, recentlyPlayed, customQueue]);
+  }, [currentSong, allSongs, isShuffle, recentlyPlayed, customQueue, isContextualQueue]);
 
   // ─── Next / Prev ──────────────────────────────────────────────────────────
   const playNext = useCallback(() => {
-    if (!currentSong || allSongs.length === 0) return;
+    if (!currentSong) return;
     if (repeatMode === 'one') {
       const audio = audioRef.current;
       audio.currentTime = 0;
@@ -531,6 +680,17 @@ export function PlayerProvider({ children, user }) {
       setIsPlaying(true);
       return;
     }
+    
+    // Infinite DJ mode: randomly pick a global trending song
+    if (infiniteDj && saavnHomeData.trending?.length > 0) {
+      const pool = saavnHomeData.trending.filter(s => s.type === 'song');
+      if (pool.length > 0) {
+        const nextSong = pool[Math.floor(Math.random() * pool.length)];
+        playSong(nextSong, { initialQueue: pool });
+        return;
+      }
+    }
+
     if (upNextQueue.length > 0) {
       const nextSong = upNextQueue[0];
       if (customQueue.length > 0 && nextSong.id === customQueue[0].id) {
@@ -541,10 +701,10 @@ export function PlayerProvider({ children, user }) {
         });
       }
       playSong(nextSong, true);
-    } else {
+    } else if (allSongs.length > 0) {
       playSong(allSongs[0], true);
     }
-  }, [currentSong, allSongs, playSong, repeatMode, upNextQueue, customQueue]);
+  }, [currentSong, allSongs, playSong, repeatMode, upNextQueue, customQueue, infiniteDj, saavnHomeData]);
 
   const playNextRef = useRef(playNext);
   useEffect(() => { playNextRef.current = playNext; }, [playNext]);
@@ -652,82 +812,6 @@ export function PlayerProvider({ children, user }) {
     setSleepTimer(null);
   }, []);
 
-  // ─── Playlists ────────────────────────────────────────────────────────────
-  const [playlists, setPlaylists] = useState([]);
-
-  const getPlaylistsKey = useCallback(() => {
-    const session = localStorage.getItem('rhythmix_session');
-    const userEmail = session ? JSON.parse(session)?.email : 'default';
-    return `rhythmix_playlists_${userEmail}`;
-  }, []);
-
-  const fetchPlaylists = useCallback(() => {
-    try {
-      const saved = localStorage.getItem(getPlaylistsKey());
-      if (saved) {
-        setPlaylists(JSON.parse(saved));
-      } else {
-        setPlaylists([]);
-      }
-    } catch (e) {
-      console.error('Failed to fetch playlists from localStorage:', e);
-      setPlaylists([]);
-    }
-  }, [getPlaylistsKey]);
-
-  useEffect(() => {
-    fetchPlaylists();
-    const handleStorage = () => fetchPlaylists();
-    window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
-  }, [fetchPlaylists]);
-
-  const savePlaylists = useCallback((newPlaylists) => {
-    try {
-      localStorage.setItem(getPlaylistsKey(), JSON.stringify(newPlaylists));
-      setPlaylists(newPlaylists);
-    } catch (e) {
-      console.error('Failed to save playlists to localStorage:', e);
-    }
-  }, [getPlaylistsKey]);
-
-  const createPlaylist = useCallback((name) => {
-    if (!name || name.trim() === '') return;
-    const newPlaylist = {
-      id: Date.now().toString(),
-      name: name.trim(),
-      songs: []
-    };
-    savePlaylists([...playlists, newPlaylist]);
-  }, [playlists, savePlaylists]);
-
-  const addSongToPlaylist = useCallback((playlistId, songId) => {
-    const updated = playlists.map(p => {
-      if (p.id === playlistId) {
-        if (!p.songs.includes(songId)) {
-          return { ...p, songs: [...p.songs, songId] };
-        }
-      }
-      return p;
-    });
-    savePlaylists(updated);
-  }, [playlists, savePlaylists]);
-
-  const removeSongFromPlaylist = useCallback((playlistId, songId) => {
-    const updated = playlists.map(p => {
-      if (p.id === playlistId) {
-        return { ...p, songs: p.songs.filter(id => id !== songId) };
-      }
-      return p;
-    });
-    savePlaylists(updated);
-  }, [playlists, savePlaylists]);
-
-  const deletePlaylist = useCallback((playlistId) => {
-    const updated = playlists.filter(p => p.id !== playlistId);
-    savePlaylists(updated);
-  }, [playlists, savePlaylists]);
-
   // ─── Seek / Volume / Stop ─────────────────────────────────────────────────
   const seek = useCallback((time) => {
     audioRef.current.currentTime = time;
@@ -740,12 +824,12 @@ export function PlayerProvider({ children, user }) {
   }, []);
 
   const goBack = useCallback((fallback = 'home') => {
-    if (window.history.length > 1 && window.history.state && window.history.state.section) {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
       window.history.back();
     } else {
       setActiveSection(fallback);
     }
-  }, []);
+  }, [setActiveSection]);
 
   const stopPlayback = useCallback(() => {
     const audio = audioRef.current;
@@ -770,13 +854,21 @@ export function PlayerProvider({ children, user }) {
       playSong, togglePlay, playNext, playPrev, seek, changeVolume, toggleLike,
       activeSection, setActiveSection, goBack, activeArtist, setActiveArtist,
       activeActor, setActiveActor,
-      isShuffle, setIsShuffle, repeatMode, setRepeatMode,
+      
+      musicLanguages, setMusicLanguages,
+      appLanguage, setAppLanguage,
+      reduceAnimations, setReduceAnimations,
+      infiniteDj, setInfiniteDj,
+      isShuffle, setIsShuffle, 
+      repeatMode, setRepeatMode,
       stopPlayback,
+      activeSection, setActiveSection,
       sleepTimer, startSleepTimer, cancelSleepTimer,
       refreshSongs: () => {},
       upNextQueue: upNextQueue.length > 0 ? upNextQueue : (currentSong ? [currentSong] : []),
-      customQueue, playNextSong, addToQueue, clearQueue,
-      playlists, fetchPlaylists, createPlaylist, addSongToPlaylist, removeSongFromPlaylist, deletePlaylist,
+      customQueue, setCustomQueue, playNextSong, addToQueue, clearQueue,
+      playlists, createPlaylist, deletePlaylist, addSongToPlaylist, removeSongFromPlaylist,
+      isPlaylistModalOpen, openPlaylistModal, closePlaylistModal, songForPlaylist,
       saavnResults,
       saavnLoading,
       searchSaavnGlobal,

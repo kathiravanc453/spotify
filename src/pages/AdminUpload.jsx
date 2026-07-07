@@ -11,8 +11,6 @@ const ICON_MAP = {
   Flame, Sparkles, Disc3, Music, Waves, Compass, TrendingUp, Star, Heart, Zap, Coffee, FolderHeart
 };
 
-const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dm1cwbbfg/auto/upload';
-const CLOUDINARY_PRESET = 'j4mjnnll';
 const API_BASE = '/api';
 
 function DropZone({ label, accept, icon: Icon, file, onFile, color, type }) {
@@ -222,27 +220,22 @@ export default function AdminUpload() {
     }
   };
 
-  const uploadToCloudinary = async (file, type, contextString = '') => {
+  const uploadToLocalServer = async (file) => {
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('upload_preset', CLOUDINARY_PRESET);
-    formData.append('resource_type', type === 'audio' ? 'video' : 'image');
-    if (contextString) {
-      formData.append('context', contextString);
-    }
 
-    const res = await fetch(CLOUDINARY_URL, {
+    const res = await fetch(`${API_BASE}/upload`, {
       method: 'POST',
       body: formData
     });
     
     if (!res.ok) {
       const err = await res.json();
-      throw new Error(err.error?.message || 'Cloudinary upload failed');
+      throw new Error(err.error?.message || 'Local upload failed');
     }
     
     const data = await res.json();
-    return data.secure_url;
+    return data.url;
   };
 
   const handleSubmit = async (e) => {
@@ -271,15 +264,14 @@ export default function AdminUpload() {
     setStatus('uploading');
 
     try {
-      // 1. Upload Cover to Cloudinary (if exists), else use URL, else use generic music fallback
+      // 1. Upload Cover to local server (if exists), else use URL, else use generic music fallback
       let finalCoverUrl = form.coverUrl || 'https://images.unsplash.com/photo-1493225457124-a1a2a5d5facf?w=500';
       if (coverFile) {
-        finalCoverUrl = await uploadToCloudinary(coverFile, 'image');
+        finalCoverUrl = await uploadToLocalServer(coverFile);
       }
 
-      // 2. Upload Audio to Cloudinary WITH metadata context attached so it remembers the cover!
-      const contextString = `cover=${finalCoverUrl}|artist=${form.artist}|title=${form.title}|album=${form.album}`;
-      const audioUrl = await uploadToCloudinary(audioFile, 'audio', contextString);
+      // 2. Upload Audio to local server
+      const audioUrl = await uploadToLocalServer(audioFile);
 
       // 3. Sync metadata to local songs.json via our backend
       setStatus('syncing');
@@ -408,7 +400,7 @@ export default function AdminUpload() {
             className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all
               ${status === 'success' ? 'bg-spotify-green text-black' : 'bg-spotify-green hover:scale-[1.02] text-black active:scale-95 disabled:opacity-50'}`}
           >
-            {status === 'uploading' && <><Loader2 className="animate-spin" /> Uploading to Cloudinary...</>}
+            {status === 'uploading' && <><Loader2 className="animate-spin" /> Uploading...</>}
             {status === 'syncing' && <><Loader2 className="animate-spin" /> Updating songs.json...</>}
             {status === 'success' && <><CheckCircle /> Song Published!</>}
             {status === 'error' && <><AlertCircle /> Failed: {errorMsg}</>}

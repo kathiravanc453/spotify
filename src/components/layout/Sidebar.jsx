@@ -2,17 +2,20 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Home, Search, Library, TrendingUp, Star, X, Music2, Disc, Heart, ChevronRight, ChevronLeft, Menu, Shield, LogOut, User, Plus, History, Bell, Settings } from 'lucide-react';
 import { usePlayer } from '../../context/PlayerContext';
-
-const navItems = [
-  { icon: Home,       label: 'Home',        id: 'home'      },
-  { icon: Search,     label: 'Search',      id: 'search'    },
-  { icon: Heart,      label: 'Favorites',   id: 'favorites' },
-  { icon: Disc,       label: 'Albums',      id: 'albums'    },
-  { icon: TrendingUp, label: 'Trending',    id: 'trending'  },
-  { icon: Star,       label: 'Recommended', id: 'recommended'},
-];
+import { useTranslation } from '../../utils/i18n';
 
 function SidebarContent({ activeSection, setActiveSection, onItemClick, user, playlists = [], createPlaylist, onLogout }) {
+  const { t } = useTranslation();
+  
+  const navItems = [
+    { icon: Home,       label: t('home'),        id: 'home'      },
+    { icon: Search,     label: t('search'),      id: 'search'    },
+    { icon: Heart,      label: t('favorites'),   id: 'favorites' },
+    { icon: Disc,       label: t('albums'),      id: 'albums'    },
+    { icon: TrendingUp, label: t('trending'),    id: 'trending'  },
+    { icon: Star,       label: t('recommended'), id: 'recommended'},
+  ];
+
   return (
     <div className="flex flex-col h-full py-6 px-4">
       {/* Logo */}
@@ -52,7 +55,7 @@ function SidebarContent({ activeSection, setActiveSection, onItemClick, user, pl
             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-black font-bold text-sm shadow-lg shadow-cyan-500/20 transition-all cursor-pointer"
           >
             <User size={16} />
-            <span>Sign In</span>
+            <span>{t('signIn')}</span>
           </button>
         </div>
       )}
@@ -84,7 +87,7 @@ function SidebarContent({ activeSection, setActiveSection, onItemClick, user, pl
               }`}
           >
             <Shield size={18} />
-            Admin Panel
+            {t('adminPanel')}
           </button>
         )}
       </nav>
@@ -93,14 +96,14 @@ function SidebarContent({ activeSection, setActiveSection, onItemClick, user, pl
       {user && (
         <div className="mt-8 flex-1 overflow-y-auto">
           <div className="flex items-center justify-between px-4 mb-2">
-            <h3 className="text-white/40 text-[10px] font-bold uppercase tracking-widest">Your Playlists</h3>
+            <h3 className="text-white/40 text-[10px] font-bold uppercase tracking-widest">{t('yourPlaylists')}</h3>
             <button 
               onClick={() => {
-                const name = window.prompt('Enter playlist name:');
+                const name = window.prompt(t('enterPlaylistName'));
                 if (name && createPlaylist) createPlaylist(name);
               }}
               className="text-white/40 hover:text-white transition-colors"
-              title="Create Playlist"
+              title={t('createPlaylist')}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             </button>
@@ -129,6 +132,30 @@ function SidebarContent({ activeSection, setActiveSection, onItemClick, user, pl
 }
 
 function AccountMenuContent({ user, onItemClick, onLogout, activeSection, setActiveSection }) {
+  const [accounts, setAccounts] = useState([]);
+  const { t } = useTranslation();
+  
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('rhythmix_accounts');
+      if (stored) {
+        const allAccounts = JSON.parse(stored);
+        setAccounts(allAccounts.filter(a => a.email !== user?.email));
+      }
+    } catch(e) {}
+  }, [user]);
+
+  const handleSwitchAccount = (account) => {
+    localStorage.setItem('rhythmix_session', JSON.stringify(account));
+    if (account.role === 'admin') {
+      localStorage.setItem('rhythmix_admin_session', JSON.stringify(account));
+    } else {
+      localStorage.removeItem('rhythmix_admin_session');
+    }
+    window.dispatchEvent(new Event('userUpdated'));
+    onItemClick?.();
+  };
+
   return (
     <div className="flex flex-col h-full py-4 px-6">
       {/* Profile Header */}
@@ -144,7 +171,7 @@ function AccountMenuContent({ user, onItemClick, onLogout, activeSection, setAct
           />
           <div className="flex flex-col">
             <span className="text-white text-xl font-extrabold tracking-tight group-hover:text-cyan-400 transition-colors">{user.name}</span>
-            <span className="text-white/50 text-xs font-semibold mt-0.5 group-hover:text-white transition-colors">View profile</span>
+            <span className="text-white/50 text-xs font-semibold mt-0.5 group-hover:text-white transition-colors">{t('viewProfile')}</span>
           </div>
         </div>
       ) : (
@@ -153,8 +180,8 @@ function AccountMenuContent({ user, onItemClick, onLogout, activeSection, setAct
             <User size={28} className="text-white/40" />
           </div>
           <div className="flex flex-col">
-            <span className="text-white text-xl font-extrabold tracking-tight">Sign In</span>
-            <span className="text-white/50 text-xs font-semibold mt-0.5 hover:text-white transition-colors cursor-pointer">Log in to view profile</span>
+            <span className="text-white text-xl font-extrabold tracking-tight">{t('signIn')}</span>
+            <span className="text-white/50 text-xs font-semibold mt-0.5 hover:text-white transition-colors cursor-pointer">{t('loginToViewProfile')}</span>
           </div>
         </div>
       )}
@@ -164,33 +191,46 @@ function AccountMenuContent({ user, onItemClick, onLogout, activeSection, setAct
 
       {/* Menu Items */}
       <nav className="flex flex-col gap-1 mt-4">
+        {accounts.map(acc => (
+          <button 
+            key={acc.email}
+            onClick={() => handleSwitchAccount(acc)}
+            className="flex items-center gap-4 px-2 py-2 text-white hover:bg-white/[0.04] rounded-xl transition-all text-left group"
+          >
+            <img src={acc.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(acc.name)}`} className="w-10 h-10 rounded-full object-cover border border-white/10 group-hover:border-cyan-500/50 transition-colors" />
+            <div className="flex flex-col min-w-0">
+              <span className="font-semibold text-sm group-hover:text-cyan-400 transition-colors truncate">{acc.name}</span>
+              <span className="text-white/40 text-[10px] truncate">{acc.email}</span>
+            </div>
+          </button>
+        ))}
         <button 
           onClick={() => { setActiveSection('login'); onItemClick?.(); }}
-          className="flex items-center gap-4 px-2 py-3.5 text-white hover:bg-white/[0.04] rounded-xl transition-all text-left"
+          className="flex items-center gap-4 px-2 py-3.5 text-white hover:bg-white/[0.04] rounded-xl transition-all text-left mt-1"
         >
           <Plus size={22} className="text-white/70" />
-          <span className="font-semibold text-base">Add account</span>
+          <span className="font-semibold text-base">{t('addAccount')}</span>
         </button>
         <button 
           onClick={() => { setActiveSection('recents'); onItemClick?.(); }}
           className={`flex items-center gap-4 px-2 py-3.5 hover:bg-white/[0.04] rounded-xl transition-all text-left ${activeSection === 'recents' ? 'text-cyan-400 bg-white/[0.04]' : 'text-white'}`}
         >
           <History size={22} className="text-white/70" />
-          <span className="font-semibold text-base">Recents</span>
+          <span className="font-semibold text-base">{t('recents')}</span>
         </button>
         <button 
           onClick={() => { setActiveSection('updates'); onItemClick?.(); }}
           className={`flex items-center gap-4 px-2 py-3.5 hover:bg-white/[0.04] rounded-xl transition-all text-left ${activeSection === 'updates' ? 'text-cyan-400 bg-white/[0.04]' : 'text-white'}`}
         >
           <Bell size={22} className={activeSection === 'updates' ? 'text-cyan-400' : 'text-white/70'} />
-          <span className="font-semibold text-base">Your updates</span>
+          <span className="font-semibold text-base">{t('yourUpdates')}</span>
         </button>
         <button 
           onClick={() => { setActiveSection('settings'); onItemClick?.(); }}
           className={`flex items-center gap-4 px-2 py-3.5 hover:bg-white/[0.04] rounded-xl transition-all text-left ${activeSection === 'settings' ? 'text-cyan-400 bg-white/[0.04]' : 'text-white'}`}
         >
           <Settings size={22} className={activeSection === 'settings' ? 'text-cyan-400' : 'text-white/70'} />
-          <span className="font-semibold text-base">Settings and privacy</span>
+          <span className="font-semibold text-base">{t('settingsAndPrivacy')}</span>
         </button>
       </nav>
       
@@ -200,7 +240,7 @@ function AccountMenuContent({ user, onItemClick, onLogout, activeSection, setAct
           onClick={() => { onLogout(); onItemClick?.(); }}
           className="mt-6 mx-2 w-max px-6 py-2.5 rounded-full border border-white/20 text-white font-bold text-sm hover:bg-white/10 transition-colors shadow-md"
         >
-          Log out
+          {t('logOut')}
         </button>
       )}
     </div>
@@ -210,6 +250,7 @@ function AccountMenuContent({ user, onItemClick, onLogout, activeSection, setAct
 export default function Sidebar({ user, search, setSearch, onLogout }) {
   const { activeSection, setActiveSection, playlists, createPlaylist } = usePlayer();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     const handler = () => setMobileOpen(true);

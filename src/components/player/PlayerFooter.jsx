@@ -1,7 +1,7 @@
 import { usePlayer } from '../../context/PlayerContext';
 import { cleanTitle, moodAccent, splitArtists } from '../../utils/cleanTitle';
 import {
-  Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Heart, X, Timer
+  Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Heart, X, Timer, ListPlus
 } from 'lucide-react';
 
 function formatTime(secs) {
@@ -35,6 +35,7 @@ export default function PlayerFooter() {
     togglePlay, playNext, playPrev, seek, changeVolume,
     favorites = [], toggleLike, activeSection, setActiveSection, stopPlayback,
     sleepTimer, startSleepTimer, cancelSleepTimer, albumCovers = {}, setActiveArtist,
+    openPlaylistModal,
   } = usePlayer();
  
   if (!currentSong || activeSection === 'now-playing') return null;
@@ -110,11 +111,20 @@ export default function PlayerFooter() {
           <button
             onClick={() => toggleLike(currentSong.id)}
             className="text-white/50 hover:text-rose-500 transition-colors p-1.5 flex items-center justify-center cursor-pointer flex-shrink-0"
+            title="Like"
           >
             <Heart
               size={18}
               className={favorites.includes(currentSong.id) ? 'text-rose-500 fill-rose-500 scale-110' : 'text-white/40 hover:text-white'}
             />
+          </button>
+          
+          <button
+            onClick={(e) => { e.stopPropagation(); openPlaylistModal(currentSong); }}
+            className="text-white/50 hover:text-cyan-400 transition-colors p-1.5 flex items-center justify-center cursor-pointer flex-shrink-0"
+            title="Add to Playlist"
+          >
+            <ListPlus size={18} className="text-white/40 hover:text-cyan-400" />
           </button>
         </div>
  

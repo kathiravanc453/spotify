@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { usePlayer } from '../context/PlayerContext';
 import { ChevronLeft, ChevronRight, Globe2, Sparkles, MonitorSmartphone } from 'lucide-react';
+import { SUPPORTED_UI_LANGUAGES, useTranslation } from '../utils/i18n';
 
 export default function ContentDisplay() {
-  const { setActiveSection, goBack } = usePlayer() || {};
-  const [reduceAnimation, setReduceAnimation] = useState(false);
+  const { setActiveSection, goBack, reduceAnimations, setReduceAnimations, appLanguage, setAppLanguage } = usePlayer() || {};
+  const { t } = useTranslation();
 
   return (
     <div className="p-4 md:p-8 space-y-6 animate-in fade-in slide-in-from-right-4 duration-500 pb-32 max-w-3xl mx-auto w-full">
@@ -16,7 +17,7 @@ export default function ContentDisplay() {
         >
           <ChevronLeft size={20} />
         </button>
-        <h2 className="text-white text-3xl font-extrabold tracking-tight">Content and display</h2>
+        <h2 className="text-white text-3xl font-extrabold tracking-tight">{t('contentDisplay')}</h2>
       </div>
 
       <div className="space-y-6">
@@ -31,7 +32,7 @@ export default function ContentDisplay() {
                 <Globe2 size={20} />
               </div>
               <div className="text-left">
-                <span className="text-white font-semibold text-[15px] block">Languages for music</span>
+                <span className="text-white font-semibold text-[15px] block">{t('languageOptions')}</span>
                 <span className="text-white/40 text-xs mt-0.5 block">Choose preferred languages for your music</span>
               </div>
             </div>
@@ -50,17 +51,17 @@ export default function ContentDisplay() {
                   <Sparkles size={20} />
                 </div>
                 <div className="text-left pr-4">
-                  <span className="text-white font-semibold text-[15px] block">Reduce animation</span>
+                  <span className="text-white font-semibold text-[15px] block">{t('reduceAnimation')}</span>
                   <span className="text-white/40 text-xs mt-0.5 block">Minimize motion effects throughout the app</span>
                 </div>
               </div>
               
               {/* Custom Switch */}
               <button 
-                onClick={() => setReduceAnimation(!reduceAnimation)}
-                className={`w-12 h-6 rounded-full transition-colors relative flex items-center px-1 flex-shrink-0 ${reduceAnimation ? 'bg-cyan-400' : 'bg-white/20'}`}
+                onClick={() => setReduceAnimations(!reduceAnimations)}
+                className={`w-12 h-6 rounded-full transition-colors relative flex items-center px-1 flex-shrink-0 ${reduceAnimations ? 'bg-cyan-400' : 'bg-white/20'}`}
               >
-                <div className={`w-4 h-4 rounded-full bg-white shadow-md transform transition-transform duration-300 ${reduceAnimation ? 'translate-x-6' : 'translate-x-0'}`} />
+                <div className={`w-4 h-4 rounded-full bg-white shadow-md transform transition-transform duration-300 ${reduceAnimations ? 'translate-x-6' : 'translate-x-0'}`} />
               </button>
             </div>
 
@@ -72,13 +73,20 @@ export default function ContentDisplay() {
                   <MonitorSmartphone size={20} />
                 </div>
                 <div className="text-left pr-4">
-                  <span className="text-white font-semibold text-[15px] block">App language</span>
-                  <span className="text-white/40 text-xs mt-0.5 block">English (System default)</span>
+                  <span className="text-white font-semibold text-[15px] block">{t('appLanguage')}</span>
+                  <span className="text-white/40 text-xs mt-0.5 block">Change the interface language</span>
                 </div>
               </div>
-              <button className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-colors active:scale-95">
-                Change
-              </button>
+              
+              <select 
+                value={appLanguage}
+                onChange={(e) => setAppLanguage(e.target.value)}
+                className="bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-colors active:scale-95 px-4 py-2 rounded-xl outline-none border border-transparent focus:border-cyan-500/50 appearance-none cursor-pointer text-center min-w-[100px]"
+              >
+                {SUPPORTED_UI_LANGUAGES.map(lang => (
+                  <option key={lang.code} value={lang.code} className="text-black">{lang.name}</option>
+                ))}
+              </select>
             </div>
           </div>
         </div>

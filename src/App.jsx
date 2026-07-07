@@ -6,6 +6,7 @@ import Header from './components/layout/Header';
 import MobileNav from './components/layout/MobileNav';
 import PlayerFooter from './components/player/PlayerFooter';
 import { Suspense, lazy } from 'react';
+import { Share, PlusSquare } from 'lucide-react';
 
 // Lazy load heavy pages for route-level code splitting
 const Home = lazy(() => import('./pages/Home'));
@@ -29,6 +30,7 @@ import ToastProvider from './components/ui/Toast';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import useMediaSession from './hooks/useMediaSession';
 import UpdateNotification from './components/UpdateNotification';
+import PlaylistModal from './components/shared/PlaylistModal';
 import { moodAccent } from './utils/cleanTitle';
 
 function AppContent({ user, onLogout, onLogin }) {
@@ -37,8 +39,30 @@ function AppContent({ user, onLogout, onLogin }) {
   const [isPulling, setIsPulling] = useState(false);
   const [pullY, setPullY] = useState(0);
   const [installPrompt, setInstallPrompt] = useState(null);
+  const [showIosPrompt, setShowIosPrompt] = useState(false);
   const pullStartY = useRef(null);
   const mainRef = useRef(null);
+
+  // 🔒 iOS PWA Install Detection
+  useEffect(() => {
+    const isIos = () => {
+      const userAgent = window.navigator.userAgent.toLowerCase();
+      return /iphone|ipad|ipod/.test(userAgent);
+    };
+    const isInStandaloneMode = () => ('standalone' in window.navigator) && (window.navigator.standalone);
+
+    if (isIos() && !isInStandaloneMode()) {
+      const dismissed = localStorage.getItem('rhythmix_ios_install_dismissed');
+      if (!dismissed) {
+        setShowIosPrompt(true);
+      }
+    }
+  }, []);
+
+  const dismissIosPrompt = () => {
+    localStorage.setItem('rhythmix_ios_install_dismissed', 'true');
+    setShowIosPrompt(false);
+  };
 
   // 🔒 PWA Install Prompt & Telemetry Listener
   useEffect(() => {
@@ -267,6 +291,26 @@ function AppContent({ user, onLogout, onLogin }) {
                 </div>
               )}
 
+              {/* iOS PWA Install Banner */}
+              {!installPrompt && showIosPrompt && activeSection !== 'now-playing' && (
+                <div className="mx-4 md:mx-8 mt-4 mb-4 p-4 rounded-2xl bg-gradient-to-r from-fuchsia-900/40 to-pink-900/40 border border-fuchsia-500/20 shadow-lg shadow-fuchsia-500/10 flex flex-col gap-3 animate-in fade-in slide-in-from-top-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <h3 className="text-white font-bold text-sm">Install Rhythmix on iOS</h3>
+                      <p className="text-white/70 text-xs mt-1.5 leading-relaxed">
+                        To install, tap the <Share size={12} className="inline mx-0.5 mb-0.5" /> Share icon in Safari, then scroll down and tap <strong className="text-white">Add to Home Screen</strong> <PlusSquare size={12} className="inline mx-0.5 mb-0.5" />.
+                      </p>
+                    </div>
+                    <button 
+                      onClick={dismissIosPrompt}
+                      className="text-white/40 hover:text-white flex-shrink-0 p-1"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Error boundary wraps page content so crashes don't blank the whole app */}
               <Suspense fallback={<PageLoader />}>
                 <ErrorBoundary>
@@ -296,6 +340,9 @@ function AppContent({ user, onLogout, onLogin }) {
 
         {/* Global toast notifications */}
         <ToastProvider />
+        
+        {/* Global Playlist Modal */}
+        <PlaylistModal />
       </div>
 
       {/* Keyboard shortcuts hint (bottom-left, desktop only) */}
@@ -349,6 +396,34 @@ export default function App() {
   }, []);
 
   const handleLogout = async () => {
+    try {
+      const currentSessionStr = localStorage.getItem('rhythmix_session');
+      if (currentSessionStr) {
+        const session = JSON.parse(currentSessionStr);
+        const accountsStr = localStorage.getItem('rhythmix_accounts');
+        if (accountsStr) {
+          let accounts = JSON.parse(accountsStr);
+          accounts = accounts.filter(a => a.email !== session.email);
+          localStorage.setItem('rhythmix_accounts', JSON.stringify(accounts));
+          
+          // Auto-switch to the next available account if one exists
+          if (accounts.length > 0) {
+            localStorage.setItem('rhythmix_session', JSON.stringify(accounts[0]));
+            if (accounts[0].role === 'admin') {
+              localStorage.setItem('rhythmix_admin_session', JSON.stringify(accounts[0]));
+            } else {
+              localStorage.removeItem('rhythmix_admin_session');
+            }
+            setUser(accounts[0]);
+            window.dispatchEvent(new Event('userUpdated'));
+            return; // Don't sign out of Firebase fully, just switched session
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Account switch on logout error', e);
+    }
+
     localStorage.removeItem('rhythmix_session');
     localStorage.removeItem('rhythmix_admin_session');
     setUser(null);

@@ -1,15 +1,17 @@
-import { Home, Search, Disc3, Heart, Music } from 'lucide-react';
+import { Home, Search, Heart, Music, Library } from 'lucide-react';
 import { usePlayer } from '../../context/PlayerContext';
+import { useTranslation } from '../../utils/i18n';
 
 const NAV_ITEMS = [
   { id: 'home',      label: 'Home',    icon: Home    },
   { id: 'search',    label: 'Search',  icon: Search  },
-  { id: 'albums',    label: 'Albums',  icon: Disc3   },
+  { id: 'library',   label: 'Library', icon: Library },
   { id: 'favorites', label: 'Favs',    icon: Heart   },
 ];
 
 export default function MobileNav() {
   const { activeSection, setActiveSection, currentSong } = usePlayer();
+  const { t } = useTranslation();
 
   // Hide the navigation bar entirely on the immersive Now Playing screen
   if (activeSection === 'now-playing') return null;
@@ -42,7 +44,7 @@ export default function MobileNav() {
               fill={isActive && id === 'favorites' ? 'currentColor' : 'none'}
             />
             <span className={`text-[9px] font-bold uppercase tracking-wider ${isActive ? 'opacity-100' : 'opacity-50'}`}>
-              {label}
+              {t(id)}
             </span>
             {/* Active indicator dot */}
             {isActive && (
@@ -64,7 +66,7 @@ export default function MobileNav() {
             className={`transition-all duration-300 ${activeSection === 'now-playing' ? 'scale-110' : ''}`}
           />
           <span className={`text-[9px] font-bold uppercase tracking-wider ${activeSection === 'now-playing' ? 'opacity-100' : 'opacity-50'}`}>
-            Now
+            {t('now')}
           </span>
           {activeSection === 'now-playing' && (
             <div className="absolute top-0.5 w-1 h-1 rounded-full bg-violet-400" />

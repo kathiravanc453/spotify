@@ -1,5 +1,5 @@
 import { useState, memo } from 'react';
-import { Play, Pause } from 'lucide-react';
+import { Play, Pause, MoreVertical } from 'lucide-react';
 import { usePlayer } from '../../context/PlayerContext';
 import { cleanTitle, moodAccent, splitArtists } from '../../utils/cleanTitle';
 import { useLongPress } from '../../hooks/useGestures';
@@ -31,7 +31,7 @@ function Equalizer() {
 }
 
 export default memo(function SongCard({ song, songsList = [] }) {
-  const { currentSong, isPlaying, playSong, progress, duration, playCounts = {}, albumCovers = {}, setActiveArtist, setActiveSection } = usePlayer();
+  const { currentSong, isPlaying, playSong, progress, duration, playCounts = {}, albumCovers = {}, setActiveArtist, setActiveSection, openPlaylistModal } = usePlayer();
   const [showContext, setShowContext] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
 
@@ -124,6 +124,16 @@ export default memo(function SongCard({ song, songsList = [] }) {
           <span className="text-white/40 text-xs font-medium font-mono">
             {formatTime(timeToShow)}
           </span>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowContext(true);
+            }}
+            className="text-white/30 hover:text-white opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all p-1 md:block"
+            title="More options"
+          >
+            <MoreVertical size={16} />
+          </button>
         </div>
       </div>
 

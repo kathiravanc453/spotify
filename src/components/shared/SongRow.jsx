@@ -1,5 +1,6 @@
-import { Play, Pause, Clock3, Heart, Plus } from 'lucide-react';
+import { Play, Pause, Clock3, Heart, MoreVertical, Trash2 } from 'lucide-react';
 import { useState, memo } from 'react';
+import SongContextSheet from '../ui/SongContextSheet';
 import { usePlayer } from '../../context/PlayerContext';
 import { cleanTitle, splitArtists } from '../../utils/cleanTitle';
 
@@ -11,11 +12,14 @@ function formatTime(secs) {
 }
 
 export default memo(function SongRow({ song, index, songsList = [] }) {
-  const { currentSong, isPlaying, playSong, favorites = [], toggleLike, progress, duration, albumCovers = {}, setActiveArtist, setActiveSection, playlists = [], addSongToPlaylist } = usePlayer();
-  const [showDropdown, setShowDropdown] = useState(false);
+  const { currentSong, isPlaying, playSong, favorites = [], toggleLike, progress, duration, albumCovers = {}, setActiveArtist, setActiveSection, openPlaylistModal, removeSongFromPlaylist, activeSection } = usePlayer();
+  const [showContext, setShowContext] = useState(false);
   const isActive = currentSong?.id === song.id;
   const isCurrentlyPlaying = isActive && isPlaying;
   const displayTitle = cleanTitle(song.title);
+  
+  const isPlaylistView = activeSection?.startsWith('playlist_');
+  const currentPlaylistId = isPlaylistView ? activeSection.split('playlist_')[1] : null;
   
   // Show live progress if playing, otherwise show total duration (use live duration if active, fallback to metadata)
   const timeToShow = isCurrentlyPlaying ? progress : (isActive && duration ? duration : song.duration);
@@ -98,40 +102,37 @@ export default memo(function SongRow({ song, index, songsList = [] }) {
       >
         <Heart
           size={14}
-          className={favorites.includes(song.id) ? 'text-rose-500 fill-rose-500 scale-110' : 'opacity-0 group-hover:opacity-100 text-white/30 hover:text-white'}
+          className={`transition-all duration-300 ${favorites.includes(song.id) ? 'fill-rose-500 text-rose-500 drop-shadow-[0_0_8px_rgba(244,63,94,0.5)]' : ''}`}
         />
       </button>
 
-      {/* Add to Playlist Button */}
-      <div className="relative">
+      {/* 3-dots Context Menu Button */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setShowContext(true);
+        }}
+        className="text-white/20 hover:text-white transition-colors p-1.5 flex items-center justify-center cursor-pointer flex-shrink-0"
+        title="More options"
+      >
+        <MoreVertical size={16} />
+      </button>
+
+      {/* Remove from Playlist Button (Only visible in Playlist View) */}
+      {isPlaylistView && (
         <button
           onClick={(e) => {
             e.stopPropagation();
-            setShowDropdown(!showDropdown);
+            if (window.confirm('Remove this song from the playlist?')) {
+              removeSongFromPlaylist(currentPlaylistId, song.id);
+            }
           }}
-          className="text-white/20 hover:text-white transition-colors p-1.5 flex items-center justify-center cursor-pointer flex-shrink-0 opacity-0 group-hover:opacity-100"
-          title="Add to Playlist"
+          className="text-white/20 hover:text-rose-500 transition-colors p-1.5 flex items-center justify-center cursor-pointer flex-shrink-0 opacity-100 md:opacity-0 md:group-hover:opacity-100"
+          title="Remove from Playlist"
         >
-          <Plus size={14} />
+          <Trash2 size={16} />
         </button>
-        {showDropdown && playlists.length > 0 && (
-          <div className="absolute right-0 bottom-full mb-1 w-40 bg-[#0d0d12]/98 border border-white/10 rounded-xl p-1 shadow-2xl z-50">
-            {playlists.map(p => (
-              <button
-                key={p.id}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  addSongToPlaylist(p.id, song.id);
-                  setShowDropdown(false);
-                }}
-                className="w-full text-left px-3 py-2 text-xs font-semibold text-white/70 hover:text-white hover:bg-white/10 rounded-lg"
-              >
-                {p.name}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+      )}
 
 
       {/* Duration / Live Progress */}
@@ -141,6 +142,10 @@ export default memo(function SongRow({ song, index, songsList = [] }) {
           {isCurrentlyPlaying && <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse mr-0.5"></span>}
           {formatTime(timeToShow)}
         </p>
+      )}
+
+      {showContext && (
+        <SongContextSheet song={song} onClose={() => setShowContext(false)} />
       )}
     </div>
   );

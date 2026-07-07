@@ -8,6 +8,7 @@ import https from 'https';
 import nodemailer from 'nodemailer';
 import admin from 'firebase-admin';
 import { getAuth } from 'firebase-admin/auth';
+import multer from 'multer';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -50,11 +51,28 @@ const otpStore = {}; // Temporary memory store for password reset OTPs
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-cloudinary.config({
-  cloud_name: 'dm1cwbbfg',
-  api_key: '969989851682274',
-  api_secret: '6N9cJ9fhanGad1sj--3gssD-vCk'
+// Multer Setup for Local Uploads
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    // Generate a unique filename using timestamp and original extension
+    const ext = path.extname(file.originalname);
+    const basename = path.basename(file.originalname, ext).replace(/\s+/g, '_');
+    cb(null, `${basename}_${Date.now()}${ext}`);
+  }
 });
+
+const upload = multer({ storage });
+
+// Serve local uploads statically
+app.use('/uploads', express.static(uploadDir));
 
 const SONGS_JSON = path.join(__dirname, 'songs.json');
 const USERS_JSON = path.join(__dirname, 'users.json');
@@ -82,6 +100,16 @@ const writePlaylists = (playlists) => {
 
 app.use(cors());
 app.use(express.json());
+
+// File Upload Endpoint
+app.post('/api/upload', upload.single('file'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No file uploaded' });
+  }
+  // Return a relative URL so it works seamlessly through the Vite proxy or on any network
+  const fileUrl = `/uploads/${req.file.filename}`;
+  res.json({ url: fileUrl });
+});
 
 const getStableId = (str) => {
   let hash = 0;
@@ -1221,8 +1249,14 @@ app.get('/api/saavn/song/:id', async (req, res) => {
 // ─── NATIVE GLOBAL SAAVN HOME DATA (LAUNCH DATA) ──────────────────────────
 app.get('/api/saavn/home', async (req, res) => {
   try {
-    const launchUrl = `https://www.jiosaavn.com/api.php?__call=webapi.getLaunchData&api_version=4&_format=json&_marker=0&ctx=web6dot0&languages=tamil`;
-    const launchResponse = await fetch(launchUrl, { headers: { 'User-Agent': 'Mozilla/5.0', 'Cookie': 'L=tamil;' } });
+    // Read languages from query (e.g. english,hindi), default to english
+    const requestedLangs = req.query.languages ? req.query.languages.toLowerCase() : 'english';
+    const langArray = requestedLangs.split(',').map(l => l.trim()).filter(Boolean);
+    const primaryLang = langArray[0] || 'english';
+    const capitalizedPrimaryLang = primaryLang.charAt(0).toUpperCase() + primaryLang.slice(1);
+    
+    const launchUrl = `https://www.jiosaavn.com/api.php?__call=webapi.getLaunchData&api_version=4&_format=json&_marker=0&ctx=web6dot0&languages=${requestedLangs}`;
+    const launchResponse = await fetch(launchUrl, { headers: { 'User-Agent': 'Mozilla/5.0', 'Cookie': `L=${requestedLangs};` } });
     const launchData = await launchResponse.json();
 
     const formatItem = (item) => ({
@@ -1236,18 +1270,18 @@ app.get('/api/saavn/home', async (req, res) => {
     const playlists = (launchData.top_playlists || []).map(formatItem);
     const albums = (launchData.new_albums || []).map(formatItem);
 
-    // Dynamic Tamil trending search seeds to keep the homepage fresh
+    // Dynamic trending search seeds based on the user's primary selected language
     const seedQueries = [
-      "Latest Tamil Songs",
-      "Trending Tamil Hits",
-      "Top Tamil Songs 2026",
-      "New Tamil Songs",
-      "Tamil Chartbusters"
+      `Latest ${capitalizedPrimaryLang} Songs`,
+      `Trending ${capitalizedPrimaryLang} Hits`,
+      `Top ${capitalizedPrimaryLang} Songs 2026`,
+      `New ${capitalizedPrimaryLang} Songs`,
+      `${capitalizedPrimaryLang} Chartbusters`
     ];
     const randomQuery = seedQueries[Math.floor(Math.random() * seedQueries.length)];
     
     const searchUrl = `https://www.jiosaavn.com/api.php?__call=search.getResults&q=${encodeURIComponent(randomQuery)}&p=1&n=50&_format=json&_marker=0&ctx=web6dot0`;
-    const searchResponse = await fetch(searchUrl, { headers: { 'User-Agent': 'Mozilla/5.0', 'Cookie': 'L=tamil;' } });
+    const searchResponse = await fetch(searchUrl, { headers: { 'User-Agent': 'Mozilla/5.0', 'Cookie': `L=${requestedLangs};` } });
     const searchData = await searchResponse.json();
 
     let trendingSongs = [];

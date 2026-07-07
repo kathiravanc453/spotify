@@ -16,7 +16,14 @@ export default {
         'equalize': 'equalize 1.2s ease-in-out infinite',
         'equalize-1': 'equalize 1.2s ease-in-out 0.4s infinite',
         'equalize-2': 'equalize 1.2s ease-in-out 0.8s infinite',
+        'marquee': 'marquee 20s linear infinite',
       },
+      keyframes: {
+        marquee: {
+          '0%': { transform: 'translateX(0%)' },
+          '100%': { transform: 'translateX(-50%)' },
+        }
+      }
     },
   },
   plugins: [],

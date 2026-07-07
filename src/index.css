@@ -133,3 +133,13 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 .scroll-snap-x > * { scroll-snap-align: start; }
+
+/* ── Reduce Animations globally when active ───────────────────────────── */
+.reduce-animations *,
+.reduce-animations *::before,
+.reduce-animations *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}

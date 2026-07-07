@@ -23,6 +23,8 @@ export default function Login({ onLogin, onClose }) {
   const [resetStep, setResetStep]     = useState(0); // 0=login, 1=otp, 2=new pass
   const [otpCode, setOtpCode]         = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
 
   const handleSendOtp = async () => {
     if (!email) {
@@ -71,6 +73,10 @@ export default function Login({ onLogin, onClose }) {
         setError('Password must be at least 6 characters.');
         return;
       }
+      if (newPassword !== confirmNewPassword) {
+        setError('New passwords do not match!');
+        return;
+      }
       setError('');
       setInfo('');
       setLoading(true);
@@ -87,6 +93,7 @@ export default function Login({ onLogin, onClose }) {
         setResetStep(0);
         setOtpCode('');
         setNewPassword('');
+        setConfirmNewPassword('');
         setPassword('');
       } catch (err) {
         setError(`Error: ${err.message}`);
@@ -116,7 +123,20 @@ export default function Login({ onLogin, onClose }) {
       localStorage.setItem('rhythmix_admin_session', JSON.stringify(sessionData));
     }
     
-    onLogin(sessionData);
+    // Maintain list of multiple accounts for switching
+    try {
+      const accountsStr = localStorage.getItem('rhythmix_accounts');
+      let accounts = accountsStr ? JSON.parse(accountsStr) : [];
+      // Remove existing account with the same email to avoid duplicates
+      accounts = accounts.filter(a => a.email !== sessionData.email);
+      // Add the latest session to the front
+      accounts.unshift(sessionData);
+      localStorage.setItem('rhythmix_accounts', JSON.stringify(accounts));
+    } catch (e) {
+      console.error('Failed to update accounts list', e);
+    }
+
+    if (onLogin) onLogin(sessionData);
   };
 
   const handleAuth = async (e) => {
@@ -151,6 +171,12 @@ export default function Login({ onLogin, onClose }) {
       const isSystemAdmin = cleanEmail === ADMIN_EMAIL;
 
       if (isSignUp) {
+        if (password !== confirmPassword) {
+          setError('Passwords do not match!');
+          setLoading(false);
+          return;
+        }
+
         userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, password);
         const fbUser = userCredential.user;
         
@@ -187,7 +213,7 @@ export default function Login({ onLogin, onClose }) {
           return;
         } catch (firebaseErr) {
           console.error("Firebase Login Error:", firebaseErr);
-          throw new Error("Invalid email or password");
+          throw new Error("Invalid email or password. If you forgot your password, please click 'Forgot Password?'.");
         }
       }
     } catch (err) {
@@ -300,10 +326,30 @@ export default function Login({ onLogin, onClose }) {
                 )}
               </div>
 
+              {/* Confirm Password Input (Only for Sign Up) */}
+              {isSignUp && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-white/50 text-[10px] font-extrabold uppercase tracking-widest pl-1">
+                    Confirm Password
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" size={16} />
+                    <input
+                      type="password"
+                      placeholder="••••••••"
+                      value={confirmPassword}
+                      onChange={e => setConfirmPassword(e.target.value)}
+                      required
+                      className="w-full bg-white/[0.04] hover:bg-white/[0.06] focus:bg-white/[0.07] border border-white/8 focus:border-cyan-500/50 text-white placeholder-white/20 text-base md:text-sm rounded-2xl pl-11 pr-4 py-3.5 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all duration-300 font-semibold"
+                    />
+                  </div>
+                </div>
+              )}
+
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={loading || !email || !password}
+                disabled={loading || !email || !password || (isSignUp && !confirmPassword)}
                 className="w-full bg-gradient-to-tr from-cyan-400 to-violet-500 hover:from-cyan-300 hover:to-violet-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3.5 px-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/15 hover:scale-[1.02] active:scale-95 transition-all duration-300 cursor-pointer mt-2"
               >
                 {loading
@@ -336,27 +382,45 @@ export default function Login({ onLogin, onClose }) {
               )}
               
               {resetStep === 2 && (
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-white/50 text-[10px] font-extrabold uppercase tracking-widest pl-1">
-                    New Password
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" size={16} />
-                    <input
-                      type="password"
-                      placeholder="••••••••"
-                      value={newPassword}
-                      onChange={e => setNewPassword(e.target.value)}
-                      required
-                      className="w-full bg-white/[0.04] hover:bg-white/[0.06] focus:bg-white/[0.07] border border-white/8 focus:border-cyan-500/50 text-white placeholder-white/20 text-base md:text-sm rounded-2xl pl-11 pr-4 py-3.5 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all duration-300 font-semibold"
-                    />
+                <>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-white/50 text-[10px] font-extrabold uppercase tracking-widest pl-1">
+                      New Password
+                    </label>
+                    <div className="relative">
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" size={16} />
+                      <input
+                        type="password"
+                        placeholder="••••••••"
+                        value={newPassword}
+                        onChange={e => setNewPassword(e.target.value)}
+                        required
+                        className="w-full bg-white/[0.04] hover:bg-white/[0.06] focus:bg-white/[0.07] border border-white/8 focus:border-cyan-500/50 text-white placeholder-white/20 text-base md:text-sm rounded-2xl pl-11 pr-4 py-3.5 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all duration-300 font-semibold"
+                      />
+                    </div>
                   </div>
-                </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-white/50 text-[10px] font-extrabold uppercase tracking-widest pl-1">
+                      Confirm New Password
+                    </label>
+                    <div className="relative">
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" size={16} />
+                      <input
+                        type="password"
+                        placeholder="••••••••"
+                        value={confirmNewPassword}
+                        onChange={e => setConfirmNewPassword(e.target.value)}
+                        required
+                        className="w-full bg-white/[0.04] hover:bg-white/[0.06] focus:bg-white/[0.07] border border-white/8 focus:border-cyan-500/50 text-white placeholder-white/20 text-base md:text-sm rounded-2xl pl-11 pr-4 py-3.5 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all duration-300 font-semibold"
+                      />
+                    </div>
+                  </div>
+                </>
               )}
 
               <button
                 type="submit"
-                disabled={loading || (resetStep === 1 && otpCode.length < 6) || (resetStep === 2 && newPassword.length < 6)}
+                disabled={loading || (resetStep === 1 && otpCode.length < 6) || (resetStep === 2 && (newPassword.length < 6 || !confirmNewPassword))}
                 className="mt-2 w-full bg-gradient-to-tr from-emerald-400 to-teal-500 hover:from-emerald-300 hover:to-teal-400 text-white font-bold py-3.5 px-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 hover:scale-[1.02] active:scale-95 transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {loading ? (

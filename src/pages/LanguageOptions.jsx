@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { usePlayer } from '../context/PlayerContext';
 import { ChevronLeft, Check } from 'lucide-react';
+import { useTranslation } from '../utils/i18n';
 
 export default function LanguageOptions() {
-  const { setActiveSection, goBack } = usePlayer() || {};
-  const [selected, setSelected] = useState(['English', 'Hindi']);
+  const { setActiveSection, goBack, musicLanguages, setMusicLanguages } = usePlayer() || {};
+  const { t } = useTranslation();
 
   const languages = [
     'English', 'Hindi', 'Spanish', 'French', 'German', 
@@ -13,9 +14,14 @@ export default function LanguageOptions() {
   ];
 
   const toggleLanguage = (lang) => {
-    setSelected(prev => 
-      prev.includes(lang) ? prev.filter(l => l !== lang) : [...prev, lang]
-    );
+    setMusicLanguages(prev => {
+      const current = prev || [];
+      if (current.includes(lang)) {
+        return current.filter(l => l !== lang);
+      } else {
+        return [...current, lang];
+      }
+    });
   };
 
   return (
@@ -28,14 +34,14 @@ export default function LanguageOptions() {
         >
           <ChevronLeft size={20} />
         </button>
-        <h2 className="text-white text-3xl font-extrabold tracking-tight">Languages for music</h2>
+        <h2 className="text-white text-3xl font-extrabold tracking-tight">{t('languageOptions')}</h2>
       </div>
       <p className="text-white/50 text-sm ml-14 mb-8">Select the languages you want to hear music in.</p>
 
       <div className="bg-white/[0.03] border border-white/10 rounded-3xl overflow-hidden p-3 shadow-xl shadow-black/20">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {languages.map((lang) => {
-            const isSelected = selected.includes(lang);
+            const isSelected = (musicLanguages || []).includes(lang);
             return (
               <button
                 key={lang}

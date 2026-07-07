@@ -4,7 +4,7 @@ import { cleanTitle, moodAccent, splitArtists } from '../utils/cleanTitle';
 import { useSwipe } from '../hooks/useGestures';
 import { toast } from '../components/ui/Toast';
 import {
-  Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Heart,
+  Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Heart, ListPlus,
   ChevronLeft, Volume2, VolumeX, ListMusic, Sparkles, Share2, MonitorSpeaker, Mic2, Loader2
 } from 'lucide-react';
 
@@ -27,7 +27,7 @@ export default function Playback() {
     allSongs = [], favorites = [], isShuffle, setIsShuffle,
     repeatMode, setRepeatMode, playSong, togglePlay, playNext,
     playPrev, seek, changeVolume, toggleLike, setActiveSection, albumCovers = {}, setActiveArtist,
-    upNextQueue, lyricsData, lyricsLoading, lyricsError
+    upNextQueue, lyricsData, lyricsLoading, lyricsError, openPlaylistModal
   } = usePlayer() || {};
 
   const accent = moodAccent(currentSong?.mood);
@@ -235,12 +235,21 @@ export default function Playback() {
                     {currentSong.artist}
                   </div>
                 </div>
-                <button
-                  onClick={() => toggleLike(currentSong.id)}
-                  className="text-white/40 hover:text-white transition-colors p-2"
-                >
-                  <Heart size={24} className={(favorites || []).includes(currentSong.id) ? 'text-[#1ed760] fill-[#1ed760]' : ''} />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => toggleLike(currentSong.id)}
+                    className="text-white/40 hover:text-white transition-colors p-2"
+                  >
+                    <Heart size={24} className={(favorites || []).includes(currentSong.id) ? 'text-[#1ed760] fill-[#1ed760]' : ''} />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); openPlaylistModal(currentSong); }}
+                    className="text-white/40 hover:text-cyan-400 transition-colors p-2"
+                    title="Add to Playlist"
+                  >
+                    <ListPlus size={24} />
+                  </button>
+                </div>
               </div>
             </div>
 
