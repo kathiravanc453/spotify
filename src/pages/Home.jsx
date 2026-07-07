@@ -684,16 +684,16 @@ export default function Home({ search = '', setSearch, activeSection = 'home' })
           </button>
         </div>
 
-        <div className="flex flex-col gap-3">
+        <div className="grid grid-rows-2 grid-flow-col gap-3 overflow-x-auto snap-x scrollbar-none pb-4 -mx-6 px-6 md:-mx-0 md:px-0 md:flex md:flex-col md:overflow-visible">
           {top10.map((song, i) => (
             <div 
               key={song.id}
               onClick={() => {
                 if (song.type === 'song') playSong(song, { initialQueue: top10 });
               }}
-              className="group flex items-center gap-4 md:gap-6 p-3 md:p-4 rounded-2xl hover:bg-white/[0.06] transition-all duration-300 cursor-pointer"
+              className="group flex items-center gap-3 md:gap-6 p-3 md:p-4 rounded-2xl bg-white/[0.02] md:bg-transparent hover:bg-white/[0.06] transition-all duration-300 cursor-pointer w-[85vw] sm:w-[350px] md:w-auto snap-start shrink-0"
             >
-              <div className="w-8 md:w-12 text-center flex-shrink-0">
+              <div className="w-6 md:w-12 text-center flex-shrink-0">
                 <span className={`text-2xl md:text-4xl font-black italic transition-colors duration-300 ${i === 0 ? 'text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.5)]' : i === 1 ? 'text-slate-300' : i === 2 ? 'text-amber-700' : 'text-white/10 group-hover:text-white/30'}`}>
                   {i + 1}
                 </span>
@@ -1185,7 +1185,7 @@ export default function Home({ search = '', setSearch, activeSection = 'home' })
     return (
       <div className="space-y-4 md:space-y-8 pb-10">
 
-        {/* Surprise Me Floating Button */}
+        {/* Surprise Me Floating Button (Desktop Only) */}
         <button
           onClick={() => {
             const pool = saavnHomeData.trending?.filter(item => item.type === 'song') || [];
@@ -1194,7 +1194,7 @@ export default function Home({ search = '', setSearch, activeSection = 'home' })
               playSong(randomSong, { initialQueue: pool });
             }
           }}
-          className="fixed bottom-24 right-4 md:right-8 z-50 bg-gradient-to-r from-cyan-400 to-violet-500 text-white p-4 rounded-full shadow-[0_0_20px_rgba(34,211,238,0.4)] hover:shadow-[0_0_30px_rgba(34,211,238,0.8)] hover:scale-110 transition-all duration-300 group"
+          className="hidden md:block fixed bottom-24 right-8 z-50 bg-gradient-to-r from-cyan-400 to-violet-500 text-white p-4 rounded-full shadow-[0_0_20px_rgba(34,211,238,0.4)] hover:shadow-[0_0_30px_rgba(34,211,238,0.8)] hover:scale-110 transition-all duration-300 group"
           title="Surprise Me"
         >
           <Sparkles size={24} className="group-hover:animate-pulse" />

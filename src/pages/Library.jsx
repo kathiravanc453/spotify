@@ -346,38 +346,7 @@ export default function Library() {
           <h3 className="text-white/70 group-hover:text-white text-lg font-bold tracking-tight transition-colors">Create Playlist</h3>
         </button>
 
-        {/* Mood Cards */}
-        {MASTER_MOODS.map(moodKey => {
-          const theme = MOOD_THEMES[moodKey];
-          const Icon = theme.icon;
-          const moodSongs = allSongs.filter(s => s?.mood?.toLowerCase().trim().includes(moodKey));
-          const count = moodSongs.length;
 
-          return (
-            <button
-              key={moodKey}
-              onClick={() => setSelectedMood(moodKey)}
-              className={`ripple-container group relative overflow-hidden rounded-3xl aspect-[16/9] flex flex-col justify-end p-6 border border-white/8 card-hover-lift text-left shadow-lg ${theme.glow} cursor-pointer`}
-            >
-              <CoverCollage songs={moodSongs} albumCovers={albumCovers} />
-              <div className={`absolute inset-0 bg-gradient-to-tr ${theme.grad} opacity-15 group-hover:opacity-25 transition-opacity duration-500`} />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#07070a] via-[#07070a]/75 to-[#07070a]/30" />
-
-              <div className="relative z-10">
-                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-tr ${theme.grad} flex items-center justify-center mb-3 shadow-lg ${theme.glow}`}>
-                  <Icon size={22} color="#fff" />
-                </div>
-                <h3 className="text-white text-xl font-extrabold tracking-tight">{theme.label}</h3>
-                <div className="flex items-center gap-2 mt-1">
-                  <p className="text-white/50 text-xs font-semibold uppercase tracking-wider">{theme.desc}</p>
-                  {count > 0 && (
-                    <span className="text-[9px] text-white/30 font-bold bg-white/5 border border-white/10 px-1.5 py-0.5 rounded-full">{count}</span>
-                  )}
-                </div>
-              </div>
-            </button>
-          );
-        })}
       </div>
     </div>
   );
