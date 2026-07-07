@@ -264,6 +264,8 @@ export function PlayerProvider({ children, user }) {
 
 
   const audioRef = useRef(null);
+  const streamUrlsRef = useRef({});
+
   if (!audioRef.current && typeof window !== 'undefined') {
     const a = new Audio();
     a.autoplay = true; // CRITICAL for background auto-advance on mobile!
@@ -595,6 +597,11 @@ export function PlayerProvider({ children, user }) {
     setLoading(true);
     let resolvedSong = { ...song };
 
+    // Inject prefetched URL if available (CRITICAL for background playback on mobile)
+    if (!resolvedSong.src && streamUrlsRef.current[resolvedSong.id] && streamUrlsRef.current[resolvedSong.id] !== 'fetching' && streamUrlsRef.current[resolvedSong.id] !== 'failed') {
+      resolvedSong.src = streamUrlsRef.current[resolvedSong.id];
+    }
+
     // Resolve media stream URL (src) if missing (e.g. from trending list or sidebar)
     if (!resolvedSong.src) {
       try {
@@ -779,6 +786,29 @@ export function PlayerProvider({ children, user }) {
     return [...customQueue, ...recommended];
   }, [currentSong, allSongs, isShuffle, recentlyPlayed, customQueue, isContextualQueue]);
 
+  // ─── Background Audio Prefetcher ──────────────────────────────────────────
+  useEffect(() => {
+    if (!upNextQueue || upNextQueue.length === 0) return;
+    const upcoming = upNextQueue.slice(0, 2); // Look ahead 2 songs
+    upcoming.forEach(song => {
+      if (song.id?.startsWith('saavn_') && !song.src && !streamUrlsRef.current[song.id]) {
+        streamUrlsRef.current[song.id] = 'fetching';
+        const cleanId = song.id.replace('saavn_', '');
+        fetch(`/api/saavn/song/${cleanId}`)
+          .then(res => res.ok ? res.json() : null)
+          .then(detail => {
+            if (detail && detail.src) {
+              streamUrlsRef.current[song.id] = detail.src;
+            } else {
+              streamUrlsRef.current[song.id] = 'failed';
+            }
+          }).catch(() => {
+            streamUrlsRef.current[song.id] = 'failed';
+          });
+      }
+    });
+  }, [upNextQueue]);
+
   // ─── Next / Prev ──────────────────────────────────────────────────────────
   const playNext = useCallback(() => {
     if (!currentSong) return;
@@ -789,9 +819,8 @@ export function PlayerProvider({ children, user }) {
       setIsPlaying(true);
       return;
     }
-    
-    // Infinite DJ mode: randomly pick a global trending song
-    if (infiniteDj && saavnHomeData.trending?.length > 0) {
+    // Fallback: If upNextQueue is somehow empty, and infiniteDj is on, grab a trending song
+    if (infiniteDj && upNextQueue.length === 0 && saavnHomeData.trending?.length > 0) {
       const pool = saavnHomeData.trending.filter(s => s.type === 'song');
       if (pool.length > 0) {
         const nextSong = pool[Math.floor(Math.random() * pool.length)];
