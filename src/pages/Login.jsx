@@ -227,7 +227,7 @@ export default function Login({ onLogin, onClose }) {
   };
 
   return (
-    <div className="relative min-h-screen w-screen bg-[#07070a] flex items-center justify-center p-4 overflow-hidden">
+    <div className="relative min-h-screen w-screen bg-[#07070a] flex items-center justify-center p-4 overflow-x-hidden overflow-y-auto">
       {/* Animated background blobs */}
       <div className="absolute top-[-15%] left-[-15%] w-[55%] h-[55%] rounded-full bg-gradient-to-br from-cyan-500/10 to-violet-500/0 blur-[130px] pointer-events-none animate-pulse" style={{ animationDuration: '8s' }} />
       <div className="absolute bottom-[-15%] right-[-15%] w-[60%] h-[60%] rounded-full bg-gradient-to-tl from-violet-600/10 to-pink-500/0 blur-[150px] pointer-events-none animate-pulse" style={{ animationDuration: '11s' }} />
