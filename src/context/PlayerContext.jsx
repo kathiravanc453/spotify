@@ -778,24 +778,32 @@ export function PlayerProvider({ children, user }) {
       return next;
     });
 
-    // Smart Radio Engine: Fetch 300+ related songs silently in the background
+    // Smart Radio Engine: Fetch related songs silently in the background
     const rawArtist = resolvedSong.artist && resolvedSong.artist !== 'Unknown Artist' ? resolvedSong.artist.split(',')[0] : '';
     const artistQuery = rawArtist ? `${rawArtist} Tamil` : '';
     const moodQuery = `${resolvedSong.mood || 'hits'} Tamil`;
+    const randomKeywords = ['latest', 'trending', 'hits', 'viral', 'bgm', 'melody', 'kuthu', 'love', 'dance'];
+    const randomQuery = `${randomKeywords[Math.floor(Math.random() * randomKeywords.length)]} Tamil`;
     
-    // Fetch both Artist-specific hits AND Mood-specific hits to guarantee a massive 200+ song queue!
+    // Fetch Artist-specific hits, Mood-specific hits, and a random query to guarantee a massive queue!
     Promise.all([
       artistQuery ? fetch(`/api/saavn/search?q=${encodeURIComponent(artistQuery)}`).then(r => r.json()).catch(() => []) : Promise.resolve([]),
-      fetch(`/api/saavn/search?q=${encodeURIComponent(moodQuery)}`).then(r => r.json()).catch(() => [])
-    ]).then(([artistData, moodData]) => {
-      const combined = [...(Array.isArray(artistData) ? artistData : []), ...(Array.isArray(moodData) ? moodData : [])];
+      fetch(`/api/saavn/search?q=${encodeURIComponent(moodQuery)}`).then(r => r.json()).catch(() => []),
+      fetch(`/api/saavn/search?q=${encodeURIComponent(randomQuery)}`).then(r => r.json()).catch(() => [])
+    ]).then(([artistData, moodData, randomData]) => {
+      const combined = [
+        ...(Array.isArray(artistData) ? artistData : []), 
+        ...(Array.isArray(moodData) ? moodData : []),
+        ...(Array.isArray(randomData) ? randomData : [])
+      ];
       // Remove duplicates
       const unique = Array.from(new Map(combined.map(item => [item.id, item])).values());
       
       setSaavnRadioPool(prev => {
         if (keepQueue) {
           const merged = [...prev, ...unique];
-          return Array.from(new Map(merged.map(item => [item.id, item])).values());
+          // Keep pool size manageable to prevent memory bloat
+          return Array.from(new Map(merged.map(item => [item.id, item])).values()).slice(-500);
         } else {
           return unique;
         }
@@ -813,80 +821,77 @@ export function PlayerProvider({ children, user }) {
   const upNextQueue = useMemo(() => {
     if (!currentSong || allSongs.length === 0) return [];
     
+    // If the user has a custom explicit queue, it ALWAYS takes priority.
+    if (customQueue.length > 0) {
+      return [...customQueue];
+    }
+
+    // If there is no custom queue, respect the Autoplay (infiniteDj) setting.
+    if (!infiniteDj) {
+      return []; // Stop playback
+    }
+
+    // --- INFINITE DJ (Autoplay) LOGIC ---
+    
     // Memory engine: exclude all recently played songs to prevent any loops.
     const recentIds = new Set(recentlyPlayed.map(s => s.id));
-    const customIds = new Set(customQueue.map(s => s.id));
     
-    let availableSongs = allSongs.filter(s => s.id !== currentSong.id && !recentIds.has(s.id) && !customIds.has(s.id));
+    let availableSongs = allSongs.filter(s => s.id !== currentSong.id && !recentIds.has(s.id));
 
     // Fallback: If we have exhausted all new songs, allow the queue to reuse recently played songs
+    // But exclude the VERY LAST played song (currentSong)
     if (availableSongs.length === 0) {
-      availableSongs = allSongs.filter(s => s.id !== currentSong.id && !customIds.has(s.id));
+      availableSongs = allSongs.filter(s => s.id !== currentSong.id);
     }
     
-    // Absolute Last Resort Fallback: If there is literally only 1 song in the entire app state
+    // Absolute Last Resort Fallback
     if (availableSongs.length === 0) {
       availableSongs = [...allSongs];
     }
 
-    // Shuffle the available songs deterministically based on the current song.
-    const shuffledAvailable = [...availableSongs].sort((a, b) => {
-      const hashA = String(a.id) + String(currentSong.id);
-      const hashB = String(b.id) + String(currentSong.id);
-      const valA = hashA.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-      const valB = hashB.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-      return valA - valB;
-    });
-
-    let recommended = [];
-
-    if (isContextualQueue) {
-      return [...customQueue];
-    }
+    // Shuffle the available songs RANDOMLY to prevent repeating the exact same sequence
+    const shuffledAvailable = [...availableSongs].sort(() => Math.random() - 0.5);
 
     if (isShuffle) {
-      // Pure random shuffle ignoring mood
-      recommended = shuffledAvailable.slice(0, 300);
-    } else {
-      // Per user request: "Right now upcoming also relate while playing song"
-      const currentMood = (currentSong.mood || '').toLowerCase();
-      const currentArtist = (currentSong.artist || '').toLowerCase();
-      const currentActor = (currentSong.actor || '').toLowerCase();
-
-      // Helper for fuzzy artist matching
-      const matchArtist = (a1, a2) => {
-        if (!a1 || !a2) return false;
-        const primary1 = a1.split(',')[0].trim();
-        const primary2 = a2.split(',')[0].trim();
-        return primary1.includes(primary2) || primary2.includes(primary1);
-      };
-      
-      // Tier 1: Perfect Match (Same Mood AND Same Artist/Actor)
-      const tier1 = shuffledAvailable.filter(s => 
-        (s.mood || '').toLowerCase() === currentMood && 
-        (matchArtist((s.artist || '').toLowerCase(), currentArtist) || (s.actor && (s.actor || '').toLowerCase() === currentActor))
-      );
-      const tier1Ids = new Set(tier1.map(s => s.id));
-      
-      // Tier 2: Mood Match
-      const tier2 = shuffledAvailable.filter(s => (s.mood || '').toLowerCase() === currentMood && !tier1Ids.has(s.id));
-      const tier2Ids = new Set(tier2.map(s => s.id));
-
-      // Tier 3: Artist/Actor Match
-      const tier3 = shuffledAvailable.filter(s => 
-        (matchArtist((s.artist || '').toLowerCase(), currentArtist) || (s.actor && (s.actor || '').toLowerCase() === currentActor)) && 
-        !tier1Ids.has(s.id) && !tier2Ids.has(s.id)
-      );
-      const tier3Ids = new Set(tier3.map(s => s.id));
-      
-      // Tier 4: Everything else (when related songs run out)
-      const others = shuffledAvailable.filter(s => !tier1Ids.has(s.id) && !tier2Ids.has(s.id) && !tier3Ids.has(s.id));
-      
-      recommended = [...tier1, ...tier2, ...tier3, ...others];
+      return shuffledAvailable.slice(0, 300);
     }
 
-    return [...customQueue, ...recommended];
-  }, [currentSong, allSongs, isShuffle, recentlyPlayed, customQueue, isContextualQueue]);
+    // Per user request: "Right now upcoming also relate while playing song"
+    const currentMood = (currentSong.mood || '').toLowerCase();
+    const currentArtist = (currentSong.artist || '').toLowerCase();
+    const currentActor = (currentSong.actor || '').toLowerCase();
+
+    // Helper for fuzzy artist matching
+    const matchArtist = (a1, a2) => {
+      if (!a1 || !a2) return false;
+      const primary1 = a1.split(',')[0].trim();
+      const primary2 = a2.split(',')[0].trim();
+      return primary1.includes(primary2) || primary2.includes(primary1);
+    };
+    
+    // Tier 1: Perfect Match (Same Mood AND Same Artist/Actor)
+    const tier1 = shuffledAvailable.filter(s => 
+      (s.mood || '').toLowerCase() === currentMood && 
+      (matchArtist((s.artist || '').toLowerCase(), currentArtist) || (s.actor && (s.actor || '').toLowerCase() === currentActor))
+    );
+    const tier1Ids = new Set(tier1.map(s => s.id));
+    
+    // Tier 2: Mood Match
+    const tier2 = shuffledAvailable.filter(s => (s.mood || '').toLowerCase() === currentMood && !tier1Ids.has(s.id));
+    const tier2Ids = new Set(tier2.map(s => s.id));
+
+    // Tier 3: Artist/Actor Match
+    const tier3 = shuffledAvailable.filter(s => 
+      (matchArtist((s.artist || '').toLowerCase(), currentArtist) || (s.actor && (s.actor || '').toLowerCase() === currentActor)) && 
+      !tier1Ids.has(s.id) && !tier2Ids.has(s.id)
+    );
+    const tier3Ids = new Set(tier3.map(s => s.id));
+    
+    // Tier 4: Everything else (when related songs run out)
+    const others = shuffledAvailable.filter(s => !tier1Ids.has(s.id) && !tier2Ids.has(s.id) && !tier3Ids.has(s.id));
+    
+    return [...tier1, ...tier2, ...tier3, ...others];
+  }, [currentSong, allSongs, isShuffle, recentlyPlayed, customQueue, infiniteDj]);
 
   // ─── Background Audio Prefetcher ──────────────────────────────────────────
   useEffect(() => {
@@ -921,15 +926,6 @@ export function PlayerProvider({ children, user }) {
       setIsPlaying(true);
       return;
     }
-    // Fallback: If upNextQueue is somehow empty, and infiniteDj is on, grab a trending song
-    if (infiniteDj && upNextQueue.length === 0 && saavnHomeData.trending?.length > 0) {
-      const pool = saavnHomeData.trending.filter(s => s.type === 'song');
-      if (pool.length > 0) {
-        const nextSong = pool[Math.floor(Math.random() * pool.length)];
-        playSong(nextSong, { initialQueue: pool });
-        return;
-      }
-    }
 
     if (upNextQueue.length > 0) {
       const nextSong = upNextQueue[0];
@@ -941,8 +937,10 @@ export function PlayerProvider({ children, user }) {
         });
       }
       playSong(nextSong, true);
-    } else if (allSongs.length > 0) {
-      playSong(allSongs[0], true);
+    } else {
+      // If upNextQueue is empty (e.g. Autoplay is OFF and queue finished), stop playback
+      setIsPlaying(false);
+      audioRef.current.pause();
     }
   }, [currentSong, allSongs, playSong, repeatMode, upNextQueue, customQueue, infiniteDj, saavnHomeData]);
 
