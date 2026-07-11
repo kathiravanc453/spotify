@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { usePlayer } from '../context/PlayerContext';
 import SongCard from '../components/shared/SongCard';
 import SongRow from '../components/shared/SongRow';
@@ -442,14 +442,17 @@ export default function Home({ search = '', setSearch, activeSection = 'home' })
 
   // No longer merging static folders globally since they are separated by section
 
+  const shuffleNextSearch = useRef(false);
+
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       if (search.trim() !== '') {
-        searchSaavnGlobal(search);
+        searchSaavnGlobal(search, shuffleNextSearch.current);
+        shuffleNextSearch.current = false;
       }
     }, 500);
     return () => clearTimeout(delayDebounceFn);
-  }, [search]);
+  }, [search, searchSaavnGlobal]);
 
   // Hero Banner auto-scroll
   useEffect(() => {
@@ -575,6 +578,7 @@ export default function Home({ search = '', setSearch, activeSection = 'home' })
                     dynamicQuery = `${folder.query} ${randomArtist}`;
                   }
                   
+                  shuffleNextSearch.current = true;
                   setSearch(dynamicQuery);
                   setGlobalSection('search');
                 }}
@@ -627,6 +631,7 @@ export default function Home({ search = '', setSearch, activeSection = 'home' })
             <div
               key={station.id}
               onClick={() => {
+                shuffleNextSearch.current = true;
                 setSearch(station.query);
                 setGlobalSection('search');
               }}
