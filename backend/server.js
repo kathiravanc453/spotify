@@ -1166,8 +1166,9 @@ app.get('/api/saavn/search', async (req, res) => {
     const { q } = req.query;
     if (!q) return res.status(400).json({ error: 'Query required' });
 
-    // Fetch 6 pages in parallel to guarantee a massive pool of 200+ unique Tamil songs
-    const pages = [1, 2, 3, 4, 5, 6];
+    // Fetch 3 random pages between 1 and 10 to guarantee a massive and constantly changing pool
+    const startPage = Math.floor(Math.random() * 8) + 1;
+    const pages = [startPage, startPage + 1, startPage + 2];
     const fetchPage = async (p) => {
       const url = `https://www.jiosaavn.com/api.php?__call=search.getResults&q=${encodeURIComponent(q)}&p=${p}&n=40&_format=json&_marker=0&ctx=web6dot0`;
       try {

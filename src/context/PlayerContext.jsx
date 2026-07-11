@@ -165,7 +165,20 @@ export function PlayerProvider({ children, user }) {
   const [activeActor, setActiveActor] = useState(null);
   const [saavnResults, setSaavnResults] = useState([]);
   const [saavnLoading, setSaavnLoading] = useState(false);
-  const [saavnRadioPool, setSaavnRadioPool] = useState([]);
+  const [saavnRadioPool, setSaavnRadioPool] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('rhythmix_radio_pool');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+
+  useEffect(() => {
+    try {
+      if (saavnRadioPool.length > 0) {
+        sessionStorage.setItem('rhythmix_radio_pool', JSON.stringify(saavnRadioPool));
+      }
+    } catch(e){}
+  }, [saavnRadioPool]);
   const [isContextualQueue, setIsContextualQueue] = useState(false);
 
   // ─── Custom User Queue ──────────────────────────────────────────────────
@@ -800,7 +813,7 @@ export function PlayerProvider({ children, user }) {
       const filtered = prev.filter(s => s.id !== resolvedSong.id && s.id !== song.id);
       const cleanSong = { ...resolvedSong };
       delete cleanSong.src; // CRITICAL: NEVER store src in local storage as it expires
-      const next = [cleanSong, ...filtered].slice(0, 100);
+      const next = [cleanSong, ...filtered].slice(0, 400);
       try { localStorage.setItem('rhythmix_recently_played', JSON.stringify(next)); } catch (e) {}
       return next;
     });
