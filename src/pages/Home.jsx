@@ -452,7 +452,7 @@ export default function Home({ search = '', setSearch, activeSection = 'home' })
       }
     }, 500);
     return () => clearTimeout(delayDebounceFn);
-  }, [search, searchSaavnGlobal]);
+  }, [search]);
 
   // Hero Banner auto-scroll
   useEffect(() => {
