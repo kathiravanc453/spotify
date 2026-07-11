@@ -13,8 +13,17 @@ export function PlayerProvider({ children, user }) {
   const [duration, setDuration]         = useState(0);
   const [volume, setVolume]             = useState(0.8);
   const [recentlyPlayed, setRecentlyPlayed] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('rhythmix_recently_played')) || []; } catch { return []; }
+    try { 
+      const raw = JSON.parse(localStorage.getItem('rhythmix_recently_played')) || [];
+      // Strip src from loaded songs to prevent expired URLs from crashing the app
+      return raw.map(s => {
+        const clean = { ...s };
+        delete clean.src;
+        return clean;
+      });
+    } catch { return []; }
   });
+  const skipCountRef = useRef(0);
   const [loading, setLoading]           = useState(false);
   const [favorites, setFavorites]       = useState([]);
   const loadedRef                       = useRef(true);
@@ -700,8 +709,16 @@ export function PlayerProvider({ children, user }) {
     let resolvedSong = { ...song };
 
     // Inject prefetched URL if available (CRITICAL for background playback on mobile)
-    if (!resolvedSong.src && streamUrlsRef.current[resolvedSong.id] && streamUrlsRef.current[resolvedSong.id] !== 'fetching' && streamUrlsRef.current[resolvedSong.id] !== 'failed') {
-      resolvedSong.src = streamUrlsRef.current[resolvedSong.id];
+    const cached = streamUrlsRef.current[resolvedSong.id];
+    if (!resolvedSong.src && cached) {
+      if (cached.url && cached.url !== 'fetching' && cached.url !== 'failed') {
+        const ageHours = (Date.now() - cached.timestamp) / (1000 * 60 * 60);
+        if (ageHours < 6) { // Cache expires after 6 hours
+          resolvedSong.src = cached.url;
+        } else {
+          delete streamUrlsRef.current[resolvedSong.id]; // Expired
+        }
+      }
     }
 
     // Resolve media stream URL (src) if missing (e.g. from trending list or sidebar)
@@ -725,6 +742,7 @@ export function PlayerProvider({ children, user }) {
       // Auto-skip to the next song to prevent playback from silently stalling during infinite DJ
       if (keepQueue) {
         setTimeout(() => {
+          skipCountRef.current += 1;
           if (playNextRef.current) playNextRef.current();
         }, 1500);
       }
@@ -780,7 +798,9 @@ export function PlayerProvider({ children, user }) {
 
     setRecentlyPlayed(prev => {
       const filtered = prev.filter(s => s.id !== resolvedSong.id && s.id !== song.id);
-      const next = [resolvedSong, ...filtered].slice(0, 100);
+      const cleanSong = { ...resolvedSong };
+      delete cleanSong.src; // CRITICAL: NEVER store src in local storage as it expires
+      const next = [cleanSong, ...filtered].slice(0, 100);
       try { localStorage.setItem('rhythmix_recently_played', JSON.stringify(next)); } catch (e) {}
       return next;
     });
@@ -912,19 +932,22 @@ export function PlayerProvider({ children, user }) {
     const upcoming = upNextQueue.slice(0, 10); // Look ahead 10 songs to survive long background play
 
     upcoming.forEach(song => {
-      if (song.id?.startsWith('saavn_') && !song.src && !streamUrlsRef.current[song.id]) {
-        streamUrlsRef.current[song.id] = 'fetching';
+      const cached = streamUrlsRef.current[song.id];
+      const isExpired = cached && cached.timestamp && (Date.now() - cached.timestamp) / (1000 * 60 * 60) > 6;
+      
+      if (song.id?.startsWith('saavn_') && !song.src && (!cached || isExpired || cached.url === 'failed')) {
+        streamUrlsRef.current[song.id] = { url: 'fetching', timestamp: Date.now() };
         const cleanId = song.id.replace('saavn_', '');
         fetch(`/api/saavn/song/${cleanId}`)
           .then(res => res.ok ? res.json() : null)
           .then(detail => {
             if (detail && detail.src) {
-              streamUrlsRef.current[song.id] = detail.src;
+              streamUrlsRef.current[song.id] = { url: detail.src, timestamp: Date.now() };
             } else {
-              streamUrlsRef.current[song.id] = 'failed';
+              streamUrlsRef.current[song.id] = { url: 'failed', timestamp: Date.now() };
             }
           }).catch(() => {
-            streamUrlsRef.current[song.id] = 'failed';
+            streamUrlsRef.current[song.id] = { url: 'failed', timestamp: Date.now() };
           });
       }
     });
@@ -933,6 +956,16 @@ export function PlayerProvider({ children, user }) {
   // ─── Next / Prev ──────────────────────────────────────────────────────────
   const playNext = useCallback(() => {
     if (!currentSong) return;
+    
+    // Stop endless skipping loops (e.g. if internet disconnects or API goes down)
+    if (skipCountRef.current >= 10) {
+      setIsPlaying(false);
+      audioRef.current.pause();
+      skipCountRef.current = 0; // reset for next manual play
+      alert("Playback stopped: Too many consecutive errors. Please check your connection or wait a moment.");
+      return;
+    }
+
     if (repeatMode === 'one') {
       const audio = audioRef.current;
       audio.currentTime = 0;
@@ -986,21 +1019,30 @@ export function PlayerProvider({ children, user }) {
       if (now - lastTime > 150) {
         setProgress(audio.currentTime);
         lastTime = now;
+        // Reset skip counter on successful continuous playback
+        if (audio.currentTime > 2) skipCountRef.current = 0;
       }
     };
     const onDurationChange  = () => setDuration(audio.duration);
     const onEnded           = () => playNextRef.current?.();
+    const onError           = () => {
+      console.error('Audio element error triggered! Stream might be expired.');
+      skipCountRef.current += 1;
+      playNextRef.current?.();
+    };
     const onVolumeChange    = () => setVolume(audio.volume);
     
     audio.addEventListener('timeupdate',      onTimeUpdate);
     audio.addEventListener('durationchange',  onDurationChange);
     audio.addEventListener('ended',           onEnded);
+    audio.addEventListener('error',           onError);
     audio.addEventListener('volumechange',    onVolumeChange);
     
     return () => {
       audio.removeEventListener('timeupdate',     onTimeUpdate);
       audio.removeEventListener('durationchange', onDurationChange);
       audio.removeEventListener('ended',          onEnded);
+      audio.removeEventListener('error',          onError);
       audio.removeEventListener('volumechange',   onVolumeChange);
     };
   }, []);
