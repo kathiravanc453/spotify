@@ -37,7 +37,7 @@ export function PlayerProvider({ children, user }) {
 
   // Global Preferences
   const [musicLanguages, setMusicLanguages] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('rhythmix_music_langs')) || ['English', 'Hindi']; } catch { return ['English', 'Hindi']; }
+    try { return JSON.parse(localStorage.getItem('rhythmix_music_langs')) || ['Tamil', 'English', 'Hindi']; } catch { return ['Tamil', 'English', 'Hindi']; }
   });
   const [appLanguage, setAppLanguage] = useState(() => {
     try { return localStorage.getItem('rhythmix_app_lang') || 'en'; } catch { return 'en'; }

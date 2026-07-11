@@ -1267,8 +1267,14 @@ app.get('/api/saavn/home', async (req, res) => {
       cover: item.image ? item.image.replace('150x150', '500x500') : 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500',
     });
 
-    const playlists = (launchData.top_playlists || []).map(formatItem);
-    const albums = (launchData.new_albums || []).map(formatItem);
+    const filterByLang = (item) => {
+      if (!item.language) return true;
+      const itemLangs = item.language.toLowerCase().split(',');
+      return itemLangs.some(l => langArray.includes(l.trim()));
+    };
+
+    const playlists = (launchData.top_playlists || []).filter(filterByLang).map(formatItem);
+    const albums = (launchData.new_albums || []).filter(filterByLang).map(formatItem);
 
     // Dynamic trending search seeds based on the user's primary selected language
     const seedQueries = [
@@ -1306,6 +1312,7 @@ app.get('/api/saavn/home', async (req, res) => {
     }
 
     res.json({
+      primaryLanguage: capitalizedPrimaryLang,
       trending: trendingSongs,
       playlists: playlists,
       albums: albums

@@ -747,7 +747,7 @@ export default function Home({ search = '', setSearch, activeSection = 'home' })
     );
   };
 
-  const renderFreshRadar = (albums) => {
+  const renderFreshRadar = (albums, lang) => {
     if (!albums || albums.length === 0) return null;
     const freshAlbums = albums.slice(0, 10);
     return (
@@ -757,7 +757,7 @@ export default function Home({ search = '', setSearch, activeSection = 'home' })
             <Zap size={20} className="text-emerald-400" />
           </div>
           <div>
-            <h2 className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-teal-500 text-2xl font-black tracking-tighter uppercase">Fresh Radar</h2>
+            <h2 className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-teal-500 text-2xl font-black tracking-tighter uppercase">{lang ? `${lang} New Releases` : 'Fresh Radar'}</h2>
             <p className="text-white/40 text-sm font-semibold tracking-wide">Brand new drops</p>
           </div>
         </div>
@@ -1347,7 +1347,7 @@ export default function Home({ search = '', setSearch, activeSection = 'home' })
                 {renderHeavyRotation(heavyRotation)}
 
                 {/* FRESH RADAR (NEW RELEASES) */}
-                {renderFreshRadar(saavnHomeData.albums)}
+                {renderFreshRadar(saavnHomeData.albums, saavnHomeData.primaryLanguage)}
 
                 {/* LYRICAL QUOTE OF THE DAY */}
                 {renderQuoteCard()}
