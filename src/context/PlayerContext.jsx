@@ -721,6 +721,13 @@ export function PlayerProvider({ children, user }) {
     if (!resolvedSong.src) {
       console.error('No playable stream found for song:', resolvedSong);
       setLoading(false);
+      
+      // Auto-skip to the next song to prevent playback from silently stalling during infinite DJ
+      if (keepQueue) {
+        setTimeout(() => {
+          if (playNextRef.current) playNextRef.current();
+        }, 1500);
+      }
       return;
     }
 
@@ -902,7 +909,8 @@ export function PlayerProvider({ children, user }) {
   // ─── Background Audio Prefetcher ──────────────────────────────────────────
   useEffect(() => {
     if (!upNextQueue || upNextQueue.length === 0) return;
-    const upcoming = upNextQueue.slice(0, 2); // Look ahead 2 songs
+    const upcoming = upNextQueue.slice(0, 10); // Look ahead 10 songs to survive long background play
+
     upcoming.forEach(song => {
       if (song.id?.startsWith('saavn_') && !song.src && !streamUrlsRef.current[song.id]) {
         streamUrlsRef.current[song.id] = 'fetching';
