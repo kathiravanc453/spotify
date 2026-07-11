@@ -29,13 +29,16 @@ try {
   console.error("🔥 Firebase Admin SDK Initialization Error:", err);
 }
 
-// Read .env.local for Gmail App Password
 const envPath = path.join(__dirname, '../.env.local');
 let gmailAppPassword = '';
+let externalSaavnApi = '';
 if (fs.existsSync(envPath)) {
   const envContent = fs.readFileSync(envPath, 'utf8');
   const match = envContent.match(/^VITE_GMAIL_APP_PASSWORD=(.*)$/m);
   if (match) gmailAppPassword = match[1].trim();
+  
+  const apiMatch = envContent.match(/^VITE_EXTERNAL_SAAVN_API=(.*)$/m);
+  if (apiMatch) externalSaavnApi = apiMatch[1].trim().replace(/\/$/, '');
 }
 
 const transporter = nodemailer.createTransport({
@@ -1161,10 +1164,89 @@ function decryptSaavnUrl(encryptedUrl) {
   }
 }
 
+const mapSaavnTrack = (track) => {
+  let artist = 'Unknown Artist';
+  if (typeof track.primaryArtists === 'string') {
+    artist = track.primaryArtists;
+  } else if (Array.isArray(track.artists?.primary)) {
+    artist = track.artists.primary.map(a => a.name).join(', ');
+  } else if (track.primary_artists) {
+    artist = track.primary_artists;
+  }
+
+  let album = 'Singles';
+  if (track.album && typeof track.album === 'object') {
+    album = track.album.name || 'Singles';
+  } else if (typeof track.album === 'string') {
+    album = track.album;
+  }
+
+  let cover = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500';
+  if (Array.isArray(track.image)) {
+    const highRes = track.image.find(img => img.quality === '500x500') || track.image[track.image.length - 1];
+    if (highRes && highRes.url) cover = highRes.url;
+  } else if (typeof track.image === 'string') {
+    cover = track.image.replace('150x150', '500x500');
+  }
+
+  let src = null;
+  const downloadUrls = track.downloadUrl || track.download_url;
+  if (Array.isArray(downloadUrls)) {
+    const bestQuality = downloadUrls.find(d => d.quality === '320kbps') || downloadUrls.find(d => d.quality === '160kbps') || downloadUrls[downloadUrls.length - 1];
+    if (bestQuality && bestQuality.url) src = bestQuality.url;
+  } else if (typeof track.src === 'string') {
+    src = track.src;
+  }
+
+  return {
+    id: track.id.startsWith('saavn_') ? track.id : `saavn_${track.id}`,
+    title: track.song || track.title || track.name,
+    artist,
+    album,
+    cover,
+    src,
+    duration: parseInt(track.duration, 10) || 0,
+    isSaavn: true,
+    mood: 'Global',
+    type: 'song'
+  };
+};
+
+const fetchFromExternal = async (pathAndQuery) => {
+  if (!externalSaavnApi) return null;
+  let url = `${externalSaavnApi}/api${pathAndQuery}`;
+  try {
+    let response = await fetch(url);
+    if (response.status === 404) {
+      url = `${externalSaavnApi}${pathAndQuery}`;
+      response = await fetch(url);
+    }
+    if (response.ok) {
+      return await response.json();
+    }
+  } catch (err) {
+    console.error(`Error fetching from external API (${url}):`, err.message);
+  }
+  return null;
+};
+
 app.get('/api/saavn/search', async (req, res) => {
   try {
     const { q } = req.query;
     if (!q) return res.status(400).json({ error: 'Query required' });
+
+    if (externalSaavnApi) {
+      console.log(`📡 [External API] Searching: "${q}" via ${externalSaavnApi}`);
+      const data = await fetchFromExternal(`/search/songs?query=${encodeURIComponent(q)}&limit=150`);
+      if (data && data.success) {
+        const resultsList = data.data?.results || data.data || [];
+        if (resultsList.length > 0) {
+          const mapped = resultsList.map(mapSaavnTrack).filter(s => s.src);
+          return res.json(mapped);
+        }
+      }
+      console.warn(`📡 [External API] Search failed/empty. Falling back to native scraper.`);
+    }
 
     // Fetch 3 random pages between 1 and 10 to guarantee a massive and constantly changing pool
     const startPage = Math.floor(Math.random() * 8) + 1;
@@ -1218,6 +1300,19 @@ app.get('/api/saavn/song/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const cleanId = id.replace('saavn_', ''); // in case saavn_ prefix is sent
+
+    if (externalSaavnApi) {
+      console.log(`📡 [External API] Song details for: "${cleanId}" via ${externalSaavnApi}`);
+      const data = await fetchFromExternal(`/songs?id=${cleanId}`);
+      if (data && data.success) {
+        const songList = data.data?.results || data.data || [];
+        if (songList.length > 0) {
+          return res.json(mapSaavnTrack(songList[0]));
+        }
+      }
+      console.warn(`📡 [External API] Details failed. Falling back to native details scraper.`);
+    }
+
     const url = `https://www.jiosaavn.com/api.php?__call=song.getDetails&pids=${cleanId}&_format=json&_marker=0&ctx=web6dot0`;
     const response = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
     const data = await response.json();
@@ -1287,29 +1382,46 @@ app.get('/api/saavn/home', async (req, res) => {
     ];
     const randomQuery = seedQueries[Math.floor(Math.random() * seedQueries.length)];
     
-    const searchUrl = `https://www.jiosaavn.com/api.php?__call=search.getResults&q=${encodeURIComponent(randomQuery)}&p=1&n=50&_format=json&_marker=0&ctx=web6dot0`;
-    const searchResponse = await fetch(searchUrl, { headers: { 'User-Agent': 'Mozilla/5.0', 'Cookie': `L=${requestedLangs};` } });
-    const searchData = await searchResponse.json();
-
     let trendingSongs = [];
-    if (searchData && searchData.results) {
-      trendingSongs = searchData.results.map(track => {
-        let coverUrl = track.image ? track.image.replace('150x150', '500x500') : 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500';
-        const streamUrl = track.encrypted_media_url ? decryptSaavnUrl(track.encrypted_media_url) : null;
-        const cleanTitleText = (track.song || 'Unknown Title').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
-        return {
-          id: `saavn_${track.id}`,
-          title: cleanTitleText,
-          artist: track.primary_artists || 'Unknown Artist',
-          album: track.album || 'Singles',
-          cover: coverUrl,
-          src: streamUrl,
-          duration: parseInt(track.duration, 10) || 0,
-          isSaavn: true,
-          mood: 'Global',
-          type: 'song'
-        };
-      }).filter(s => s.src);
+
+    if (externalSaavnApi) {
+      console.log(`📡 [External API] Fetching trending: "${randomQuery}" via ${externalSaavnApi}`);
+      const data = await fetchFromExternal(`/search/songs?query=${encodeURIComponent(randomQuery)}&limit=50`);
+      if (data && data.success) {
+        const resultsList = data.data?.results || data.data || [];
+        if (resultsList.length > 0) {
+          trendingSongs = resultsList.map(mapSaavnTrack).filter(s => s.src);
+        }
+      }
+      if (trendingSongs.length === 0) {
+        console.warn(`📡 [External API] Trending failed/empty. Falling back to native trending scraper.`);
+      }
+    }
+
+    if (trendingSongs.length === 0) {
+      const searchUrl = `https://www.jiosaavn.com/api.php?__call=search.getResults&q=${encodeURIComponent(randomQuery)}&p=1&n=50&_format=json&_marker=0&ctx=web6dot0`;
+      const searchResponse = await fetch(searchUrl, { headers: { 'User-Agent': 'Mozilla/5.0', 'Cookie': `L=${requestedLangs};` } });
+      const searchData = await searchResponse.json();
+
+      if (searchData && searchData.results) {
+        trendingSongs = searchData.results.map(track => {
+          let coverUrl = track.image ? track.image.replace('150x150', '500x500') : 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500';
+          const streamUrl = track.encrypted_media_url ? decryptSaavnUrl(track.encrypted_media_url) : null;
+          const cleanTitleText = (track.song || 'Unknown Title').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+          return {
+            id: `saavn_${track.id}`,
+            title: cleanTitleText,
+            artist: track.primary_artists || 'Unknown Artist',
+            album: track.album || 'Singles',
+            cover: coverUrl,
+            src: streamUrl,
+            duration: parseInt(track.duration, 10) || 0,
+            isSaavn: true,
+            mood: 'Global',
+            type: 'song'
+          };
+        }).filter(s => s.src);
+      }
     }
 
     res.json({
