@@ -826,8 +826,8 @@ export function PlayerProvider({ children, user }) {
       return [...customQueue];
     }
 
-    // If there is no custom queue, respect the Autoplay (infiniteDj) setting.
-    if (!infiniteDj) {
+    // If there is no custom queue, respect the Autoplay setting.
+    if (!autoplayEnabled) {
       return []; // Stop playback
     }
 
@@ -849,8 +849,14 @@ export function PlayerProvider({ children, user }) {
       availableSongs = [...allSongs];
     }
 
-    // Shuffle the available songs RANDOMLY to prevent repeating the exact same sequence
-    const shuffledAvailable = [...availableSongs].sort(() => Math.random() - 0.5);
+    // Stable pseudo-random shuffle: Shuffles randomly but stays consistent for the given currentSong
+    const hash = (str) => {
+      let h = 0;
+      for (let i = 0; i < str.length; i++) h = Math.imul(31, h) + str.charCodeAt(i) | 0;
+      return h;
+    };
+    const seed = hash(currentSong.id);
+    const shuffledAvailable = [...availableSongs].sort((a, b) => (hash(a.id) ^ seed) - (hash(b.id) ^ seed));
 
     if (isShuffle) {
       return shuffledAvailable.slice(0, 300);
@@ -891,7 +897,7 @@ export function PlayerProvider({ children, user }) {
     const others = shuffledAvailable.filter(s => !tier1Ids.has(s.id) && !tier2Ids.has(s.id) && !tier3Ids.has(s.id));
     
     return [...tier1, ...tier2, ...tier3, ...others];
-  }, [currentSong, allSongs, isShuffle, recentlyPlayed, customQueue, infiniteDj]);
+  }, [currentSong, allSongs, isShuffle, recentlyPlayed, customQueue, autoplayEnabled]);
 
   // ─── Background Audio Prefetcher ──────────────────────────────────────────
   useEffect(() => {
@@ -942,7 +948,7 @@ export function PlayerProvider({ children, user }) {
       setIsPlaying(false);
       audioRef.current.pause();
     }
-  }, [currentSong, allSongs, playSong, repeatMode, upNextQueue, customQueue, infiniteDj, saavnHomeData]);
+  }, [currentSong, allSongs, playSong, repeatMode, upNextQueue, customQueue, autoplayEnabled, saavnHomeData]);
 
   const playNextRef = useRef(playNext);
   useEffect(() => { playNextRef.current = playNext; }, [playNext]);
